@@ -1,0 +1,140 @@
+# GitHub automation — operations guide
+
+This repo ships a full cloud-agent CI pipeline under `.github/`. Once configured,
+every PR is reviewed + merged by a Cursor cloud agent, conflicts are auto-resolved,
+stacked PRs cascade, and an orchestrator drives Scope Slices to implementation —
+with scheduled "re-catch" jobs so **nothing stays stuck for more than ~1h**.
+
+> New here? Start with [`/BOOTSTRAP.md`](../BOOTSTRAP.md) for the end-to-end flow.
+> This file is the reference for the GitHub side.
+
+---
+
+## 1. One-time setup (≈5 min)
+
+### a. Cursor API key
+1. [cursor.com/settings](https://cursor.com/settings) → **API Keys** (Team plan: Dashboard → Service accounts). Cloud agents need a Pro or Team plan.
+2. Copy the key (starts with `cursor_`).
+3. Repo → **Settings → Secrets and variables → Actions → Secrets** → **New repository secret**:
+   - Name: `CURSOR_API_KEY`, Value: the key.
+
+`GITHUB_TOKEN` is injected automatically — you don't add it.
+
+### b. Allow Actions to merge PRs
+**Settings → Actions → General → Workflow permissions**:
+- **Read and write permissions** ✅
+- **Allow GitHub Actions to create and approve pull requests** ✅
+
+### c. Repository variables (optional — all have safe defaults)
+**Settings → Secrets and variables → Actions → Variables**:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `ORCHESTRATOR_ENABLED` | `true` | Kill switch — set `false` to pause all agent firing instantly |
+| `CURSOR_AGENT_MODEL` | `composer-2.5` | Cloud agent model for review + orchestration |
+| `REQUIRED_CHECKS` | `quality` | Comma-separated checks that gate merges. Add `playwright` once you have E2E |
+| `ORCHESTRATOR_TRACKING_BASE` | `main` | Integration branch for tracking PRs (e.g. `feature/my-epic`) |
+| `MAX_REMEDIATION_RUNS` | `5` | Circuit breaker — auto-block a step after this many stalled retries |
+
+### d. Branch protection (recommended) — `main`
+Settings → Branches → Add rule:
+- Require a pull request before merging ✅
+- Require status checks to pass: **`quality`** (add `playwright` when ready) ✅
+- Require branches up to date ✅
+
+---
+
+## 2. What runs, and when
+
+| Workflow | Trigger | Does |
+|---|---|---|
+| `ci.yml` (`quality`) | PR → main/master | typecheck · lint · test · build via turbo. **Graceful**: no-op green if no monorepo at root yet |
+| `e2e.yml` (`playwright`) | PR → main/master | Playwright. **Auto-skips green** until a suite exists |
+| `pr-automation.yml` | PR opened/sync/ready | Waits for `REQUIRED_CHECKS`, then a Cursor agent reviews + squash-merges |
+| `phase-orchestrator.yml` | merge to main/`feature/*`, **cron */30m**, manual | Coordinator picks ready steps → fans out one worker per step → each opens a draft tracking PR + fires an agent |
+| `pr-ready.yml` | PR → ready_for_review | Auto-merges orchestrator tracking PRs, re-dispatches the orchestrator |
+| `pr-cascade.yml` | merge to main/`feature/*` | Rebases + merges stacked draft PRs |
+| `auto-rebase.yml` | PR → ready | Regenerates a stale `pnpm-lock.yaml` |
+| `conflict-resolver.yml` | push to main, **cron */30m**, manual | Cursor agent resolves conflicts on conflicting PRs |
+| `orchestration-automation.yml` | push to PRD/slice files, **cron 6h**, manual | Refills the pipeline from the PRD Flow Inventory + planner queue |
+| `orchestration-planner.yml` | manual | Appends `planner-queue.json` steps into the pipeline |
+| `orchestrator-cleanup.yml` | **cron hourly**, manual | The safety net (see §4) |
+
+---
+
+## 3. The orchestration state (`docs/state/`)
+
+The orchestrator is **data-driven** — it never hardcodes your product. It reads:
+
+| File | Role |
+|---|---|
+| `orchestration.pipeline.json` | Ordered steps + `dependsOn`. Ships with a permanent `bootstrap` anchor |
+| `status.json` | Per-step state: `not-started` / `in-progress` / `complete` / `blocked` (+ remediation counts) |
+| `orchestration.planner-queue.json` | Manual steps to append (you edit this) |
+| `orchestration.prd-flow-map.json` | Maps PRD Flow Inventory rows → Scope Slice files |
+| `HANDOFF.md` | Living context every agent reads first |
+| `seed-anchor.md` | Target of the `bootstrap` anchor — don't delete |
+
+**A step ("slice") points at a Feature Area + Scope Slice** under `docs/product/**`.
+The agent then follows the repo's `.cursor/` governance to implement it. To add work:
+either let `orchestration-automation` derive it from the PRD, or hand-add steps to
+`orchestration.planner-queue.json` and run the **Orchestration Planner**.
+
+### How a step advances
+1. Coordinator marks the step `in-progress`, opens a **draft tracking PR** (`orchestrator/tracking-<id>-*`).
+2. A worker fires a Cursor agent. The agent commits to the tracking branch.
+3. On success the agent sets `status.json` → `complete` and runs `gh pr ready`.
+4. `pr-ready.yml` merges the tracking PR and re-dispatches the orchestrator → next step.
+5. If the agent can't finish, it sets the step `blocked` with a `NEED_HUMAN:` reason; the orchestrator mirrors that to `main` and moves on to other ready steps.
+
+---
+
+## 4. Resilience — "never stuck > 1h"
+
+Every long step is bounded and every path has a scheduled re-catch:
+
+- **Job timeouts** — every workflow has `timeout-minutes` (15–50). No job hangs.
+- **Bounded waits** — `wait-for-required-pr-checks.sh` caps at `MAX_WAIT_SEC` (30 min) then fails loudly.
+- **Orchestrator cron */30m** — recovers missed merge webhooks; reruns coordinator.
+- **Conflict-resolver cron */30m** — catches conflicts the push trigger missed.
+- **Cleanup cron hourly** (`orchestrator-cleanup.yml`) — the catch-all:
+  1. closes duplicate tracking PRs,
+  2. merges "ready" tracking PRs that missed `pr-ready.yml`,
+  3. **re-dispatches draft tracking PRs older than `STALE_DRAFT_MINUTES` (45m)** — a stalled agent is retried within the hour,
+  4. resets orphaned `in-progress` steps (no PR) back to `not-started`.
+- **Circuit breaker** — a step that keeps stalling is auto-`blocked` after `MAX_REMEDIATION_RUNS`, so the cron never refires it forever.
+- **Orphan reset** — `in-progress` with no tracking PR is reset on the next coordinator pass.
+
+Net effect: any single failure is re-attempted or surfaced as `NEED_HUMAN` within ~1h, without freezing the rest of the pipeline.
+
+---
+
+## 5. Kill switch & control
+
+- **Pause everything:** set `ORCHESTRATOR_ENABLED=false` (agents log and exit cleanly).
+- **Resume:** set it back to `true` (or delete the variable — defaults to enabled).
+- **Manual kick:** Actions → *Phase Orchestrator* → *Run workflow* (blank `step_id` = coordinator; set `step_id` to force one step).
+- **Force a stuck merge:** Actions → *Orchestrator Cleanup* → *Run workflow*.
+
+---
+
+## 6. Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `CURSOR_API_KEY is not set` | Add the secret (§1a) |
+| `401 Unauthorized` from the SDK | Re-paste the key (stray whitespace) |
+| `GH_TOKEN lacks merge permission` | Enable Actions write + PR approve (§1b) |
+| Agent posts a blocker comment | Read it — it states exactly what a human must resolve |
+| Workflow never triggers | The workflow file must be on the default branch (or in a PR to it) |
+| Orchestrator exits "missing pipeline" | Ensure `docs/state/orchestration.pipeline.json` is committed (it's git-tracked via a `.gitignore` exception) |
+| First PR's `quality` is green but did nothing | Expected on a governance-only repo with no root monorepo yet |
+
+---
+
+## 7. Not enabled yet: Vercel build-log watch
+
+Vercel monitoring is intentionally **off** in this template. To add it later: enable
+Vercel's Git integration, add `VERCEL_TOKEN` / `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID`
+secrets, and add a workflow on `deployment_status` (failure) that fires a Cursor agent
+to read the build log and push a fix to the PR branch — mirroring `conflict-resolver.ts`.

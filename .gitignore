@@ -1,0 +1,55 @@
+# Track PRD, product decomposition trees, and process synthesis docs; ignore other paths under docs/
+docs/*
+!docs/prd/
+!docs/prd/**
+!docs/product/
+!docs/product/**
+!docs/product-decisions/
+!docs/product-decisions/**
+!docs/process/
+!docs/process/**
+# Orchestration state (read + written by the GitHub automation — must be committed)
+!docs/state/
+!docs/state/**
+
+# Node / pnpm / npm
+node_modules/
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Test
+coverage/
+.vitest-cache/
+
+# Prisma
+prisma/migrations/dev.db*
+prisma/*.db
+prisma/*.db-journal
+
+# Environments
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log

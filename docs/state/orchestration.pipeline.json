@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "description": "Orchestration pipeline. The `bootstrap` step is a permanent anchor (always complete). Slice steps are appended after it by sync-prd-orchestration.ts (from the PRD Flow Inventory) and orchestration-planner.ts (from the planner queue). Do not run code agents from this file directly — it only declares step order + dependencies.",
+  "steps": [
+    {
+      "id": "bootstrap",
+      "dependsOn": [],
+      "workload": {
+        "kind": "slice",
+        "title": "Pipeline anchor",
+        "featureAreaFile": "docs/state/seed-anchor.md",
+        "scopeSliceFile": "docs/state/seed-anchor.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Permanent anchor. Kept `complete` in status.json so it never executes. New slice steps attach after this id (orchestration.prd-flow-map.json attachAfterStepId)."
+      }
+    }
+  ]
+}

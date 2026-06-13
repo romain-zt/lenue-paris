@@ -1,0 +1,60 @@
+name: Auto-rebase — pnpm-lock.yaml only
+
+# One mechanical case: a PR's pnpm-lock.yaml is stale after a push to main.
+# Regenerate and push. Content conflicts are handled by conflict-resolver.yml
+# (Cursor agent), which resolves them intelligently instead of blindly.
+
+on:
+  pull_request:
+    types: [ready_for_review]
+
+jobs:
+  regenerate-lockfile:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Regenerate pnpm-lock.yaml if stale
+        run: |
+          if [ ! -f pnpm-lock.yaml ]; then
+            echo "ℹ️  No pnpm-lock.yaml — nothing to do."
+            exit 0
+          fi
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git fetch origin main
+
+          if git diff --name-only origin/main...HEAD | grep -q "pnpm-lock.yaml"; then
+            echo "🔄 pnpm-lock.yaml diverged — regenerating…"
+            pnpm install --no-frozen-lockfile --silent 2>/dev/null || true
+            if [ -n "$(git status --porcelain pnpm-lock.yaml)" ]; then
+              git add pnpm-lock.yaml
+              git commit -m "chore: regenerate pnpm-lock.yaml [skip ci]"
+              git push origin "$PR_BRANCH"
+              echo "✅ pnpm-lock.yaml regenerated and pushed."
+            else
+              echo "✅ pnpm-lock.yaml already up to date."
+            fi
+          else
+            echo "✅ pnpm-lock.yaml not diverged — nothing to do."
+          fi

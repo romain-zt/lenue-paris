@@ -1,0 +1,57 @@
+name: Conflict Resolver — Smart merge via Cursor Agent
+
+# When main advances, every open non-draft PR that becomes conflicting gets a Cursor
+# agent that merges origin/main into the branch and resolves conflicts before pushing.
+# The 30-min cron is a safety net for conflicts missed by the push trigger.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why are you manually triggering?"
+        required: false
+        default: "manual conflict resolution sweep"
+
+concurrency:
+  group: conflict-resolver-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  resolve-conflicts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+      CURSOR_AGENT_MODEL: ${{ vars.CURSOR_AGENT_MODEL }}
+      REPO: ${{ github.repository }}
+      BASE_BRANCH: ${{ vars.ORCHESTRATOR_TRACKING_BASE || 'main' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Install script deps
+        run: npm install --prefix .github/scripts
+
+      - name: Configure git identity
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+      - name: Run Cursor conflict resolver
+        run: npx tsx .github/scripts/conflict-resolver.ts
