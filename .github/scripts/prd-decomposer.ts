@@ -97,7 +97,7 @@ function needsDecomposition(): { needed: boolean; reason: string } {
   }
 
   const slicesExist =
-    fs.existsSync(SLICES_DIR) && fs.readdirSync(SLICES_DIR).some((f) => f.endsWith(".md"));
+    fs.existsSync(SLICES_DIR) && fs.readdirSync(SLICES_DIR).some((f: string) => f.endsWith(".md"));
   if (!slicesExist) return { needed: true, reason: "no Scope Slice files exist yet" };
 
   const mapped = mappedFlowKeys();

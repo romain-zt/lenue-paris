@@ -58,6 +58,16 @@ You now have `.cursor/`, `.github/`, `docs/`, and the starter monorepo skeleton.
    `docs/product-decisions/PD-NNN-implementation-phase.md`, set `status: approved`.
 2. In `docs/project.config.md` set **Implementation governance enabled: yes**.
 
+### Enable fully autonomous decomposition (off by default)
+Want "edit the PRD and CI does the rest" — including writing the Scope Slices itself?
+1. Approve a decomposition decision (`docs/product-decisions/PD-008-autonomous-decomposition.md`).
+2. In `docs/project.config.md` set **Autonomous decomposition enabled: yes**.
+
+Then `prd-decomposition.yml` runs the `.cursor/` map→slice chain on a Vision agent when
+the PRD changes, a checker `CLEAR` substitutes for human approval, and genuine
+`NEED_HUMAN` still stops the affected item. See *Fully autonomous mode* in
+[`.github/AUTOMATION.md`](.github/AUTOMATION.md#3-the-orchestration-state-docsstate).
+
 ---
 
 ## Step 3 — Push to GitHub + add keys
@@ -85,8 +95,11 @@ Then configure the repo once (full detail in [`.github/AUTOMATION.md`](.github/A
 
 Add work to the pipeline, then automation takes over:
 
-- **From the PRD:** push changes to `docs/prd/PRD.md` (Flow Inventory) or
-  `docs/state/orchestration.prd-flow-map.json`. `orchestration-automation` appends the
+- **Fully autonomous (opt-in):** with *Autonomous decomposition enabled: yes*, just push
+  changes to `docs/prd/PRD.md`. `prd-decomposition` runs the decomposition chain, opens a
+  PR, and once merged `orchestration-automation` fills the pipeline. No manual slicing.
+- **From an already-decomposed PRD:** push changes to `docs/prd/PRD.md` (Flow Inventory)
+  or `docs/state/orchestration.prd-flow-map.json`. `orchestration-automation` appends the
   matching Scope Slices and dispatches the orchestrator.
 - **By hand:** add steps to `docs/state/orchestration.planner-queue.json`, then run the
   **Orchestration Planner** workflow.

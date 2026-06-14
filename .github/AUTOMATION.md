@@ -54,6 +54,7 @@ The mapping lives in [`.github/scripts/cursor-models.config.ts`](scripts/cursor-
 | `conflict-resolver.ts` (default) | Manager | `claude-4.6-sonnet` | File-level merge judgment on most PRs |
 | `conflict-resolver.ts` (sensitive) | Vision | `claude-opus-4-8` | Auto-escalates when ANY conflicted file touches `.cursor/**`, `docs/state/**`, `docs/product/**`, or `docs/product-decisions/**` |
 | `phase-orchestrator.ts` worker | Manager | `claude-4.6-sonnet` | The worker IS the per-step router — picks the smallest coherent layer, decides blocked vs proceed, then sub-delegates the actual typing to Executor subagents (`composer-2.5-fast`) via `Task` |
+| `prd-decomposer.ts` | Vision | `claude-opus-4-8` | Drives the full PRD → Feature Area → Scope Slice chain autonomously and commits durable product-scope decisions that feed implementation — irreversible/strategic, so Vision |
 
 Inside the run, the cloud agent itself respects `20-model-routing.mdc` and routes subagent calls accordingly. To change a model, edit the constants file and open a PR.
 
@@ -71,6 +72,7 @@ Inside the run, the cloud agent itself respects `20-model-routing.mdc` and route
 | `pr-cascade.yml` | merge to main/`feature/*` | Rebases + merges stacked draft PRs |
 | `auto-rebase.yml` | PR → ready | Regenerates a stale `pnpm-lock.yaml` |
 | `conflict-resolver.yml` | push to main, **cron */30m**, manual | Cursor agent resolves conflicts on conflicting PRs |
+| `prd-decomposition.yml` | push to `docs/prd/PRD.md` / feature-areas, **cron 6h**, manual | **Autonomous decomposition** (opt-in): a Vision agent runs the `.cursor/` map→slice chain and wires the flow map, opening a PR that `pr-automation` merges. Gated by `docs/project.config.md` → *Autonomous decomposition enabled* + PD-008 |
 | `orchestration-automation.yml` | push to PRD/slice files, **cron 6h**, manual | Refills the pipeline from the PRD Flow Inventory + planner queue |
 | `orchestration-planner.yml` | manual | Appends `planner-queue.json` steps into the pipeline |
 | `orchestrator-cleanup.yml` | **cron hourly**, manual | The safety net (see §4) |
@@ -101,6 +103,30 @@ either let `orchestration-automation` derive it from the PRD, or hand-add steps 
 3. On success the agent sets `status.json` → `complete` and runs `gh pr ready`.
 4. `pr-ready.yml` merges the tracking PR and re-dispatches the orchestrator → next step.
 5. If the agent can't finish, it sets the step `blocked` with a `NEED_HUMAN:` reason; the orchestrator mirrors that to `main` and moves on to other ready steps.
+
+### Fully autonomous mode (PRD → code, no human in the loop)
+
+By default, turning a ready PRD into runnable slice steps is a human-driven `.cursor/`
+workflow (`/feature-area slice` → `scaffold-slices` → `promote-slice`). To skip that and
+let CI do it:
+
+1. Set `docs/project.config.md` → **Autonomous decomposition enabled: yes** (governed by
+   `docs/product-decisions/PD-008-autonomous-decomposition.md`).
+2. Set **Implementation governance enabled: yes** (PD-007) if you also want code written.
+
+Then the end-to-end chain is:
+
+```
+edit docs/prd/PRD.md  ─▶ prd-decomposition.yml (Vision agent runs map→slice→promote,
+                          wires orchestration.prd-flow-map.json)  ─▶ PR
+   ─▶ pr-automation.yml reviews + merges  ─▶ orchestration-automation.yml
+   ─▶ sync-prd-orchestration.ts fills the pipeline  ─▶ phase-orchestrator.yml implements
+```
+
+A scope-readiness **`CLEAR`** verdict substitutes for the in-conversation human approval.
+A genuine `NEED_HUMAN` (missing product truth, blocking open question, missing secret)
+still stops *that* item — the agent marks it `blocked` and continues with siblings.
+Reverse it any time by setting the flag back to `no` (or `ORCHESTRATOR_ENABLED=false`).
 
 ---
 
