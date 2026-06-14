@@ -19,7 +19,8 @@ Read with `40-architecture-baseline.mdc` (the stack), `50-code-quality.mdc` (cle
 3. **Minimal v0 catalog only.** Add a dependency to the catalog only when a v0 slice needs it. No speculative libraries. Keep the catalog small.
 4. **Apps picked (see §3).** Scaffold only the apps this project targets; keep the monorepo shape.
 5. **Local infra reproducible.** `docker compose up` + `.env` from `.env.example` runs the stack (Postgres + MinIO per baseline).
-6. **A visible first page (see §2).** Something a human can open in a browser, deployable, on day one.
+6. **Seed data + base assets committed (see §2.5).** A seed script and the original/basic assets so the app renders real content immediately — never an empty shell.
+7. **A visible first page (see §2).** Something a human can open in a browser, deployable, on day one.
 
 ## 2. First content / first paint — ASAP
 
@@ -30,6 +31,15 @@ Ship a real, visible home page **before** deep feature work, so progress is visi
 - Deploy target is wired (e.g. Vercel) so the page is reachable. "It builds locally" is not "it's visible".
 
 > Project rule of thumb (from `docs/project.config.md`): *get a first home page up as soon as possible so the customer sees something is moving.*
+
+## 2.5 Seed + base assets — always, when developing with PayloadCMS
+
+Developing through Payload, you must **always** ship two things so the app is never an empty shell and the first paint shows real content:
+
+1. **A seed script** that populates Payload with starter content (a few pages/products/etc.) for local dev and demos. Idempotent, run via a package script (e.g. `pnpm --filter cms seed`), and runnable in CI/preview. The first page must render meaningfully after `docker compose up` + seed — no manual admin clicking required.
+2. **Original / basic assets committed in the Next.js `public/` dir.** Logo, favicon, hero/placeholder images, and any always-present brand asset live in `apps/web/public/` (and `apps/cms/public/` where relevant) and are **committed to git** — they do **not** depend on S3/MinIO being populated. Uploaded/user media still goes to S3 per `40-architecture-baseline.mdc`; these base assets are the static, always-there set.
+
+Net effect: a fresh clone renders real content + real assets immediately, with an empty database and an empty media bucket. Placeholder/empty states still exist for dynamic data, but the base experience is never blank.
 
 ## 3. Pickable apps — don't ship 3 apps for 1
 

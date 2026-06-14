@@ -48,6 +48,7 @@ Do not just tell the user to "use this stack." A clonable skeleton lives at
 |---------|---------|
 | Async/long-running | Stream (SSE) or background job — never a blocking sync POST > 2s (per Spec SP-15) |
 | Media upload | Presigned/server upload to S3 (MinIO local) |
+| Seed + base assets (Payload) | Always ship a seed script **and** commit original/basic assets (logo, favicon, placeholders) in the Next `public/` dir — the app renders real content with an empty DB + empty bucket (see `05-project-setup.mdc` §2.5). Uploaded media still goes to S3. |
 | Localization | Payload locales + Next i18n routing, default + at least one secondary locale wired |
 | Config/secrets | `.env` (never committed); `.env.example` documents every key |
 | Types | Generated Payload types shared across the monorepo |
