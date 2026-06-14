@@ -1,5 +1,5 @@
 {
   "version": 1,
-  "description": "Manual step queue. Add slice steps here, then run the 'Orchestration Planner' workflow (or 'Orchestration automation') to append them into orchestration.pipeline.json. Each step.workload must be kind:\"slice\" pointing at real files under docs/product/**. `dependsOn` ids must already exist in the pipeline or earlier in this queue.",
+  "description": "Manual step queue. Add slice steps here, then run the 'Orchestration Planner' workflow (or 'Orchestration automation') to append them into orchestration.pipeline.json. Each step.workload must be kind:\"slice\" pointing at real files under docs/product/**. `dependsOn` ids must already exist in the pipeline or earlier in this queue. Each step may carry an optional `priority` (0=pick next absolutely … 5=default); see 61-input-queue.mdc. Feed ad-hoc inputs via /btw → docs/state/inbox.ndjson, then triage them into steps here.",
   "steps": []
 }
