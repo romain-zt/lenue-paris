@@ -3,7 +3,7 @@
     "steps": {
       "bootstrap": "complete",
       "orch-product-catalog--v0-category-grid": "complete",
-      "orch-product-detail--v0-pdp-gallery-and-copy": "in-progress",
+      "orch-product-detail--v0-pdp-gallery-and-copy": "not-started",
       "orch-product-detail--v0-pdp-variant-pickers": "not-started",
       "orch-whatsapp-checkout--v0-checkout-and-wa-handoff": "not-started",
       "orch-cms-products--v0-product-crud": "not-started",
