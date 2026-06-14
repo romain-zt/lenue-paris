@@ -82,6 +82,18 @@ export const Products: CollectionConfig = {
       defaultValue: true,
     },
     {
+      name: "relatedDress",
+      type: "relationship",
+      relationTo: "products",
+      hasMany: false,
+      required: false,
+      filterOptions: { category: { equals: "robe" } },
+      admin: {
+        description:
+          "Optional: the dress this bag or scarf is paired with. Filtered to dresses only.",
+      },
+    },
+    {
       name: "lengthVariants",
       type: "select",
       hasMany: true,

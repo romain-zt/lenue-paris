@@ -72,4 +72,18 @@ describe("Products collection", () => {
     expect(images?.type).toBe("array");
     expect(images?.minRows).toBe(1);
   });
+
+  it("has an optional relatedDress relationship to another product", () => {
+    const relatedDress = field("relatedDress") as {
+      type?: string;
+      relationTo?: string;
+      required?: boolean;
+      filterOptions?: unknown;
+    };
+
+    expect(relatedDress?.type).toBe("relationship");
+    expect(relatedDress?.relationTo).toBe("products");
+    expect(relatedDress?.required).toBeFalsy();
+    expect(relatedDress?.filterOptions).toBeTruthy();
+  });
 });

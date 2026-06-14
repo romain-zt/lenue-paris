@@ -11,6 +11,29 @@ Customers browse the catalogue, pick an item, and place an order via a WhatsApp 
 also writes to the CMS. No real payment processing in v0. Aesthetic direction: minimal,
 editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, and Dôen.
 
+## Latest completed step
+
+**Step:** `orch-cms-products--v0-product-variants-and-pairings` — **complete**.
+
+### What was implemented (all layers — data/schema + tests + state)
+
+- User story authored: `docs/product/user-stories/cms-products--v0-product-variants-and-pairings--US-001--set-dress-variants-and-pairings.md` (`ready-for-spec`)
+- Spec authored: `docs/product/specs/cms-products--v0-product-variants-and-pairings--US-001--set-dress-variants-and-pairings.spec.md` (`ready-for-implementation`)
+- `apps/cms/src/collections/Products.ts` — added `relatedDress` relationship field (optional, relationTo `products`, filterOptions `category = robe`). `lengthVariants` and `sizes` were already present from the prior step.
+- `apps/cms/src/collections/Products.test.ts` — added test for `relatedDress` field (type, relationTo, required, filterOptions).
+- `pnpm --filter cms typecheck` → clean. `pnpm --filter cms test` → 15/15 pass.
+
+### Layer progress (v0 Product Variants and Pairings)
+
+| Layer | Status | Notes |
+|-------|--------|-------|
+| 1. data/schema | ✅ complete | `lengthVariants`, `sizes`, `relatedDress` all on `Products.ts` |
+| 2. contracts/types | ✅ n/a | No custom API route; Payload auto-generates REST + types |
+| 3. domain/business logic | ✅ n/a | Validation handled by Payload field constraints |
+| 4. API/route handlers | ✅ n/a | Payload admin REST auto-generated |
+| 5. UI | ✅ n/a | Payload admin panel auto-generated from collection config |
+| 6. tests + state finalization | ✅ complete | Unit tests pass; status.json → complete |
+
 ## Current architecture
 
 - Monorepo: `apps/web` (Next.js storefront), `apps/cms` (Payload 3 CMS + admin), `packages/*` (pnpm + turbo).
@@ -21,7 +44,7 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 - CMS collections: `users`, `media`, `products`, `orders`.
 - Checkout: web form → WhatsApp deep-link (pre-filled message) + POST to `/api/orders` (Payload).
 
-## Completed steps (this session)
+## Previous completed steps (this session)
 
 **Step:** `orch-cms-products--v0-product-crud` — **complete**.
 
@@ -58,6 +81,6 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Next recommended steps
 
-1. `orch-cms-products--v0-product-variants-and-pairings` — dress length variants + related-product pairings in the CMS admin (data model only, no buyer-facing UI in v0)
-2. `orch-whatsapp-checkout--v0-admin-order-list` — order management in Payload admin
-3. `orch-editorial--v0-about-page` — editorial about page
+1. `orch-whatsapp-checkout--v0-admin-order-list` — order management in Payload admin
+2. `orch-editorial--v0-about-page` — editorial about page
+3. `orch-i18n-localization--v0-buyer-locale-routing` — locale routing in Next.js storefront
