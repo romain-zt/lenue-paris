@@ -3,6 +3,7 @@ import type { SupportedLocale } from "@repo/catalog";
 import type { ProductDetail } from "@repo/product-detail";
 import { formatProductPrice, getPdpCopy } from "@/lib/pdp-copy";
 import { ProductGallery } from "./ProductGallery";
+import { ProductOrderSection } from "./ProductOrderSection";
 import styles from "./pdp.module.css";
 
 interface ProductDetailViewProps {
@@ -25,9 +26,13 @@ export function ProductDetailView({ product, locale }: ProductDetailViewProps) {
         {product.description ? (
           <p className={styles.description}>{product.description}</p>
         ) : null}
-        <Link href={product.orderHref} className={styles.orderCta}>
-          {copy.orderCta}
-        </Link>
+        <ProductOrderSection
+          locale={locale}
+          slug={product.slug}
+          orderHref={product.orderHref}
+          variantPickers={product.variantPickers}
+          copy={copy}
+        />
       </div>
     </article>
   );
