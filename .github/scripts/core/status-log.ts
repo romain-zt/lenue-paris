@@ -129,13 +129,36 @@ export function parseStatusLog(raw: string): StatusEvent[] {
 }
 
 /**
- * Project the latest status per step from a log body. Ordering: by `ts` ascending,
- * with original line order as a stable tie-break (so the last-written line wins
- * even when timestamps collide). Union-merged logs may interleave lines from two
- * branches; ts ordering gives a deterministic result.
+ * A reset marker is a line `{ "ts": "...", "reset": true }`. Because the log is
+ * append-only AND `merge=union` (deletions don't stick — old lines resurrect on
+ * merge), a reset CANNOT be done by truncating the file. Instead append a reset
+ * marker; the projection then **ignores every event before the latest reset**.
+ * Returns the max reset `ts` in the log, or null if none.
  */
-export function projectStatus(events: StatusEvent[]): Record<string, StatusEvent> {
-  const indexed = events.map((e, i) => ({ e, i }));
+export function latestResetTs(raw: string): string | null {
+  let max: string | null = null;
+  for (const line of raw.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    try {
+      const e = JSON.parse(trimmed) as { reset?: boolean; ts?: string };
+      if (e && e.reset === true && typeof e.ts === "string" && (!max || e.ts > max)) max = e.ts;
+    } catch {
+      /* ignore corrupt line */
+    }
+  }
+  return max;
+}
+
+/**
+ * Project the latest status per step from parsed events. Events older than the
+ * latest reset marker (`resetTs`) are excluded, so a reset wins even though the
+ * union merge keeps the old lines in the file. Ordering: by `ts` ascending, with
+ * original line order as a stable tie-break (last-written wins on ts collisions).
+ */
+export function projectStatus(events: StatusEvent[], resetTs?: string | null): Record<string, StatusEvent> {
+  const eligible = resetTs ? events.filter((e) => e.ts >= resetTs) : events;
+  const indexed = eligible.map((e, i) => ({ e, i }));
   indexed.sort((a, b) => {
     if (a.e.ts !== b.e.ts) return a.e.ts < b.e.ts ? -1 : 1;
     return a.i - b.i;
@@ -145,10 +168,29 @@ export function projectStatus(events: StatusEvent[]): Record<string, StatusEvent
   return latest;
 }
 
-/** Read + project the on-disk log. Returns {} when the log does not exist. */
+/** Read + project the on-disk log (honoring reset markers). Returns {} when the log does not exist. */
 export function projectStatusFromLog(logPath: string = STATUS_LOG_PATH): Record<string, StatusEvent> {
   if (!fs.existsSync(logPath)) return {};
-  return projectStatus(parseStatusLog(fs.readFileSync(logPath, "utf8")));
+  const raw = fs.readFileSync(logPath, "utf8");
+  return projectStatus(parseStatusLog(raw), latestResetTs(raw));
+}
+
+/**
+ * Reset the pipeline state in an append-only-safe way: append a reset marker (so
+ * the projection drops all prior events) plus a fresh `bootstrap = complete`
+ * anchor so the permanent anchor survives the boundary. Every other step becomes
+ * implicitly `todo` (fireable) again.
+ */
+export function appendReset(opts?: { note?: string; actor?: string }): void {
+  const ts = new Date().toISOString();
+  fs.mkdirSync(path.dirname(STATUS_LOG_PATH), { recursive: true });
+  fs.appendFileSync(
+    STATUS_LOG_PATH,
+    JSON.stringify({ ts, reset: true, actor: opts?.actor ?? "reset", note: opts?.note ?? "fresh restart — supersede all prior events" }) + "\n",
+    "utf8",
+  );
+  // Re-assert the bootstrap anchor at the same ts so it is included (>= resetTs).
+  appendStatusEvent({ ts, step: "bootstrap", status: "complete", actor: opts?.actor ?? "reset", note: "bootstrap anchor (post-reset)" });
 }
 
 // ---------------------------------------------------------------------------
@@ -186,6 +228,13 @@ function runCli(): void {
       actor: flags.actor ?? "agent",
     });
     console.log(`✅ Appended status event: ${step} → ${status}`);
+    return;
+  }
+
+  if (cmd === "reset") {
+    const flags = parseFlags(rest);
+    appendReset({ note: flags.note, actor: flags.actor });
+    console.log("✅ Reset: appended reset marker + bootstrap anchor. Projection now excludes all prior events (setup + features are todo again).");
     return;
   }
 

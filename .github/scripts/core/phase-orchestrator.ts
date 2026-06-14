@@ -28,6 +28,7 @@ import { formatPickedModel, pickOrchestratorWorkerModel } from "./cursor-models.
 import {
   appendStatusEvent,
   isFireable,
+  latestResetTs,
   NEEDS_HUMAN,
   parseStatusLog,
   projectStatus,
@@ -518,7 +519,7 @@ function readStatusFromGitRev(revLike: string): StatusJson | null {
       encoding: "utf8",
       maxBuffer: 8 * 1024 * 1024,
     });
-    logProjected = projectStatus(parseStatusLog(logRaw));
+    logProjected = projectStatus(parseStatusLog(logRaw), latestResetTs(logRaw));
   } catch {
     /* no log at this rev */
   }
