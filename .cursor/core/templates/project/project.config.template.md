@@ -20,6 +20,7 @@
 ## Stack (overrides to `40-architecture-baseline.mdc`)
 
 State only deviations from the baseline (monorepo · next-forge · Payload i18n+S3 · Postgres · MinIO local).
+Start from the **latest stable** release of each framework/dependency (see `05-project-setup.mdc`).
 
 | Concern | Baseline | This project |
 |---------|----------|--------------|
@@ -27,6 +28,17 @@ State only deviations from the baseline (monorepo · next-forge · Payload i18n+
 | CMS/data | Payload (Postgres) | |
 | Media | S3 (MinIO local) | |
 | i18n | on | |
+
+## Apps (pickable — keep the monorepo, scaffold only what you need)
+
+Setup (`05-project-setup.mdc`) scaffolds **only** the apps listed here. See
+`.cursor/core/templates/starter-monorepo/apps/CATALOG.md`. Default to the fewest.
+
+| App | Selected? | Why |
+|-----|-----------|-----|
+| `web` | <!-- yes/no --> | <!-- buyer/visitor-facing surface --> |
+| `cms` | <!-- yes/no --> | <!-- human-edited content/catalog in Payload --> |
+| `api` | <!-- yes/no (add when needed) --> | <!-- standalone backend/service surface --> |
 
 ## Priority bands
 
