@@ -1,0 +1,54 @@
+---
+description: The work-item status lifecycle (todo → in-progress → in-review → validated → complete, plus to-qa-human and blocked) and the append-only status log that records it. Applies to any agent that records or reads orchestration progress.
+globs:
+  - docs/state/**
+alwaysApply: false
+---
+
+# Status Lifecycle & Append-Only State
+
+Two problems this rule fixes: (1) status was a flat `not-started / in-progress / complete / blocked`, too coarse to see where a piece of work actually is; (2) every agent *edited* the same `docs/state/status.json`, so concurrent cloud agents collided and stalled the pipeline.
+
+## 1. The lifecycle
+
+```
+todo ─▶ in-progress ─▶ in-review ─▶ validated ─▶ complete
+                │            │           │
+                └──▶ blocked (NEED_HUMAN) │
+                             └──▶ to-qa-human (needs a human QA pass)
+```
+
+| Status | Meaning | Who sets it |
+|--------|---------|-------------|
+| `todo` | Queued, eligible to start once dependencies are `complete`. (Alias: `not-started`.) | planner / sync / decomposer |
+| `in-progress` | An agent owns it and is building. | orchestrator / worker on pickup |
+| `in-review` | Implementation **and** tests are done; the PR is up and under review (reviewer agent or human). | the building agent |
+| `validated` | Re-test (validation) passed **and** review approved; awaiting merge. | reviewer / building agent |
+| `to-qa-human` | Built and green, but needs a **human QA pass** before it can be called done. Not a decision blocker — a verification handoff. | building agent |
+| `complete` | Merged and done. **Only `complete` satisfies a dependent step's `dependsOn`.** | merge → orchestrator projection |
+| `blocked` | `NEED_HUMAN` — cannot proceed without a person (secret, product decision, ambiguity). | any agent |
+
+Only `todo` / `not-started` / unset is **fireable** (the orchestrator will start an agent). Every other status means "leave it alone". `to-qa-human` and `blocked` are surfaced as "a human is needed" but never freeze siblings.
+
+## 2. Append-only — never hand-edit `status.json`
+
+The **source of truth** is the append-only log `docs/state/status-events.ndjson`. One transition = one JSON line. `.gitattributes` marks it `merge=union`, so two branches that both record a transition merge without conflict — git keeps both lines, and the latest event per step (by `ts`) wins.
+
+`docs/state/status.json` is a **generated snapshot** (a cache) projected from the log. Treat it as read-only.
+
+**To record a transition, append — do not edit:**
+
+```bash
+npx --prefix .github/scripts/core tsx .github/scripts/core/status-log.ts set "<step-id>" <status> \
+  --note "<short>" [--blocker "NEED_HUMAN: <exact input needed>"]
+```
+
+Event shape: `{ "ts", "step", "status", "note?", "blocker?", "actor?" }`.
+
+## 3. Rules
+
+- **Never** write `docs/state/status.json` from an agent. Append an event instead. (The orchestrator regenerates the snapshot.)
+- Record `in-review` when implementation + tests are done and the PR exists; `validated` after re-test + review pass; `complete` only when the work is mergeable.
+- Use `blocked` for a true human decision/secret/access need (`NEED_HUMAN:`); use `to-qa-human` when the work is green but wants human eyes before done.
+- Commit `docs/state/status-events.ndjson` with your work. Do not rewrite or reorder existing lines.
+- Reading current state: project the log (`status-log.ts project`) rather than trusting a possibly-stale `status.json`.

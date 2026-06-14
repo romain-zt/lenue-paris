@@ -1,0 +1,8 @@
+{"ts":"2026-01-01T00:00:00.000Z","step":"bootstrap","status":"complete","actor":"seed","note":"pipeline anchor"}
+{"ts":"2026-01-01T00:00:00.000Z","step":"orch-product-catalog--category-grid","status":"in-progress","actor":"seed"}
+{"ts":"2026-01-01T00:00:00.000Z","step":"orch-product-detail--gallery-and-variants","status":"in-progress","actor":"seed"}
+{"ts":"2026-01-01T00:00:00.000Z","step":"orch-whatsapp-checkout--order-save-and-handoff","status":"todo","actor":"seed"}
+{"ts":"2026-01-01T00:00:00.000Z","step":"orch-cms-products--product-management","status":"todo","actor":"seed"}
+{"ts":"2026-01-01T00:00:00.000Z","step":"orch-cms-products--order-viewing","status":"todo","actor":"seed"}
+{"ts":"2026-01-01T00:00:00.000Z","step":"orch-editorial--brand-page","status":"todo","actor":"seed"}
+{"ts":"2026-01-01T00:00:00.000Z","step":"orch-i18n--localized-storefront","status":"todo","actor":"seed"}
