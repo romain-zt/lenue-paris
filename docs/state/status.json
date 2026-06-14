@@ -10,6 +10,8 @@
       "orch-editorial--brand-page": "not-started",
       "orch-i18n--localized-storefront": "not-started"
     },
-    "remediation_counts": {}
+    "remediation_counts": {
+      "orch-product-catalog--category-grid": 1
+    }
   }
 }
