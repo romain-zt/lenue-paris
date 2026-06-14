@@ -6,3 +6,4 @@
 {"ts":"2026-01-01T00:00:00.000Z","step":"orch-cms-products--order-viewing","status":"todo","actor":"seed"}
 {"ts":"2026-01-01T00:00:00.000Z","step":"orch-editorial--brand-page","status":"todo","actor":"seed"}
 {"ts":"2026-01-01T00:00:00.000Z","step":"orch-i18n--localized-storefront","status":"todo","actor":"seed"}
+{"ts":"2026-06-14T19:26:56.027Z","step":"orch-product-detail--gallery-and-variants","status":"not-started","note":"orphan reset (no tracking PR)","actor":"cleanup"}
