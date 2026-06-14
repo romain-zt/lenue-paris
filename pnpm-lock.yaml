@@ -73,6 +73,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@repo/catalog':
+        specifier: workspace:*
+        version: link:../../packages/catalog
       next:
         specifier: ^15.0.0
         version: 15.5.19(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass@1.77.4)
@@ -101,6 +104,9 @@ importers:
       typescript:
         specifier: ^5.6.0
         version: 5.9.3
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.19.21)(happy-dom@20.10.3)(sass@1.77.4)
 
   packages/catalog:
     devDependencies:
