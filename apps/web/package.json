@@ -23,6 +23,8 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@vitejs/plugin-react": "catalog:",
+    "eslint": "catalog:",
+    "eslint-config-next": "catalog:",
     "jsdom": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",

@@ -27,6 +27,8 @@
     "@repo/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
+    "eslint": "catalog:",
+    "eslint-config-next": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
