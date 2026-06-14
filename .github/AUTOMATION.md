@@ -153,6 +153,7 @@ Every long step is bounded and every path has a scheduled re-catch:
   4. resets orphaned `in-progress` steps (no PR) back to `not-started`.
 - **Circuit breaker** — a step that keeps stalling is auto-`blocked` after `MAX_REMEDIATION_RUNS`, so the cron never refires it forever.
 - **Orphan reset** — `in-progress` with no tracking PR is reset on the next coordinator pass.
+- **State-log merge sync** — GitHub's auto-merge does **not** apply the `.gitattributes merge=union` driver, so a tracking branch + `main` that both appended to `docs/state/status-events.ndjson` would show up as `CONFLICTING` and never merge. The orchestrator therefore merges `main` into the tracking branch (union resolves the log locally) and pushes **before marking the PR ready**, so the PR is never stuck on a state-log conflict. The conflict-resolver cron is the backstop for anything beyond the log.
 
 Net effect: any single failure is re-attempted or surfaced as `NEED_HUMAN` within ~1h, without freezing the rest of the pipeline.
 
