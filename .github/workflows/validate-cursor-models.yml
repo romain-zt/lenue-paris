@@ -1,0 +1,43 @@
+name: Validate Cursor Models
+
+# Lints .github/scripts/cursor-models.config.ts against the live Cursor Cloud
+# API: every tier's { id, params } must EXACTLY match a registered variant.
+# Catches the [invalid_model] failure mode at PR review time instead of in a
+# live cloud run (where it silently breaks the orchestrator).
+
+on:
+  pull_request:
+    paths:
+      - ".github/scripts/cursor-models.config.ts"
+      - ".github/scripts/cursor-subagents.config.ts"
+      - ".github/scripts/cursor-sdk-options.ts"
+      - ".github/scripts/validate-cursor-models.ts"
+      - ".github/scripts/package.json"
+      - ".github/scripts/package-lock.json"
+      - ".github/workflows/validate-cursor-models.yml"
+  workflow_dispatch: {}
+  schedule:
+    # Daily heartbeat — catches drift if Cursor changes a default variant
+    # under us without us touching the config.
+    - cron: "17 6 * * *"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps
+        run: npm install --prefix .github/scripts
+
+      - name: Validate TIER_MODELS against Cursor.models.list()
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: npx --prefix .github/scripts tsx .github/scripts/validate-cursor-models.ts
