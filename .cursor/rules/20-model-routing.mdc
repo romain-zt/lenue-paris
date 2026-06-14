@@ -9,13 +9,13 @@ Match the model to the **responsibility level**, not the topic. Three tiers.
 
 ## Tiers
 
-| Tier | Use for | Agent frontmatter `model:` | Task subagent slug | Cloud API slug |
-|------|---------|----------------------------|--------------------|----------------|
-| **Vision** (high-stakes) | Big plans, product/business strategy, architecture decisions, high-risk reviews, delegation/orchestration, anything irreversible or expensive to get wrong | `claude-opus-4-8` | `claude-opus-4-8-thinking-high` | `claude-opus-4-8-thinking-high` |
-| **Manager** (PM) | Planning, scoping, ticket/spec breakdown, splitting scope into executor-sized bricks, routine review | `claude-4.6-sonnet` (escalate to `claude-opus-4-8` for big plans) | `claude-4.6-sonnet-medium-thinking` | `auto` |
-| **Executor** | The smallest concrete unit of work: one Task / one commit / one brick, mechanical edits, scaffolding from an approved spec | `composer-2.5-fast` | `composer-2.5-fast` | `composer-2.5` |
+| Tier | Use for | Agent frontmatter `model:` | Task subagent slug | Cloud API id (+ params) |
+|------|---------|----------------------------|--------------------|--------------------------|
+| **Vision** (high-stakes) | Big plans, product/business strategy, architecture decisions, high-risk reviews, delegation/orchestration, anything irreversible or expensive to get wrong | `claude-opus-4-8` | `claude-opus-4-8-thinking-high` | `claude-opus-4-8` (+ `thinking=true, context=1m, effort=high`) |
+| **Manager** (PM) | Planning, scoping, ticket/spec breakdown, splitting scope into executor-sized bricks, routine review | `claude-4.6-sonnet` (escalate to `claude-opus-4-8` for big plans) | `claude-4.6-sonnet-medium-thinking` | `claude-sonnet-4-6` (+ `thinking=true, context=1m, effort=medium`) |
+| **Executor** | The smallest concrete unit of work: one Task / one commit / one brick, mechanical edits, scaffolding from an approved spec | `composer-2.5-fast` | `composer-2.5-fast` | `composer-2.5` (+ `fast=true`) |
 
-> **Note:** Task subagent slugs are Cursor IDE-internal identifiers used by the `Task` tool. Cloud API slugs are used by `@cursor/sdk` / `cursor-models.config.ts` for CI cloud agents — these are **different namespaces**. Confirmed valid Cloud API slugs: `"auto"` (server-picks), `"composer-2.5"`, `"claude-opus-4-8-thinking-high"`. Run `Cursor.models.list()` to discover current valid ids for your account.
+> **Note:** Task subagent slugs are Cursor IDE-internal identifiers used by the `Task` tool. Cloud API ids are used by `@cursor/sdk` / `.github/scripts/cursor-models.config.ts` for CI cloud agents — these are **different namespaces**. The Cloud API expects a canonical `{ id, params }` (not a compound string like `"claude-opus-4-8-thinking-high"`); passing an unknown id silently falls back to the account default model and bypasses this doctrine. Run the **Discover Cursor Models** workflow (or `tsx .github/scripts/discover-cursor-models.ts`) to list every valid `id` + variant for your account, then bump `vars.CURSOR_MODEL_VISION_ID` / `CURSOR_MODEL_MANAGER_ID` / `CURSOR_MODEL_EXECUTOR_ID` if you want a different version. Variant params are kept in code (next to the doctrine) and aren't overridable per repo. Never use `id: "default"` (server-picks-auto) in CI — it skips the tier doctrine. CI cloud agents also load an `executor` and `vision-reviewer` subagent (`.github/scripts/cursor-subagents.config.ts`) so the Manager parent can `Task`-delegate per the doctrine.
 
 ## Routing rules
 

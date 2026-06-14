@@ -23,7 +23,7 @@
 
 import { Agent, CursorAgentError, type RunResult } from "@cursor/sdk";
 import { buildCursorCloudOptions } from "./cursor-sdk-options";
-import { CURSOR_MODELS } from "./cursor-models.config";
+import { formatPickedModel, pickPrdDecomposerModel } from "./cursor-models.config";
 import { parseFlowInventory, normalizeFlowCell } from "./sync-prd-orchestration";
 import fs from "node:fs";
 import path from "node:path";
@@ -366,8 +366,9 @@ If everything that could advance is blocked on a human, leave the PR as draft (d
 }
 
 async function runAgent(message: string): Promise<RunResult> {
-  const opts = buildCursorCloudOptions(apiKey!, repo!, CURSOR_MODELS.prdDecomposer);
-  console.log(`🤖 Decomposition cloud agent — model: ${CURSOR_MODELS.prdDecomposer}`);
+  const picked = pickPrdDecomposerModel();
+  const opts = buildCursorCloudOptions(apiKey!, repo!, picked.modelSelection);
+  console.log(`🤖 Decomposition cloud agent — model: ${formatPickedModel(picked)}`);
   const agent = await Agent.create(opts);
   try {
     const run = await agent.send(message);

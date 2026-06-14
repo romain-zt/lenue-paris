@@ -9,7 +9,7 @@
 
 import { Agent, CursorAgentError } from "@cursor/sdk";
 import { buildCursorCloudOptions } from "./cursor-sdk-options";
-import { CURSOR_MODELS } from "./cursor-models.config";
+import { formatPickedModel, pickPrReviewModel } from "./cursor-models.config";
 import { execSync } from "node:child_process";
 
 // --- Environment -----------------------------------------------------------
@@ -127,10 +127,11 @@ Run \`gh pr diff ${prNumber}\` and check against the rules you loaded in Step 1.
 // --- Run -------------------------------------------------------------------
 
 try {
-  console.log(`🤖 Firing Cursor cloud agent for PR review (model: ${CURSOR_MODELS.prReview})…`);
+  const picked = pickPrReviewModel();
+  console.log(`🤖 Firing Cursor cloud agent for PR review — model: ${formatPickedModel(picked)}`);
   const result = await Agent.prompt(
     prompt,
-    buildCursorCloudOptions(apiKey!, repo, CURSOR_MODELS.prReview),
+    buildCursorCloudOptions(apiKey!, repo, picked.modelSelection),
   );
 
   if (result.status === "error") {

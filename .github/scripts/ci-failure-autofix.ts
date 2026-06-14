@@ -19,7 +19,7 @@
 
 import { Agent, CursorAgentError } from "@cursor/sdk";
 import { buildCursorCloudOptions } from "./cursor-sdk-options";
-import { pickCiAutofixModel } from "./cursor-models.config";
+import { formatPickedModel, pickCiAutofixModel } from "./cursor-models.config";
 import { execSync } from "node:child_process";
 
 // ---------------------------------------------------------------------------
@@ -280,22 +280,23 @@ if (priorAttempts >= maxAttempts) {
 }
 
 const changedFiles = listPrChangedFiles(pr.number);
-const { modelId, tier, matchedPaths } = pickCiAutofixModel(changedFiles);
-if (tier === "sensitive") {
+const picked = pickCiAutofixModel(changedFiles);
+if (picked.sensitivity === "sensitive") {
+  const matched = picked.matchedPaths ?? [];
   console.log(
-    `🛡  Vision tier (${modelId}) — PR touches sensitive paths: ${matchedPaths.slice(0, 5).join(", ")}${
-      matchedPaths.length > 5 ? `, +${matchedPaths.length - 5} more` : ""
+    `🛡  ${formatPickedModel(picked)} — PR touches sensitive paths: ${matched.slice(0, 5).join(", ")}${
+      matched.length > 5 ? `, +${matched.length - 5} more` : ""
     }`,
   );
 } else {
-  console.log(`🔧 Manager tier (${modelId}) — attempt ${attempt}/${maxAttempts}.`);
+  console.log(`🔧 ${formatPickedModel(picked)} — attempt ${attempt}/${maxAttempts}.`);
 }
 
 const logs = fetchFailedLogs();
 const prompt = buildPrompt(pr, attempt, logs);
 
 try {
-  const result = await Agent.prompt(prompt, buildCursorCloudOptions(apiKey!, repo!, modelId));
+  const result = await Agent.prompt(prompt, buildCursorCloudOptions(apiKey!, repo!, picked.modelSelection));
   if (result.status === "error") {
     console.error(`❌ Agent run failed for PR #${pr.number}. Check the Cursor dashboard.`);
     process.exit(2);

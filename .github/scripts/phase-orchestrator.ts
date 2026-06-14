@@ -21,7 +21,7 @@
 
 import { Agent, CursorAgentError, type RunResult } from "@cursor/sdk";
 import { buildCursorCloudOptions } from "./cursor-sdk-options";
-import { CURSOR_MODELS } from "./cursor-models.config";
+import { formatPickedModel, pickOrchestratorWorkerModel } from "./cursor-models.config";
 import fs from "node:fs";
 import path from "node:path";
 import { execSync, execFileSync } from "node:child_process";
@@ -115,6 +115,13 @@ Record the next layer in \`docs/state/HANDOFF.md\`, commit, push, and stop unles
 Follow the active \`.cursor/rules/\` — especially \`implementation-workflow.mdc\` (spec → test → implementation gates),
 \`30-test-strategy.mdc\` (test-first; contract/integration/unit over e2e), \`40-architecture-baseline.mdc\` (stack), and
 the v0 boundary in \`docs/project.config.md\`. Do not change architecture, dependencies, or package boundaries unless the step requires it.
+
+## Tier delegation (mandatory)
+You are running at **Manager** tier. Per \`.cursor/rules/20-model-routing.mdc\`, manager plans/splits, executor builds.
+Two named subagents are pre-wired into this run via the \`Task\` tool:
+- **\`executor\`** (composer-2.5) — for the actual code-typing brick (one Task / one commit). Use it for mechanical edits, scaffolding from an approved spec, and test-first writes once the layer to implement is unambiguous.
+- **\`vision-reviewer\`** (claude-opus-4-8) — read-only escalation for high-risk decisions (irreversible, security, architecture, contract). Use it before committing changes that touch \`auth\`, \`money\`, \`data migrations\`, public contracts, or anything you can't undo.
+Default DOWN: do as much as you can yourself at Manager; delegate to \`executor\` for the implementation brick; escalate to \`vision-reviewer\` only when the call is genuinely high-stakes.
 
 ## Checks
 Run the repo's check commands (typically \`pnpm typecheck\`, \`pnpm build\`, \`pnpm test\`; prefer the narrowest relevant command first).
@@ -563,8 +570,9 @@ function emitCursorCloudRunTelemetry(args: { label: string; agentId: string; run
 }
 
 async function runOneCloudPrompt(message: string, label: string): Promise<RunResult> {
-  const opts = buildCursorCloudOptions(apiKey!, repo!, CURSOR_MODELS.orchestratorWorker);
-  console.log(`🤖 Cloud agent for "${label}" — model: ${CURSOR_MODELS.orchestratorWorker}`);
+  const picked = pickOrchestratorWorkerModel();
+  const opts = buildCursorCloudOptions(apiKey!, repo!, picked.modelSelection);
+  console.log(`🤖 Cloud agent for "${label}" — model: ${formatPickedModel(picked)}`);
   const agent = await Agent.create(opts);
   try {
     const run = await agent.send(message);
