@@ -1,7 +1,14 @@
 {
   "orchestration": {
     "steps": {
-      "bootstrap": "complete"
+      "bootstrap": "complete",
+      "orch-product-catalog--category-grid": "not-started",
+      "orch-product-detail--gallery-and-variants": "not-started",
+      "orch-whatsapp-checkout--order-save-and-handoff": "not-started",
+      "orch-cms-products--product-management": "not-started",
+      "orch-cms-products--order-viewing": "not-started",
+      "orch-editorial--brand-page": "not-started",
+      "orch-i18n--localized-storefront": "not-started"
     },
     "remediation_counts": {}
   }

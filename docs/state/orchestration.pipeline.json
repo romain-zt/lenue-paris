@@ -14,6 +14,111 @@
         "planFile": null,
         "notes": "Permanent anchor. Kept `complete` in status.json so it never executes. New slice steps attach after this id (orchestration.prd-flow-map.json attachAfterStepId)."
       }
+    },
+    {
+      "id": "orch-product-catalog--category-grid",
+      "dependsOn": [
+        "bootstrap"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Category Grid",
+        "featureAreaFile": "docs/product/feature-areas/product-catalog.md",
+        "scopeSliceFile": "docs/product/scope-slices/product-catalog--category-grid.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Auto-appended from docs/prd PRD Flow Inventory + orchestration.prd-flow-map.json. Create user story + plan if not present before implementing."
+      }
+    },
+    {
+      "id": "orch-product-detail--gallery-and-variants",
+      "dependsOn": [
+        "orch-product-catalog--category-grid"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Gallery and Variants",
+        "featureAreaFile": "docs/product/feature-areas/product-detail.md",
+        "scopeSliceFile": "docs/product/scope-slices/product-detail--gallery-and-variants.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Auto-appended from docs/prd PRD Flow Inventory + orchestration.prd-flow-map.json. Create user story + plan if not present before implementing."
+      }
+    },
+    {
+      "id": "orch-whatsapp-checkout--order-save-and-handoff",
+      "dependsOn": [
+        "orch-product-detail--gallery-and-variants"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Order Save and Handoff",
+        "featureAreaFile": "docs/product/feature-areas/whatsapp-checkout.md",
+        "scopeSliceFile": "docs/product/scope-slices/whatsapp-checkout--order-save-and-handoff.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Auto-appended from docs/prd PRD Flow Inventory + orchestration.prd-flow-map.json. Create user story + plan if not present before implementing."
+      }
+    },
+    {
+      "id": "orch-cms-products--product-management",
+      "dependsOn": [
+        "orch-whatsapp-checkout--order-save-and-handoff"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Product Management",
+        "featureAreaFile": "docs/product/feature-areas/cms-products.md",
+        "scopeSliceFile": "docs/product/scope-slices/cms-products--product-management.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Auto-appended from docs/prd PRD Flow Inventory + orchestration.prd-flow-map.json. Create user story + plan if not present before implementing."
+      }
+    },
+    {
+      "id": "orch-cms-products--order-viewing",
+      "dependsOn": [
+        "orch-cms-products--product-management"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Order Viewing",
+        "featureAreaFile": "docs/product/feature-areas/cms-products.md",
+        "scopeSliceFile": "docs/product/scope-slices/cms-products--order-viewing.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Auto-appended from docs/prd PRD Flow Inventory + orchestration.prd-flow-map.json. Create user story + plan if not present before implementing."
+      }
+    },
+    {
+      "id": "orch-editorial--brand-page",
+      "dependsOn": [
+        "orch-cms-products--order-viewing"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Brand Page",
+        "featureAreaFile": "docs/product/feature-areas/editorial.md",
+        "scopeSliceFile": "docs/product/scope-slices/editorial--brand-page.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Auto-appended from docs/prd PRD Flow Inventory + orchestration.prd-flow-map.json. Create user story + plan if not present before implementing."
+      }
+    },
+    {
+      "id": "orch-i18n--localized-storefront",
+      "dependsOn": [
+        "orch-editorial--brand-page"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Localized Storefront",
+        "featureAreaFile": "docs/product/feature-areas/i18n.md",
+        "scopeSliceFile": "docs/product/scope-slices/i18n--localized-storefront.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Auto-appended from docs/prd PRD Flow Inventory + orchestration.prd-flow-map.json. Create user story + plan if not present before implementing."
+      }
     }
   ]
 }
