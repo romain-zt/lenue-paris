@@ -35,6 +35,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
+import { appendStatusEvent, projectStatusFromLog } from "./status-log";
+
+const STATUS_LOG_REL = "docs/state/status-events.ndjson";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -127,12 +130,25 @@ function listOpenTrackingPRs(): PrRow[] {
 
 function readStatusJson(): StatusJson | null {
   const p = path.join(process.cwd(), "docs/state/status.json");
-  if (!fs.existsSync(p)) return null;
-  try {
-    return JSON.parse(fs.readFileSync(p, "utf8")) as StatusJson;
-  } catch {
-    return null;
+  const logPath = path.join(process.cwd(), STATUS_LOG_REL);
+  let base: StatusJson | null = null;
+  if (fs.existsSync(p)) {
+    try {
+      base = JSON.parse(fs.readFileSync(p, "utf8")) as StatusJson;
+    } catch {
+      base = null;
+    }
   }
+  // Overlay the append-only event log — it is the source of truth.
+  const projected = projectStatusFromLog(logPath);
+  if (Object.keys(projected).length === 0) return base;
+  const merged: StatusJson = base ?? {};
+  merged.orchestration ??= {};
+  merged.orchestration.steps ??= {};
+  for (const [step, event] of Object.entries(projected)) {
+    merged.orchestration.steps[step] = event.status;
+  }
+  return merged;
 }
 
 function writeStatusJson(s: StatusJson): void {
@@ -345,6 +361,7 @@ function reconcileStatusAndPRs(survivingPRs: PrRow[]): void {
     if (!status.orchestration) status.orchestration = {};
     if (!status.orchestration.steps) status.orchestration.steps = {};
     status.orchestration.steps[stepId] = "not-started";
+    appendStatusEvent({ step: stepId, status: "not-started", actor: "cleanup", note: "orphan reset (no tracking PR)" });
     updates.push(`reset orphan ${stepId} → not-started`);
   }
 
@@ -356,6 +373,7 @@ function reconcileStatusAndPRs(survivingPRs: PrRow[]): void {
     if (!status.orchestration) status.orchestration = {};
     if (!status.orchestration.steps) status.orchestration.steps = {};
     status.orchestration.steps[stepId] = "in-progress";
+    appendStatusEvent({ step: stepId, status: "in-progress", actor: "cleanup", note: `restore desync (was ${previous})` });
     updates.push(`restore desync ${stepId} (was ${previous}) → in-progress`);
   }
 
@@ -366,7 +384,7 @@ function reconcileStatusAndPRs(survivingPRs: PrRow[]): void {
   try {
     git(`config user.email "github-actions[bot]@users.noreply.github.com"`);
     git(`config user.name "github-actions[bot]"`);
-    git(`add docs/state/status.json`);
+    git(`add docs/state/status.json ${STATUS_LOG_REL}`);
     git(
       `commit -m "chore(orchestrator): cleanup — reconcile status.json (${updates.length} fix${
         updates.length === 1 ? "" : "es"
