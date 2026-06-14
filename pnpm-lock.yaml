@@ -76,6 +76,9 @@ importers:
       '@repo/catalog':
         specifier: workspace:*
         version: link:../../packages/catalog
+      '@repo/checkout':
+        specifier: workspace:*
+        version: link:../../packages/checkout
       '@repo/product-detail':
         specifier: workspace:*
         version: link:../../packages/product-detail
