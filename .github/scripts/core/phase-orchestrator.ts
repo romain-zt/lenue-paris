@@ -3,13 +3,16 @@
  *
  * Coordinator/worker model:
  *  - Coordinator (no STEP_ID): reads docs/state/orchestration.pipeline.json + status.json,
- *    finds every ready step (deps complete) and every in-progress step that still has a
- *    draft tracking PR, and dispatches one parallel worker per step.
- *  - Worker (STEP_ID set): executes exactly one step — opens a draft tracking PR, fires a
- *    Cursor cloud agent against the Scope Slice, and verifies the outcome.
+ *    finds every ready step (deps complete) and every in-progress step that still has an
+ *    open tracking PR (draft OR ready), and dispatches one parallel worker per step.
+ *  - Worker (STEP_ID set): executes exactly one step — reuses the step's open tracking PR
+ *    if one exists (remediation) or opens a fresh draft one, fires a Cursor cloud agent
+ *    against the Scope Slice, and verifies the outcome.
  *
  * Resilience built in:
- *  - in-progress steps with no tracking PR are reset to not-started (orphan recovery).
+ *  - tracking PRs are matched regardless of draft state, so a readied-but-unmergeable PR
+ *    (e.g. failing CI) is never mistaken for an orphan — this prevents duplicate PRs.
+ *  - in-progress steps with NO tracking PR at all are reset to not-started (orphan recovery).
  *  - a circuit breaker auto-blocks a step after MAX_REMEDIATION_RUNS to stop infinite refire.
  *  - blocked steps are skipped so a single stall never freezes the whole pipeline.
  * The hourly orchestrator-cleanup.yml is the external safety net (see that file).
@@ -427,21 +430,40 @@ interface GhPrListRow {
   baseRefName: string;
 }
 
-function findDraftTrackingPR(step: string): TrackingPR | null {
+/**
+ * Find the canonical open tracking PR for a step, **regardless of draft state**.
+ *
+ * Critical: a tracking PR that an agent has flipped to "ready for review"
+ * (non-draft) is STILL this step's tracking PR. Filtering to drafts only — as a
+ * previous version did — made a readied-but-unmergeable PR (e.g. failing CI)
+ * invisible, so the orchestrator treated the step as orphaned, reset it, and
+ * opened a brand-new tracking PR → duplicate stuck PRs. We therefore match any
+ * open PR for the step on the tracking base.
+ *
+ * When more than one exists (a residual race), the OLDEST (lowest PR number) is
+ * the canonical one. orchestrator-cleanup.ts uses the same oldest-wins rule, so
+ * both converge on the same PR and the cleanup closes the newer duplicates.
+ */
+function findTrackingPR(step: string): TrackingPR | null {
   try {
     const raw = gh(`pr list --repo "${repo}" --state open --json number,title,headRefName,isDraft,url,baseRefName`);
     const prs = JSON.parse(raw) as GhPrListRow[];
-    for (const pr of prs) {
-      if (!pr.isDraft) continue;
-      if (extractStepFromTrackingTitle(pr.title) !== step) continue;
-      if (pr.baseRefName !== trackingBase) {
-        console.log(`   …skipping PR #${pr.number} (base '${pr.baseRefName}' ≠ orchestrator base '${trackingBase}')`);
-        continue;
+    const matches = prs
+      .filter((pr) => extractStepFromTrackingTitle(pr.title) === step && pr.baseRefName === trackingBase)
+      .sort((a, b) => a.number - b.number);
+    const pr = matches[0];
+    if (pr) {
+      if (matches.length > 1) {
+        console.log(
+          `   …${matches.length} open tracking PRs for "${step}" (${matches
+            .map((m) => `#${m.number}`)
+            .join(", ")}); treating oldest #${pr.number} as canonical (cleanup closes the rest).`,
+        );
       }
       return { number: pr.number, branch: pr.headRefName, url: pr.url };
     }
   } catch (e) {
-    console.warn("⚠️  findDraftTrackingPR failed:", e);
+    console.warn("⚠️  findTrackingPR failed:", e);
   }
   return null;
 }
@@ -654,7 +676,11 @@ async function executeAgentRun(step: string, trackingPR: TrackingPR, remediate: 
 
     if (result.status === "error") {
       console.error(`\n❌ Agent run for "${step}" failed. Check the Cursor dashboard.`);
-      if (!findDraftTrackingPR(step)) resetInProgress(step);
+      // Only a genuine orphan (no tracking PR at all) is reset. While the
+      // tracking PR exists, leave the step in-progress so the bounded
+      // remediation loop (MAX_REMEDIATION_RUNS) retries instead of spawning a
+      // duplicate PR.
+      if (!findTrackingPR(step)) resetInProgress(step);
       process.exit(2);
     }
 
@@ -666,6 +692,16 @@ async function executeAgentRun(step: string, trackingPR: TrackingPR, remediate: 
     }
 
     const remoteRev = `origin/${trackingPR.branch}`;
+    const freshStatus = readStatusFromGitRev(remoteRev);
+    const phaseIsComplete = freshStatus ? phaseCompleteOnStatus(step, freshStatus) : false;
+    const phaseIsBlocked = freshStatus ? phaseBlockedOnStatus(step, freshStatus) : false;
+
+    // Blocked → mirror to the base so the orchestrator skips this step and picks
+    // other work. Takes priority over draft/ready state.
+    if (phaseIsBlocked && syncBlockedFromRemoteToBase(step, remoteRev)) {
+      console.log("✅ Step marked blocked on base; orchestrator can pick other work.");
+      process.exit(0);
+    }
 
     let trackingPRIsDraft = true;
     try {
@@ -677,31 +713,36 @@ async function executeAgentRun(step: string, trackingPR: TrackingPR, remediate: 
       console.warn(`⚠️  Could not query tracking PR #${trackingPR.number} state (non-fatal).`);
     }
 
-    const freshStatus = readStatusFromGitRev(remoteRev);
-    const phaseIsComplete = freshStatus ? phaseCompleteOnStatus(step, freshStatus) : false;
-
-    if (trackingPRIsDraft) {
-      if (syncBlockedFromRemoteToBase(step, remoteRev)) {
-        console.log("✅ Step marked blocked on base; orchestrator can pick other work.");
-        process.exit(0);
+    if (phaseIsComplete) {
+      // Work is done on the branch. If the agent forgot to flip the PR ready,
+      // do it for them (idempotent) so pr-ready.yml / cleanup can merge it.
+      if (trackingPRIsDraft) {
+        try {
+          gh(`pr ready ${trackingPR.number} --repo "${repo}"`);
+          console.log(`🟢 Marked tracking PR #${trackingPR.number} ready for review (agent reported complete).`);
+        } catch {
+          console.warn(`⚠️  Could not flip PR #${trackingPR.number} to ready (non-fatal).`);
+        }
       }
-      console.log(`\n⏳ Tracking PR #${trackingPR.number} still draft — leaving step in-progress for next remediation run.`);
+      console.log(
+        `✅ Post-agent checks passed: "${step}" complete — tracking PR #${trackingPR.number} will merge once checks are green.`,
+      );
       process.exit(0);
     }
 
-    if (!phaseIsComplete) {
-      if (syncBlockedFromRemoteToBase(step, remoteRev)) process.exit(0);
-      console.error(`\n❌ Post-agent check FAILED: status.json on '${remoteRev}' does not show "${step}" complete.`);
-      resetInProgress(step);
-      process.exit(2);
-    }
-
-    console.log(`✅ Post-agent checks passed: tracking PR #${trackingPR.number} ready, status complete.`);
+    // Not complete and not blocked → still in progress. The tracking PR exists,
+    // so DO NOT reset: that is exactly what spawned duplicate PRs before.
+    // Leave the step in-progress; the next bounded remediation worker continues.
+    console.log(
+      `\n⏳ "${step}" not yet complete (tracking PR #${trackingPR.number}, ${
+        trackingPRIsDraft ? "draft" : "ready"
+      }). Leaving in-progress for the next remediation run.`,
+    );
     process.exit(0);
   } catch (err) {
     if (err instanceof CursorAgentError) {
       console.error(`❌ Agent failed to start: ${err.message} (retryable=${err.isRetryable})`);
-      if (!findDraftTrackingPR(step)) resetInProgress(step);
+      if (!findTrackingPR(step)) resetInProgress(step);
       process.exit(1);
     }
     throw err;
@@ -777,10 +818,12 @@ async function mainOrchestrator(): Promise<void> {
     const currentStepStatus = resolveStepStatus(status, stepId);
     validateRunnableStep(stepId);
 
-    // Always look for an existing draft PR for this step first — the worker is
-    // idempotent and may be re-dispatched (cron, CI failure, manual). If one
-    // exists, that's the source of truth; reuse it.
-    const existingPR = findDraftTrackingPR(stepId);
+    // Always look for an existing tracking PR for this step first (draft OR
+    // ready) — the worker is idempotent and may be re-dispatched (cron, CI
+    // failure, manual). If one exists, that's the source of truth; reuse it.
+    // This is the primary defense against duplicate tracking PRs: we never open
+    // a second PR while one is already open for the step.
+    const existingPR = findTrackingPR(stepId);
 
     if (existingPR) {
       // If a tracking PR already exists for this step, by definition the agent
@@ -789,24 +832,24 @@ async function mainOrchestrator(): Promise<void> {
       // coordinator + cleanup see a coherent state.
       if (currentStepStatus !== "in-progress") {
         console.log(
-          `🔧 Worker: status was "${currentStepStatus ?? "unset"}" but draft PR #${existingPR.number} exists — restoring in-progress.`,
+          `🔧 Worker: status was "${currentStepStatus ?? "unset"}" but tracking PR #${existingPR.number} exists — restoring in-progress.`,
         );
         markInProgress(status, stepId);
         status = readStatus() ?? status;
       }
-      console.log(`♻️  Reusing existing draft tracking PR #${existingPR.number} for "${stepId}" (remediation).`);
+      console.log(`♻️  Reusing existing tracking PR #${existingPR.number} for "${stepId}" (remediation).`);
       if (bumpRemediationOrTrip(status, stepId)) process.exit(2);
       await executeAgentRun(stepId, existingPR, true);
       return;
     }
 
-    // No draft PR exists. If the status still says in-progress that is an
+    // No tracking PR exists. If the status still says in-progress that is an
     // actual orphan (a previous agent run died before/after committing). Reset
     // and continue with a fresh PR. (If status is anything else this is just a
     // fresh dispatch — no reset needed.)
     if (currentStepStatus === "in-progress") {
       console.log(
-        `⚠️  Worker: "${stepId}" in-progress but no draft tracking PR for '${trackingBase}' — orphaned, resetting before retry.`,
+        `⚠️  Worker: "${stepId}" in-progress but no tracking PR for '${trackingBase}' — orphaned, resetting before retry.`,
       );
       resetInProgress(stepId);
       status = readStatus() ?? status;
@@ -826,11 +869,11 @@ async function mainOrchestrator(): Promise<void> {
   // Coordinator mode — fan-out across all ready steps
   // -------------------------------------------------------------------------
 
-  // 1. Reset orphaned in-progress steps (in-progress but no tracking PR).
+  // 1. Reset orphaned in-progress steps (in-progress but no tracking PR at all).
   for (const row of loadPipeline().steps) {
     if (resolveStepStatus(status, row.id) !== "in-progress") continue;
-    if (!findDraftTrackingPR(row.id)) {
-      console.log(`⚠️  "${row.id}" in-progress but no draft tracking PR for '${trackingBase}'. Resetting.`);
+    if (!findTrackingPR(row.id)) {
+      console.log(`⚠️  "${row.id}" in-progress but no tracking PR for '${trackingBase}'. Resetting.`);
       resetInProgress(row.id);
     }
   }
@@ -838,11 +881,11 @@ async function mainOrchestrator(): Promise<void> {
   status = readStatus();
   if (!status) { process.exit(0); return; }
 
-  // 2. in-progress steps WITH tracking PRs → remediation workers.
+  // 2. in-progress steps WITH tracking PRs (draft or ready) → remediation workers.
   const remediationSteps: string[] = [];
   for (const row of loadPipeline().steps) {
     if (resolveStepStatus(status, row.id) !== "in-progress") continue;
-    if (findDraftTrackingPR(row.id)) remediationSteps.push(row.id);
+    if (findTrackingPR(row.id)) remediationSteps.push(row.id);
   }
 
   // 3. ready steps (deps complete, not started).
