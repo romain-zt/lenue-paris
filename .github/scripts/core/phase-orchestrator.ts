@@ -750,7 +750,7 @@ Read \`docs/state/HANDOFF.md\` and \`docs/project.config.md\`, then anchor on:
 - Scope Slice: \`${w.scopeSliceFile}\`
 ${us}${plan}${notes}
 ### Done criteria
-1. Decompose this Slice into per-part tasks and delegate each part to the matching specialist (see \`.cursor/core/rules/user-story-workflow.mdc\`) — do not build the whole slice as one undifferentiated blob.
+1. Decompose this Slice into per-part tasks and delegate each part to the matching specialist (see \`.cursor/core/rules/62-feature-decomposition.mdc\`) — do not build the whole slice as one undifferentiated blob.
 2. Workflow order per part: spec → plan → tests (failing) → implement → re-test (validation) → review.
 3. Repo check commands pass on every head you push.
 4. Append \`status-log.ts set "${stepRow.id}" in-review\` when built + tested, \`validated\` after re-test/review pass, then \`complete\` on \`{TRACKING_PR_BRANCH}\`, then \`gh pr ready {TRACKING_PR_NUMBER} --repo {REPO}\`.
