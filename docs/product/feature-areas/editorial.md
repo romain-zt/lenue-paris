@@ -2,7 +2,7 @@
 
 ## Status
 
-`validated`
+`delivery-ready`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -104,6 +104,16 @@ Tell the Lénue Paris brand story beyond the catalogue — at least one editoria
 
 **Verdict:** READY FOR SCOPE SLICES
 
+### Delivery Readiness
+
+- [x] DR-01 — Status was `validated` prior to this transition
+- [x] DR-02 — Every direct dependency Feature Area has a file in `docs/product/feature-areas/`
+- [x] DR-03 — Every governing Product Decision is `approved`
+- [x] DR-04 — No `NEED_HUMAN=true` on this FA or its direct dependencies
+- [x] DR-05 — At least one child Scope Slice is `ready-for-user-stories`
+
+**Verdict:** READY FOR VERTICAL DELIVERY
+
 ---
 
 ## Changelog
@@ -112,3 +122,4 @@ Tell the Lénue Paris brand story beyond the catalogue — at least one editoria
 |------|--------|--------|
 | 2026-06-14 | Scaffolded from approved Feature Area Map (`/feature-area scaffold`) | — |
 | 2026-06-14 | Promoted to validated after CLEAR readiness check (`/feature-area promote`) | — |
+| 2026-06-14 | Promoted to delivery-ready after CLEAR DR-01–DR-05 (`/feature-area clear-for-vertical`) | — |
