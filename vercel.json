@@ -3,18 +3,6 @@
   "buildCommand": "turbo run build",
   "installCommand": "pnpm install",
   "framework": null,
-  "projects": [
-    {
-      "name": "web",
-      "directory": "apps/web",
-      "framework": "nextjs"
-    },
-    {
-      "name": "cms",
-      "directory": "apps/cms",
-      "framework": "nextjs"
-    }
-  ],
   "env": {
     "TURBO_TOKEN": "@turbo-token",
     "TURBO_TEAM": "@turbo-team"
