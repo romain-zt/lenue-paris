@@ -28,7 +28,7 @@ Tracking PR #55 (`orchestrator/tracking-setup-1781469264704`).
 
 **`orch-product-catalog--category-grid` — COMPLETE (2026-06-14)**
 
-Tracking PR #47 (`orchestrator/tracking-orch-product-catalog--category-grid-1781463077496`).
+Tracking PR #56 (`orchestrator/tracking-orch-product-catalog--category-grid-1781469855459`). Prior run PR #47 was also complete; this run re-verified after orphan reset.
 
 Implemented in main via prior merged commits:
 - **UI**: `/catalogue` page (RSC) with `CatalogueClient`, `CategoryFilter` (Robes/Sacs/Foulards), `ProductGrid`, `ProductCard`, `ProductCardSkeleton`.
