@@ -5,6 +5,9 @@
   "engines": {
     "node": ">=20.9.0"
   },
+  "dependencies": {
+    "next": "^15.0.0"
+  },
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
