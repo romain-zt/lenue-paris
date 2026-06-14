@@ -6,24 +6,22 @@
 
 ## What this project is
 
-<!-- One paragraph. Pulled from docs/project.config.md once you fill it in. -->
-A new project bootstrapped from the Cursor governance template. See
-`docs/project.config.md` for identity, stack, priority bands, and the v0 boundary.
+Lénue Paris — luxury fashion boutique for Russian-speaking women in France. Buyers browse dresses, bags, and scarfs, then order via WhatsApp. The storefront is Next.js 15 (fr primary, en secondary); the CMS is Payload 3 on Neon Postgres. Both are deployed on Vercel. No payment gateway — prices are listed in EUR; settlement is manual in WhatsApp.
 
 ## Current architecture
 
-<!-- The shape of the codebase as it exists right now: apps, packages, key boundaries.
-     On a fresh project this is just the starter monorepo (apps/web, apps/cms, packages/*). -->
-- Monorepo: `apps/*`, `packages/*` (pnpm + turbo).
-- Stack baseline: see `.cursor/core/rules/40-architecture-baseline.mdc` and `docs/project.config.md`.
+- **Monorepo:** `apps/web` (Next.js 15, port 3001), `apps/cms` (Payload 3, port 3000), `packages/typescript-config`. pnpm 9 + Turbo.
+- **Data:** Payload collections — `users`, `media`, `pages`, **`products`** (new: title/slug/category/price/images, draft/publish).
+- **Web surface:** `/` — category grid page. Fetches published products from Payload REST API (`CMS_URL/api/products`). Components: `CategoryFilter`, `ProductGrid`, `ProductCard`, `ProductCardSkeleton`. All UX states handled (populated, filtered, empty, loading, error).
+- **Stack baseline:** see `.cursor/core/rules/40-architecture-baseline.mdc` and `docs/project.config.md`. Media via S3/MinIO; i18n locales fr + en.
+- **Check commands:** `pnpm --filter @lenue-paris/web typecheck`, `pnpm --filter @lenue-paris/cms typecheck`, `pnpm --filter @lenue-paris/cms test`, `pnpm --filter @lenue-paris/web test` — all pass.
 
 ## Active work
 
-<!-- The step currently in flight, if any. The orchestrator keeps this roughly in sync. -->
-- Autonomous decomposition run on `orchestrator/decompose-1781454348705` (PR #38) is **complete**.
-  All v0 Feature Areas are `delivery-ready` and each has at least one `ready-for-user-stories`
-  Scope Slice. The PRD flow map is wired. Pipeline anchor `bootstrap` is still the only
-  pipeline step — appending slice steps is the next (separate) automation's job.
+- **`orch-product-catalog--category-grid` → COMPLETE** (2026-06-14, PR #42).
+  - User story + spec authored: `docs/product/user-stories/product-catalog--category-grid--US-001--browse-and-filter.md`
+  - Spec: `docs/product/specs/product-catalog--category-grid--US-001--browse-and-filter.spec.md`
+  - 12 tests passing (8 CMS schema + 4 web contract).
 
 ## Decomposition status (2026-06-14)
 
@@ -76,7 +74,9 @@ were reverted — appending pipeline steps is owned by `orchestration-automation
 
 ## Next recommended step
 
-<!-- The single safest next action. Agents use this to avoid analysis loops. -->
-- Run `orchestration-automation` / `Orchestration Planner` to append the 7 wired slices as
-  pipeline steps after `bootstrap`, then begin `/user-story` → `/spec` → `/implement` on the
-  `delivery-ready` Feature Areas in priority-band order (P0 first: storefront-shell, product-catalog).
+Next P0 steps (in dependency order):
+1. **`orch-storefront-shell--global-chrome`** — shared nav, footer, hero. Extends `apps/web/src/app/layout.tsx`. The category grid already renders within a minimal layout; this slice adds the branded chrome.
+2. **`orch-cms-products--product-management`** — CMS admin UX for product creation/editing. The `products` Payload collection already exists; this slice refines admin fields and adds `ru` locale.
+3. **`orch-product-detail--gallery-and-variants`** — detail page at `/products/[slug]`. `ProductCard` already links to this path.
+
+The `apps/web` and `apps/cms` packages are live; new slices should build on top of the existing monorepo rather than re-scaffolding.
