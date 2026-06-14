@@ -135,4 +135,23 @@ describe("fetchCatalogList", () => {
     expect(response.products).toEqual([]);
     expect(response.category).toBe("scarf");
   });
+
+  it("dress filter excludes sac and foulard products (AC acceptance)", async () => {
+    const findProducts = vi.fn().mockResolvedValue([sampleDocs[0]]);
+
+    const response = await fetchCatalogList(
+      { category: "dress", locale: "fr" },
+      { findProducts },
+    );
+
+    expect(findProducts).toHaveBeenCalledWith({
+      where: { category: { equals: "robe" } },
+      locale: "fr",
+    });
+    expect(response.products).toHaveLength(1);
+    expect(response.products[0]?.category).toBe("robe");
+    const categories = response.products.map((product) => product.category);
+    expect(categories).not.toContain("sac");
+    expect(categories).not.toContain("foulard");
+  });
 });

@@ -65,6 +65,28 @@ describe("GET /api/catalog", () => {
     expect(body.products).toEqual([]);
   });
 
+  it("dress filter excludes sac and foulard from response", async () => {
+    vi.mocked(findPayloadProducts).mockResolvedValue([sampleDoc]);
+
+    const request = new NextRequest(
+      "http://localhost:3001/api/catalog?category=dress&locale=fr",
+    );
+    const response = await GET(request);
+    const body = await response.json();
+
+    expect(findPayloadProducts).toHaveBeenCalledWith({
+      where: { category: { equals: "robe" } },
+      locale: "fr",
+    });
+    expect(body.products).toHaveLength(1);
+    expect(body.products[0]?.category).toBe("robe");
+    const categories = body.products.map(
+      (product: { category: string }) => product.category,
+    );
+    expect(categories).not.toContain("sac");
+    expect(categories).not.toContain("foulard");
+  });
+
   it("returns 500 when CMS fetch fails", async () => {
     vi.mocked(findPayloadProducts).mockRejectedValue(new Error("CMS down"));
 

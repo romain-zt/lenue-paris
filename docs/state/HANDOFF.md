@@ -23,13 +23,14 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Active work
 
-**Step:** `orch-product-catalog--v0-category-grid` — UI layer complete; next is tests + state finalization.
+**Step:** `orch-product-catalog--v0-category-grid` — **complete**.
 
 - User story: `docs/product/user-stories/product-catalog--v0-category-grid--US-001--browse-and-filter-grid.md` (`ready-for-spec`)
 - Spec: `docs/product/specs/product-catalog--v0-category-grid--US-001--browse-and-filter-grid.spec.md` (`ready-for-implementation`)
 - Package: `@repo/catalog` — types, category mapping, `ProductCard`, catalogue fetch helper + unit tests
 - API: `GET /api/catalog` in `apps/web` — wires `fetchCatalogList` to Payload REST via `CMS_URL`
 - UI: `/[locale]/catalogue` — mobile-first grid, category filter chips, empty/error/loading states
+- Tests: contract + acceptance + UI component tests; all monorepo checks green
 
 ## Layer progress (v0 Category Grid)
 
@@ -40,7 +41,7 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 | 3. domain/business logic | ✅ complete | `fetchCatalogList`, `buildPayloadProductsWhere`, locale/query normalization |
 | 4. API/route handlers | ✅ complete | `apps/web/src/app/api/catalog/route.ts` + Payload REST adapter + contract tests |
 | 5. UI | ✅ complete | `/[locale]/catalogue` page + filter chips + grid + empty/error/loading states |
-| 6. tests + state finalization | ⏳ next | Integration tests + step `complete` + `gh pr ready 12` |
+| 6. tests + state finalization | ✅ complete | Dress-filter acceptance, UI component tests, step marked `complete` |
 
 ## Known issues / decisions in effect
 
@@ -51,5 +52,4 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Next recommended step
 
-1. Add integration/UI tests for catalogue page (layer 6).
-2. Run full monorepo checks; set `orchestration.steps["orch-product-catalog--v0-category-grid"] = "complete"` and `gh pr ready 12 --repo romain-zt/lenue-paris`.
+Pick the next orchestrator step from `docs/state/orchestration.prd-flow-map.json` — likely `orch-product-detail--v0-pdp-gallery-and-copy` or another P0 slice per flow map priority.
