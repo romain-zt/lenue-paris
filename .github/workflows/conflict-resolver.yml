@@ -67,6 +67,8 @@ jobs:
           node-version: 22
 
       - uses: pnpm/action-setup@v4
+        with:
+          version: latest
 
       - name: Install script deps
         run: npm install --prefix .github/scripts/core
