@@ -10,3 +10,4 @@
 {"step":"orch-product-catalog--category-grid","status":"in-progress","note":"agent picked up work","ts":"2026-06-14T18:51:18.500Z"}
 {"step":"orch-product-catalog--category-grid","status":"complete","note":"category grid implemented — flat grid, category filter, product cards, loading skeletons; 22 tests pass, typecheck clean","ts":"2026-06-14T19:35:00.000Z"}
 {"ts":"2026-06-14T19:31:29.229Z","step":"orch-product-detail--gallery-and-variants","status":"in-progress","actor":"orchestrator"}
+{"ts":"2026-06-14T19:31:51.718Z","step":"orch-product-detail--gallery-and-variants","status":"not-started","note":"orphan reset (agent failed)","actor":"orchestrator"}
