@@ -8,6 +8,13 @@ export interface PdpCopy {
   errorTitle: string;
   errorBody: string;
   galleryLabel: string;
+  lengthGroupLabel: string;
+  sizeGroupLabel: string;
+  lengthLonger: string;
+  lengthShorter: string;
+  selectionRequired: string;
+  missingLength: string;
+  missingSize: string;
 }
 
 const COPY: Record<SupportedLocale, PdpCopy> = {
@@ -20,6 +27,13 @@ const COPY: Record<SupportedLocale, PdpCopy> = {
     errorTitle: "Page indisponible",
     errorBody: "Impossible de charger cette fiche pour le moment. Réessayez bientôt.",
     galleryLabel: "Galerie photos",
+    lengthGroupLabel: "Longueur",
+    sizeGroupLabel: "Taille",
+    lengthLonger: "Plus long",
+    lengthShorter: "Plus court",
+    selectionRequired: "Choisissez une longueur et une taille pour continuer.",
+    missingLength: "Sélectionnez une longueur.",
+    missingSize: "Sélectionnez une taille.",
   },
   en: {
     orderCta: "Order",
@@ -29,6 +43,13 @@ const COPY: Record<SupportedLocale, PdpCopy> = {
     errorTitle: "Page unavailable",
     errorBody: "We couldn't load this product right now. Please try again soon.",
     galleryLabel: "Photo gallery",
+    lengthGroupLabel: "Length",
+    sizeGroupLabel: "Size",
+    lengthLonger: "Longer",
+    lengthShorter: "Shorter",
+    selectionRequired: "Choose a length and size to continue.",
+    missingLength: "Select a length.",
+    missingSize: "Select a size.",
   },
   ru: {
     orderCta: "Заказать",
@@ -39,6 +60,13 @@ const COPY: Record<SupportedLocale, PdpCopy> = {
     errorTitle: "Страница недоступна",
     errorBody: "Не удалось загрузить карточку товара. Попробуйте позже.",
     galleryLabel: "Фотогалерея",
+    lengthGroupLabel: "Длина",
+    sizeGroupLabel: "Размер",
+    lengthLonger: "Длиннее",
+    lengthShorter: "Короче",
+    selectionRequired: "Выберите длину и размер, чтобы продолжить.",
+    missingLength: "Выберите длину.",
+    missingSize: "Выберите размер.",
   },
 };
 

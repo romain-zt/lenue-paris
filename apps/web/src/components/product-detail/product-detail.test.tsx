@@ -29,6 +29,23 @@ const product: ProductDetail = {
   catalogueHref: "/fr/catalogue",
 };
 
+const dressWithPickers: ProductDetail = {
+  ...product,
+  variantPickers: {
+    lengthOptions: ["longer", "shorter"],
+    sizeOptions: ["XS", "S", "M", "L", "XL"],
+  },
+};
+
+const bagProduct: ProductDetail = {
+  ...product,
+  slug: "sac-cuir",
+  name: "Sac en cuir",
+  category: "sac",
+  orderHref: "/fr/order/sac-cuir",
+  variantPickers: null,
+};
+
 describe("ProductGallery", () => {
   it("lets the buyer browse through multiple images", () => {
     render(
@@ -55,6 +72,59 @@ describe("ProductDetailView", () => {
     expect(screen.getByRole("link", { name: "Commander" })).toHaveAttribute(
       "href",
       "/fr/order/robe-lin",
+    );
+  });
+
+  it("shows dress variant pickers with a disabled order CTA until both are chosen", () => {
+    render(<ProductDetailView product={dressWithPickers} locale="fr" />);
+
+    expect(screen.getByText("Longueur")).toBeInTheDocument();
+    expect(screen.getByText("Taille")).toBeInTheDocument();
+    expect(
+      screen.getByText("Choisissez une longueur et une taille pour continuer."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Commander" })).not.toBeInTheDocument();
+    expect(screen.getByText("Commander")).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("highlights the missing picker and keeps the CTA disabled on partial selection", () => {
+    render(<ProductDetailView product={dressWithPickers} locale="fr" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Plus long" }));
+
+    expect(screen.getByText("Sélectionnez une taille.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Commander" })).not.toBeInTheDocument();
+  });
+
+  it("enables the order link with variant query params when selection is complete", () => {
+    render(<ProductDetailView product={dressWithPickers} locale="fr" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Plus long" }));
+    fireEvent.click(screen.getByRole("button", { name: "M" }));
+
+    expect(screen.getByRole("link", { name: "Commander" })).toHaveAttribute(
+      "href",
+      "/fr/order/robe-lin?length=longer&size=M",
+    );
+  });
+
+  it("renders localized picker labels for the active locale", () => {
+    render(<ProductDetailView product={dressWithPickers} locale="en" />);
+
+    expect(screen.getByText("Length")).toBeInTheDocument();
+    expect(screen.getByText("Size")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Longer" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "M" })).toBeInTheDocument();
+  });
+
+  it("does not show variant pickers for bags", () => {
+    render(<ProductDetailView product={bagProduct} locale="fr" />);
+
+    expect(screen.queryByText("Longueur")).not.toBeInTheDocument();
+    expect(screen.queryByText("Taille")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Commander" })).toHaveAttribute(
+      "href",
+      "/fr/order/sac-cuir",
     );
   });
 });
