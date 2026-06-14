@@ -18,6 +18,10 @@ import { readFileSync, existsSync, readdirSync, statSync } from "fs";
 import { resolve, relative, dirname } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
+import { Agent } from "@cursor/sdk";
+import { buildCursorCloudOptions } from "./cursor-sdk-options";
+import { TIER_MODELS } from "./cursor-models.config";
+import { openGapsByPriority, type FrameworkGapEvent } from "./framework-gap";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -35,6 +39,9 @@ const DRY_RUN = process.env.DRY_RUN === "true";
 const OPEN_IMPROVER_PR = process.env.OPEN_IMPROVER_PR === "true" && !DRY_RUN;
 const IMPROVER_PR_CAP = parseInt(process.env.IMPROVER_PR_CAP ?? "3", 10);
 const TIER_THRESHOLD = parseFloat(process.env.TIER_COMPLIANCE_THRESHOLD ?? "0.60");
+const ORCHESTRATOR_ENABLED = process.env.ORCHESTRATOR_ENABLED !== "false";
+const CURSOR_API_KEY = process.env.CURSOR_API_KEY;
+const REPO_SLUG = process.env.GITHUB_REPOSITORY ?? process.env.REPO ?? "";
 
 // --- Load manifest ---
 
@@ -237,17 +244,33 @@ console.log(`\nFramework verdict: ${verdict}`);
 
 // --- Open issues for core-broken gaps (CI mode) ---
 
-if (!DRY_RUN && coreBroken.length > 0 && process.env.GITHUB_TOKEN) {
-  console.log(`\nOpening/updating GitHub issue for core-broken gaps...`);
+if (!DRY_RUN && (coreBroken.length > 0 || recordedGaps.length > 0) && process.env.GITHUB_TOKEN) {
+  console.log(`\nOpening/updating GitHub issue for framework gaps...`);
   const body = [
-    "## Framework audit detected core-broken gaps",
+    "## Framework audit detected gaps",
     "",
-    "| Gap | Detail |",
-    "|-----|--------|",
-    ...coreBroken.map((g) => `| ${g.check} | ${g.detail} |`),
-    "",
+    ...(coreBroken.length > 0
+      ? [
+          "### Core-broken (declared in manifest, missing/broken on disk)",
+          "",
+          "| Gap | Detail |",
+          "|-----|--------|",
+          ...coreBroken.map((g) => `| ${g.check} | ${g.detail} |`),
+          "",
+        ]
+      : []),
+    ...(recordedGaps.length > 0
+      ? [
+          "### Recorded setup gaps (discovered while working — auto-update queue)",
+          "",
+          "| Priority | Kind | Summary |",
+          "|----------|------|---------|",
+          ...recordedGaps.map((g) => `| P${g.priority} | ${g.kind} | ${g.summary} |`),
+          "",
+        ]
+      : []),
     `Detected at: ${new Date().toISOString()}`,
-    "Run `/framework-audit propose` to draft fixes.",
+    "The improver fires automatically on the nightly schedule (or run `/framework-audit propose`).",
   ].join("\n");
 
   try {
@@ -270,21 +293,105 @@ if (!DRY_RUN && coreBroken.length > 0 && process.env.GITHUB_TOKEN) {
   }
 }
 
-// --- Fire framework-improver for core-broken gaps ---
+// --- Recorded setup gaps (the "auto-update the setup as needed" queue) ---
 
-if (OPEN_IMPROVER_PR && coreBroken.length > 0) {
-  const actionable = coreBroken.filter((g) => g.entry).slice(0, IMPROVER_PR_CAP);
-  console.log(`\nFiring framework-improver for ${actionable.length} gap(s) (cap: ${IMPROVER_PR_CAP})...`);
-  for (const gap of actionable) {
-    const brief = JSON.stringify({ gap: gap.entry, note: gap.detail }, null, 2);
-    console.log(`  → Improver brief for ${gap.entry!.id}:`);
-    console.log(`    ${brief.split("\n").slice(0, 5).join("\n    ")}...`);
-    // In real CI: fire a Cursor cloud agent here via @cursor/sdk Task
-    // import { Agent } from "@cursor/sdk";
-    // const agent = Agent.create({ ... });
-    // await agent.prompt(`Framework gap brief:\n${brief}\nDraft the artifact per framework-improver.md doctrine.`);
-    console.log(`  [DRY: would fire improver agent for ${gap.entry!.id}]`);
+const recordedGaps = openGapsByPriority();
+if (recordedGaps.length > 0) {
+  console.log(`\nRecorded setup gaps (docs/state/framework-gaps.ndjson): ${recordedGaps.length} open`);
+  for (const g of recordedGaps) {
+    console.log(`  P${g.priority} ${g.id} (${g.kind}${g.suggestedPath ? ` → ${g.suggestedPath}` : ""}) — ${g.summary}`);
   }
 }
 
+// --- Fire framework-improver (real) for core-broken gaps AND recorded gaps ---
+
+interface ImproverBrief {
+  label: string;
+  branchId: string;
+  brief: string;
+}
+
+function coreBrokenBriefs(): ImproverBrief[] {
+  return coreBroken
+    .filter((g) => g.entry)
+    .map((g) => ({
+      label: g.entry!.id,
+      branchId: g.entry!.id.replace(/[^a-z0-9-]/gi, "-"),
+      brief: JSON.stringify({ gap: g.entry, note: g.detail }, null, 2),
+    }));
+}
+
+function recordedGapBriefs(): ImproverBrief[] {
+  return recordedGaps.map((g: FrameworkGapEvent) => ({
+    label: g.id,
+    branchId: g.id,
+    brief: JSON.stringify(
+      { gap: { id: g.id, kind: g.kind, suggestedPath: g.suggestedPath, purpose: g.summary, priority: g.priority } },
+      null,
+      2,
+    ),
+  }));
+}
+
+function improverPrExists(branchId: string): boolean {
+  try {
+    const raw = execSync(
+      `gh pr list --state open --head framework/improver/${branchId} --json number --jq 'length'`,
+      { cwd: ROOT, encoding: "utf-8" },
+    ).trim();
+    return parseInt(raw || "0", 10) > 0;
+  } catch {
+    return false;
+  }
+}
+
+async function fireImprover(item: ImproverBrief): Promise<void> {
+  const prompt = [
+    "You are the framework-improver (Vision tier). Follow `.cursor/core/agents/framework/framework-improver.md` exactly.",
+    "",
+    "Gap brief:",
+    "```json",
+    item.brief,
+    "```",
+    "",
+    "Draft the single missing artifact at the declared/suggested path, append ONE entry to",
+    "`.cursor/core/framework.manifest.json`, and open a DRAFT PR on branch",
+    `\`framework/improver/${item.branchId}\`. NEVER edit existing artifacts, never delete/rename a`,
+    "manifest entry, never merge. Post the self-review checklist as a PR comment.",
+    "If the gap is already covered by an existing artifact, open no PR and say so.",
+  ].join("\n");
+
+  console.log(`\n🤖 Firing framework-improver for "${item.label}" (branch framework/improver/${item.branchId})…`);
+  const result = await Agent.prompt(prompt, buildCursorCloudOptions(CURSOR_API_KEY!, REPO_SLUG, TIER_MODELS.vision));
+  if (result.status === "error") {
+    console.error(`  ❌ Improver run for "${item.label}" failed (check the Cursor dashboard).`);
+  } else {
+    console.log(`  ✅ Improver run for "${item.label}" dispatched.`);
+  }
+}
+
+if (OPEN_IMPROVER_PR && ORCHESTRATOR_ENABLED && CURSOR_API_KEY && REPO_SLUG) {
+  const allBriefs = [...coreBrokenBriefs(), ...recordedGapBriefs()]
+    .filter((b) => !improverPrExists(b.branchId))
+    .slice(0, IMPROVER_PR_CAP);
+
+  if (allBriefs.length === 0) {
+    console.log("\nℹ️  No actionable improver gaps (none, or all already have an open improver PR).");
+  } else {
+    console.log(`\nFiring framework-improver for ${allBriefs.length} gap(s) (cap: ${IMPROVER_PR_CAP})…`);
+    for (const item of allBriefs) {
+      try {
+        await fireImprover(item);
+      } catch (err) {
+        console.error(`  ⚠️  Could not fire improver for "${item.label}" (non-fatal):`, err);
+      }
+    }
+  }
+} else if (OPEN_IMPROVER_PR) {
+  console.log("\n⏸️  Improver firing requested but skipped (ORCHESTRATOR_ENABLED=false or missing CURSOR_API_KEY/REPO).");
+} else if (coreBroken.length > 0 || recordedGaps.length > 0) {
+  console.log("\nℹ️  Gaps detected. Re-run with OPEN_IMPROVER_PR=true (or via the nightly schedule) to fire the improver.");
+}
+
+// Recorded setup gaps are discovered needs, not broken core — they do not fail the check.
 process.exit(coreBroken.length > 0 || tierViolations.length > 0 ? 1 : 0);

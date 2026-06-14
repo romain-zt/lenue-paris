@@ -77,3 +77,5 @@ Before acting on a framework chore:
 2. If the chore fills a declared gap, run `/framework-audit propose` — the `framework-improver` subagent drafts the file on a branch PR.
 3. If the chore renames or deletes a manifest entry, a Framework Decision (FD-NNN in `docs/framework-decisions/`) is required first (append-only invariant).
 4. NEVER edit `core/` directly to resolve a product gap — that belongs in `project/`.
+
+**Discovered a gap while doing other work?** Don't drop it — **record it** to the append-only framework-gap log (`64-self-improvement.mdc`: `framework-gap.ts add "<gap>" --kind <kind> [--priority N]`). The nightly framework audit drains the log and fires the improver automatically — this is how the setup auto-updates as needed.

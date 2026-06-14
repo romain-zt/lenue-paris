@@ -69,6 +69,7 @@ Other entry points: **`/setup`** (always-first project setup), **`/btw "…" pN`
 | `61-input-queue.mdc` | `/btw` priority input queue + 0–5 step scheduling (priority 0 = next, absolutely) |
 | `62-feature-decomposition.mdc` | split features on pickup; each part built by its specialist (design/backend/frontend/http/copy) |
 | `63-two-model-challenge.mdc` | every plan/decomposition challenged by a second, different model before converging |
+| `64-self-improvement.mdc` | record setup gaps (mandatory) → nightly audit fires the improver so the setup auto-updates as needed |
 
 ## Domain specialists (`/domain <name>`)
 

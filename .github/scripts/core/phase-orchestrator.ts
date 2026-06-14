@@ -119,8 +119,10 @@ This run must produce exactly one concrete outcome:
 
 Hard limits: max 1 broad exploration pass; **after reading 5 files without writing code you MUST stop reading** and either write code or commit a blocked state; max 2 attempts to patch the same file.
 
-## Decompose on pickup, then delegate per part (mandatory)
-Per \`.cursor/core/rules/62-feature-decomposition.mdc\`: this slice was intentionally **not** pre-split into tasks. As the Manager that just picked it up, FIRST decompose it into per-part tasks, THEN delegate each part to the matching specialist subagent — do not build the whole slice yourself as one blob.
+## Inventory first, then decompose, then delegate per part (mandatory)
+Per \`.cursor/core/rules/62-feature-decomposition.mdc\`:
+0. **Inventory (reuse-first).** Before building anything, scan what already exists (components/primitives/hooks/routes/services/repositories/domain/utils) and list what the feature needs. Gap = need − have. Default to reuse/extend; for each genuinely-missing primitive (button/modal/util/hook/service), delegate building it as a **reusable, shared** piece (right location, single-purpose) to the matching specialist FIRST — never a one-off copy-paste inside the feature.
+1. This slice was intentionally **not** pre-split into tasks. As the Manager that just picked it up, decompose it into per-part tasks, THEN delegate each part to the matching specialist subagent — do not build the whole slice yourself as one blob.
 Layer order (do the first incomplete one this run): 1. data/schema (migrations) → 2. contracts/types → 3. domain/business logic → 4. API/route handlers → 5. UI/design → 6. copy → 7. tests + state finalization.
 Map each part to a specialist (via \`Task\`): \`backend-specialist\` (data/domain), \`http-specialist\` (contracts/API), \`frontend-specialist\` + \`design-specialist\` (UI), \`copywriter-specialist\` (copy). Design and backend are first-class parts, never an afterthought.
 Record the next layer in \`docs/state/HANDOFF.md\`, commit, push, and stop unless this is the finalization layer.
@@ -145,7 +147,11 @@ Named subagents pre-wired into this run via the \`Task\` tool:
 Default DOWN: plan/split at Manager, push the typing to composer specialists/executor, escalate to \`vision-reviewer\` only when genuinely high-stakes.
 
 ## Review includes setup self-improvement (mandatory)
-At the review step, also check whether the setup itself should improve: did this work reveal a missing or weak rule / skill / agent / command / hook? If yes, surface it (run \`/framework-audit\` for framework gaps; \`/btw\` it with a priority for product gaps) — do not silently work around a recurring gap.
+At the review step, check whether the setup itself should improve: did this work reveal a missing or weak rule / skill / agent / command / hook (or did you work around the same gap twice)? If yes, you MUST record it (per \`.cursor/core/rules/64-self-improvement.mdc\`) — do not silently work around it:
+\`\`\`bash
+npx --prefix .github/scripts/core tsx .github/scripts/core/framework-gap.ts add "<gap>" --kind <rule|skill|agent|command|hook|checker|template> [--priority N]
+\`\`\`
+The nightly framework audit drains this log and fires the improver automatically. Use \`/btw\` instead for *product* gaps.
 
 ## Checks
 Run the repo's check commands (typically \`pnpm typecheck\`, \`pnpm build\`, \`pnpm test\`; prefer the narrowest relevant command first).

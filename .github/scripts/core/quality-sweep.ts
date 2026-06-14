@@ -61,6 +61,7 @@ Commit all changes to \`${branch}\` and open a **draft** PR. Never push to \`${b
 - \`docs/project.config.md\` (stack, v0 boundary, apps), \`docs/state/HANDOFF.md\`.
 - The code-quality rules: \`.cursor/core/rules/50-code-quality.mdc\`, \`51-backend-code.mdc\`, \`52-frontend-code.mdc\`, \`30-test-strategy.mdc\`.
 - Drain the input queue: \`npx --prefix .github/scripts/core tsx .github/scripts/core/inbox.ts list --open\` — fold any quality/refactor/cleanup items in (priority 0 first), and \`resolve\` the ones you action.
+- List open setup gaps: \`npx --prefix .github/scripts/core tsx .github/scripts/core/framework-gap.ts list --open\` — note them in the PR backlog so the nightly audit's improver picks them up (you do not draft framework artifacts in a product sweep).
 
 ## Step 2 — Assess (run the real checks)
 Run the repo's checks (typically \`pnpm typecheck\`, \`pnpm lint\`, \`pnpm test\`, \`pnpm build\` — narrowest first). Catalog the TOP issues by impact:

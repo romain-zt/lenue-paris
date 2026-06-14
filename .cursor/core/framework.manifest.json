@@ -1365,6 +1365,32 @@
       "dependsOn": ["workflow.quality-sweep"],
       "since": "2026-06-14",
       "status": "active"
+    },
+    {
+      "id": "rule.64-self-improvement",
+      "kind": "rule",
+      "path": ".cursor/core/rules/64-self-improvement.mdc",
+      "purpose": "The setup auto-improves: discovered rule/skill/agent/command/hook gaps are mandatorily recorded and drained into improver PRs.",
+      "stage": ["all"],
+      "tier": "n/a",
+      "expectedTier": "n/a",
+      "owners": ["framework-team"],
+      "dependsOn": ["agent.framework-improver", "workflow.framework-audit"],
+      "since": "2026-06-14",
+      "status": "active"
+    },
+    {
+      "id": "workflow.framework-gap-script",
+      "kind": "workflow",
+      "path": ".github/scripts/core/framework-gap.ts",
+      "purpose": "CI helper: append-only framework-gap log (add/list/resolve) — the auto-update-the-setup queue drained by framework-audit.",
+      "stage": ["all"],
+      "tier": "n/a",
+      "expectedTier": "n/a",
+      "owners": ["framework-team"],
+      "dependsOn": ["rule.64-self-improvement"],
+      "since": "2026-06-14",
+      "status": "active"
     }
   ]
 }

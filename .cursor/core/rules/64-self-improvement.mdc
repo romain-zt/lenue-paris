@@ -1,0 +1,49 @@
+---
+description: The setup must auto-improve. When work reveals a missing or weak rule/skill/agent/command/hook, RECORD it (mandatory, not optional) to the append-only framework-gap log, which the framework audit drains and turns into improver PRs. Applies at every review step and whenever a gap is hit twice.
+alwaysApply: true
+---
+
+# Self-Improvement — auto-update the setup as needed
+
+The framework is supposed to get better as it's used. In practice that only happens if gaps are **actively captured and actually fired** — not left as a mental note. This rule makes both real.
+
+## 1. When you MUST record a setup gap
+
+Record a gap the moment any of these is true:
+
+- A rule / skill / agent / command / hook / checker / template that *should* exist for what you're doing **doesn't** — or exists but is too weak/ambiguous to follow.
+- You **worked around the same gap twice** (a recurring friction is a gap).
+- The review step of a feature surfaces a missing reusable convention (e.g. "there's no rule for X", "no specialist for Y").
+
+This is **mandatory at the review step** of `implementation-workflow.mdc` / `62-feature-decomposition.mdc`. "I'll remember it" is not allowed — record it.
+
+## 2. How to record (append-only)
+
+```bash
+npx --prefix .github/scripts/core tsx .github/scripts/core/framework-gap.ts add \
+  "<what's missing/weak and why it matters>" \
+  --kind <rule|skill|command|agent|hook|checker|template|workflow|unknown> \
+  [--path .cursor/core/<section>/<suggested-file>] [--priority 0..5]
+```
+
+Writes one line to `docs/state/framework-gaps.ndjson` (`merge=union`, never hand-edited — see 60-status-lifecycle). Priority is the 0–5 scale from `61-input-queue.mdc` (0 = urgent).
+
+## 3. The loop (how it auto-updates)
+
+```
+agent records gap  ─▶  framework-audit drains the log  ─▶  fires framework-improver
+   ─▶  improver drafts the artifact + manifest entry on a framework/improver/* PR (DRAFT)
+   ─▶  framework-critic reviews (different model)  ─▶  human merges
+```
+
+- **`framework-audit.yml`** fires the improver **automatically on its nightly schedule** (and on manual `OPEN_IMPROVER_PR=true`), capped at `IMPROVER_PR_CAP`, kill-switched by `ORCHESTRATOR_ENABLED`. It skips a gap that already has an open `framework/improver/*` PR.
+- **`/quality-sweep`** also lists open framework gaps so they're visible every sweep.
+- Open gaps are surfaced in a `framework-audit` GitHub issue so they're never invisible.
+- The improver **never edits existing artifacts and never merges** (append-only invariant, `framework-improver.md`). A human still merges.
+
+## 4. Invariants
+
+- Recording is mandatory, not optional — a known gap that isn't recorded is a process failure.
+- `core/` is never edited to patch a *product* gap — that belongs in `project/` or a `/btw` item. This log is for *framework* gaps only (see `intake-flow.mdc` §7).
+- Renaming/removing a manifest entry still needs a Framework Decision (FD-NNN). The improver only **adds**.
+- Don't spam: one coherent gap per record; `resolve` it (with a note/PR link) once addressed.

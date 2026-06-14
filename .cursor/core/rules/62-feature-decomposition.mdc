@@ -17,9 +17,23 @@ Two changes to how features get built:
 
 Read with `20-model-routing.mdc` (tiers), `implementation-workflow.mdc` (gates), and the domain skills under `.cursor/core/skills/domains/`.
 
+## 0. First, inventory what exists (reuse-first — mandatory)
+
+**Before splitting or building anything**, understand the codebase you're adding to. Do a bounded inventory of what's already there and what the feature needs:
+
+1. **What we have** — scan for existing, reusable pieces relevant to the slice:
+   - UI: components, layouts, primitives (button, modal, input, card…), hooks, design tokens.
+   - Server: routes/handlers, services, repositories, domain functions/types, validators.
+   - Shared: utils, packages, config.
+2. **What we need** — from the Spec, list the concrete pieces the feature requires.
+3. **Gap = need − have.** For each gap, decide: **reuse / extend an existing piece**, or **build a new reusable primitive**. Default to reuse; only build new when nothing fits.
+4. **Build missing primitives first, cleanly + reusably.** For each genuinely-missing primitive (a `Button`, a `Modal`, a `formatPrice` util, a `useCart` hook, an `OrdersService`…), delegate it to the matching specialist to build it **as a reusable, single-purpose piece in the shared/right location** (per `50-code-quality.mdc` and `52-frontend-code.mdc`) — **not** inline, one-off, inside the feature. Then compose the feature from these primitives.
+
+A feature that copy-pastes a one-off button/modal/util instead of building or reusing a shared primitive is a defect, not a shortcut.
+
 ## 1. On pickup: the Manager decomposes
 
-When a Manager picks up a slice (e.g. the orchestrator worker, or `/implement`):
+When a Manager picks up a slice (e.g. the orchestrator worker, or `/implement`), after the §0 inventory:
 
 1. Read the Scope Slice + Spec + `docs/project.config.md`.
 2. **Split the slice into parts** — only the parts this slice actually needs. Typical parts:
@@ -46,7 +60,7 @@ spec → plan → tests (failing) → implement → re-test (validation) → rev
 - **tests first**: failing tests for the part (Executor/specialist).
 - **implement**: smallest change to green (specialist, composer tier).
 - **re-test (validation)**: re-run the part's tests + the slice's checks; the part isn't done while they're red.
-- **review**: routine = Manager; high-risk (auth/money/migration/contract/security) = Vision. The review also asks: *did this reveal a setup gap?* (new rule/skill/agent/command/hook) — surface it (`/framework-audit` for framework, `/btw` for product), don't silently work around it.
+- **review**: routine = Manager; high-risk (auth/money/migration/contract/security) = Vision. The review **must** ask: *did this reveal a setup gap?* (new/weak rule/skill/agent/command/hook) — if so **record it** to the framework-gap log (`64-self-improvement.mdc`: `framework-gap.ts add …`); use `/btw` for product gaps. Don't silently work around a recurring gap.
 
 ## 3. Status reflects the lifecycle
 
@@ -54,6 +68,8 @@ Record the slice's status in the append-only log (60-status-lifecycle): `in-prog
 
 ## 4. Anti-patterns
 
+- **Skipping the §0 inventory** and building blind — duplicating a component/service/util that already exists.
+- Copy-pasting a one-off button/modal/util into a feature instead of building or reusing a shared, reusable primitive.
 - Pre-splitting a feature into tasks before anyone is building it.
 - One agent building data + API + UI + copy as a single undifferentiated commit.
 - Treating design or backend as a "small part" of a frontend agent's job.

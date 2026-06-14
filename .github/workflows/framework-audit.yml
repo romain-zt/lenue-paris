@@ -32,7 +32,11 @@ jobs:
   audit:
     name: framework-audit
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
 
     steps:
       - uses: actions/checkout@v4
@@ -54,10 +58,14 @@ jobs:
       - name: Run framework audit
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPEN_IMPROVER_PR: ${{ github.event.inputs.open_improver_pr || 'false' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Fire the improver automatically on the nightly schedule (and on manual opt-in),
+          # so the setup auto-updates as gaps are recorded. PR pushes never fire it.
+          OPEN_IMPROVER_PR: ${{ github.event.inputs.open_improver_pr || (github.event_name == 'schedule' && 'true' || 'false') }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           IMPROVER_PR_CAP: "3"
           TIER_COMPLIANCE_THRESHOLD: "0.60"
+          ORCHESTRATOR_ENABLED: ${{ vars.ORCHESTRATOR_ENABLED || 'true' }}
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
         run: npx --prefix .github/scripts/core tsx .github/scripts/core/framework-audit.ts
 

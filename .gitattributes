@@ -4,6 +4,7 @@
 # See .cursor/core/rules/60-status-lifecycle.mdc and 61-input-queue.mdc.
 docs/state/status-events.ndjson merge=union
 docs/state/inbox.ndjson         merge=union
+docs/state/framework-gaps.ndjson merge=union
 
 # Generated lockfile — let tooling regenerate rather than hand-merge.
 pnpm-lock.yaml -diff
