@@ -48,3 +48,5 @@
 {"ts":"2026-06-14T21:25:49.129Z","step":"orch-whatsapp-checkout--order-save-and-handoff","status":"in-review","note":"All 3 parts done: Orders collection, POST /api/orders, OrderCTA upgraded. 46 tests green, typecheck clean.","actor":"agent"}
 {"ts":"2026-06-14T21:27:01.271Z","step":"orch-whatsapp-checkout--order-save-and-handoff","status":"validated","note":"Re-test pass: 46 tests green (39 web + 7 cms), typecheck clean both apps","actor":"agent"}
 {"ts":"2026-06-14T21:27:06.019Z","step":"orch-whatsapp-checkout--order-save-and-handoff","status":"complete","note":"All 3 parts done and validated. PR #59 ready.","actor":"agent"}
+{"ts":"2026-06-14T21:16:31.594Z","step":"orch-whatsapp-checkout--order-save-and-handoff","status":"in-progress","actor":"orchestrator"}
+{"ts":"2026-06-14T21:20:22.726Z","step":"orch-product-detail--gallery-and-variants","status":"in-progress","actor":"orchestrator"}
