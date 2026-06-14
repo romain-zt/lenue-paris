@@ -9,11 +9,13 @@ Match the model to the **responsibility level**, not the topic. Three tiers.
 
 ## Tiers
 
-| Tier | Use for | Agent frontmatter `model:` | Task subagent slug |
-|------|---------|----------------------------|--------------------|
+| Tier | Use for | Agent frontmatter `model:` | Task subagent slug / Cloud API slug |
+|------|---------|----------------------------|-------------------------------------|
 | **Vision** (high-stakes) | Big plans, product/business strategy, architecture decisions, high-risk reviews, delegation/orchestration, anything irreversible or expensive to get wrong | `claude-opus-4-8` | `claude-opus-4-8-thinking-high` |
-| **Manager** (PM) | Planning, scoping, ticket/spec breakdown, splitting scope into executor-sized bricks, routine review | `claude-4.6-sonnet` (escalate to `claude-opus-4-8` for big plans) | `claude-4.6-sonnet-medium-thinking` |
+| **Manager** (PM) | Planning, scoping, ticket/spec breakdown, splitting scope into executor-sized bricks, routine review | `claude-4.6-sonnet` (escalate to `claude-opus-4-8` for big plans) | `claude-4.6-sonnet-high-thinking` |
 | **Executor** | The smallest concrete unit of work: one Task / one commit / one brick, mechanical edits, scaffolding from an approved spec | `composer-2.5-fast` | `composer-2.5-fast` |
+
+> **Note:** "Agent frontmatter `model:`" names are the short identifiers used in `.cursor/agents/*.md` for the Cursor IDE. "Task subagent slug / Cloud API slug" are the full slugs required when spawning agents programmatically (Task tool or Cursor Cloud Agent API from CI scripts). Always use the full slug in `cursor-models.config.ts`.
 
 ## Routing rules
 
