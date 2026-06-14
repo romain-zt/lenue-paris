@@ -15,7 +15,8 @@
     },
     "remediation_counts": {
       "orch-product-catalog--v0-category-grid": 5,
-      "orch-product-detail--v0-pdp-variant-pickers": 2
+      "orch-product-detail--v0-pdp-variant-pickers": 2,
+      "orch-whatsapp-checkout--v0-checkout-and-wa-handoff": 1
     },
     "blocker": null
   }
