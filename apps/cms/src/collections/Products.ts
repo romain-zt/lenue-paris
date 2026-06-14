@@ -1,5 +1,18 @@
 import type { CollectionConfig } from "payload";
 
+/** Dress length options shown on the storefront PDP. */
+export const DRESS_LENGTH_VARIANTS = ["longer", "shorter"] as const;
+
+export type DressLengthVariant = (typeof DRESS_LENGTH_VARIANTS)[number];
+
+/** Fixed dress size set per Q-005 — owner may adjust in CMS. */
+export const DRESS_SIZE_OPTIONS = ["XS", "S", "M", "L", "XL"] as const;
+
+export type DressSizeCode = (typeof DRESS_SIZE_OPTIONS)[number];
+
+const isDressCategory = (data: { category?: string | null }) =>
+  data?.category === "robe";
+
 // Product catalogue for lenue.paris — dresses, bags, foulards.
 export const Products: CollectionConfig = {
   slug: "products",
@@ -68,20 +81,33 @@ export const Products: CollectionConfig = {
       defaultValue: true,
     },
     {
-      name: "sizes",
-      type: "array",
-      fields: [
-        {
-          name: "label",
-          type: "text",
-          required: true,
-        },
-        {
-          name: "inStock",
-          type: "checkbox",
-          defaultValue: true,
-        },
+      name: "lengthVariants",
+      type: "select",
+      hasMany: true,
+      options: [
+        { label: "Longer", value: "longer" },
+        { label: "Shorter", value: "shorter" },
       ],
+      admin: {
+        condition: (_, siblingData) => isDressCategory(siblingData),
+        description:
+          "Dress length options shown on the product page (longer / shorter).",
+      },
+    },
+    {
+      name: "sizes",
+      type: "select",
+      hasMany: true,
+      options: DRESS_SIZE_OPTIONS.map((size) => ({
+        label: size,
+        value: size,
+      })),
+      defaultValue: [...DRESS_SIZE_OPTIONS],
+      admin: {
+        condition: (_, siblingData) => isDressCategory(siblingData),
+        description:
+          "Available dress sizes on the product page. Defaults to XS–XL.",
+      },
     },
   ],
 };
