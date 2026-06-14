@@ -110,5 +110,17 @@ export const Products: CollectionConfig = {
           "Available dress sizes on the product page. Defaults to XS–XL.",
       },
     },
+    {
+      name: "relatedDress",
+      type: "relationship",
+      relationTo: "products",
+      hasMany: false,
+      label: "Related Dress",
+      admin: {
+        condition: (_, siblingData) =>
+          siblingData?.category === "sac" || siblingData?.category === "foulard",
+        description: "The dress this bag or scarf is paired with. Optional.",
+      },
+    },
   ],
 };

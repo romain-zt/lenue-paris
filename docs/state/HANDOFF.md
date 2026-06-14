@@ -23,6 +23,14 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Completed steps (this session)
 
+**Step:** `orch-cms-products--v0-product-variants-and-pairings` — **complete**.
+
+- User story: `docs/product/user-stories/cms-products--v0-product-variants-and-pairings--US-001--dress-variants-and-product-pairings.md` (`ready-for-spec`)
+- Spec: `docs/product/specs/cms-products--v0-product-variants-and-pairings--US-001--dress-variants-and-product-pairings.spec.md` (`ready-for-implementation`)
+- Implementation: Added `relatedDress` relationship field to `apps/cms/src/collections/Products.ts` — optional field linking a bag/scarf to its paired dress, hidden on dress records
+- Tests: Added 2 tests for `relatedDress` (condition logic for sac/foulard/robe/autre); all 15 CMS tests pass
+- Typecheck: ✅ all packages clean
+
 **Step:** `orch-cms-products--v0-product-crud` — **complete**.
 
 - User story: `docs/product/user-stories/cms-products--v0-product-crud--US-001--manage-product-catalogue.md` (`ready-for-spec`)
@@ -40,6 +48,6 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Next recommended steps
 
-1. `orch-cms-products--v0-product-variants-and-pairings` — dress length variants + related-product links in admin
-2. `orch-whatsapp-checkout--v0-admin-order-list` — order management in Payload admin
-3. `orch-editorial--v0-about-page` — editorial about page
+1. `orch-whatsapp-checkout--v0-admin-order-list` — order management in Payload admin
+2. `orch-editorial--v0-about-page` — editorial about page
+3. `orch-i18n-localization--v0-buyer-locale-routing` — buyer locale routing
