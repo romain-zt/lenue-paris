@@ -37,7 +37,7 @@ Implemented in main via prior merged commits:
 
 **`orch-product-detail--gallery-and-variants` — COMPLETE (2026-06-14)**
 
-Implemented in PR #44 (`orchestrator/tracking-orch-product-detail--gallery-and-variants-1781461775624`):
+Implemented in PR #58 (`orchestrator/tracking-orch-product-detail--gallery-and-variants-1781471392958`):
 
 - **CMS schema**: Extended `Products.ts` with `gallery` (array of media uploads) and `description` (localized textarea).
 - **Types**: Updated `apps/web/src/types/product.ts` with `ProductGalleryItem`, `DressLength`, `DressSize`, `DRESS_SIZES`, `DRESS_LENGTHS`.
