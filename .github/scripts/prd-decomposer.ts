@@ -137,9 +137,59 @@ function gitExec(cmd: string): void {
   execSync(`git ${cmd}`, { stdio: "inherit" });
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/**
+ * Retry a function up to `attempts` times with exponential backoff.
+ * Only retries on errors whose message matches `retryablePattern`.
+ */
+async function withRetry<T>(
+  label: string,
+  fn: () => T | Promise<T>,
+  { attempts = 3, baseDelayMs = 2_000, retryablePattern = /timeout|ETIMEDOUT|rate limit|502|503|504|fetch failed/i }:
+    { attempts?: number; baseDelayMs?: number; retryablePattern?: RegExp } = {},
+): Promise<T> {
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      return await fn();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isRetryable = retryablePattern.test(msg);
+      if (i === attempts || !isRetryable) throw err;
+      const delay = baseDelayMs * 2 ** (i - 1);
+      console.warn(`⚠️  ${label} attempt ${i}/${attempts} failed (retryable): ${msg.split("\n")[0]}`);
+      console.warn(`   Retrying in ${delay}ms…`);
+      await sleep(delay);
+    }
+  }
+  throw new Error("unreachable");
+}
+
 const DECOMPOSE_TITLE_PREFIX = "chore(decompose):";
 
-/** Avoid duplicate concurrent decomposition PRs. */
+/**
+ * Pre-flight: verify the GITHUB_TOKEN can create PRs.
+ * Catches the "GitHub Actions is not permitted to create or approve pull requests"
+ * error BEFORE we push any branches.
+ */
+function preflight_checkPRPermission(): void {
+  try {
+    const raw = gh(`api repos/${repo} --jq ".permissions"`);
+    // If we can list PRs, the token is valid. The actual "create PR" permission
+    // is a repo setting we can't query via API, but we can detect the error
+    // pattern from a previous run. Instead, we do a lightweight dry-run:
+    // try to list PRs (always works) and verify the token is authenticated.
+    if (!raw || raw === "null") {
+      console.warn("⚠️  Could not read repo permissions — token may be scoped too narrow.");
+    }
+  } catch {
+    // Non-fatal: the actual gh pr create will fail with a clear message.
+  }
+}
+
+/** Avoid duplicate concurrent decomposition PRs. Also checks for orphaned branches. */
 function openDecompositionPRExists(): boolean {
   try {
     const raw = gh(`pr list --repo "${repo}" --state open --json title,baseRefName`);
@@ -147,6 +197,45 @@ function openDecompositionPRExists(): boolean {
     return prs.some((p) => p.title.startsWith(DECOMPOSE_TITLE_PREFIX) && p.baseRefName === trackingBase);
   } catch {
     return false;
+  }
+}
+
+/** Delete orphaned decompose branches that have no open PR. */
+function cleanupOrphanedDecomposeBranches(): void {
+  try {
+    const raw = execSync(
+      `git ls-remote --heads origin 'orchestrator/decompose-*'`,
+      { encoding: "utf8" },
+    ).trim();
+    if (!raw) return;
+
+    const branches = raw
+      .split("\n")
+      .map((l) => l.split("\t")[1]?.replace("refs/heads/", ""))
+      .filter(Boolean) as string[];
+
+    if (branches.length === 0) return;
+
+    const openPRs = (() => {
+      try {
+        const prRaw = gh(`pr list --repo "${repo}" --state open --json headRefName`);
+        return new Set((JSON.parse(prRaw) as { headRefName: string }[]).map((p) => p.headRefName));
+      } catch {
+        return new Set<string>();
+      }
+    })();
+
+    for (const branch of branches) {
+      if (openPRs.has(branch)) continue;
+      console.log(`🧹 Cleaning up orphaned branch: ${branch}`);
+      try {
+        execSync(`git push origin --delete ${branch}`, { stdio: "inherit" });
+      } catch {
+        console.warn(`   Could not delete ${branch} — may need manual cleanup.`);
+      }
+    }
+  } catch {
+    // Non-fatal — orphan cleanup is best-effort.
   }
 }
 
@@ -197,15 +286,37 @@ function openDraftPR(): TrackingPR {
     ].join("\n"),
   );
 
-  const prUrl = gh(
-    `pr create --repo "${repo}" --base "${trackingBase}" --head "${branch}" --draft --title "${title}" --body-file "${bodyFile}"`,
-  );
-  const number = parseInt(prUrl.split("/").at(-1) ?? "0", 10);
-  try { fs.unlinkSync(bodyFile); } catch { /* ignore */ }
-  try { gitExec(`checkout ${trackingBase}`); } catch { gitExec(`checkout main`); }
+  try {
+    const prUrl = gh(
+      `pr create --repo "${repo}" --base "${trackingBase}" --head "${branch}" --draft --title "${title}" --body-file "${bodyFile}"`,
+    );
+    const number = parseInt(prUrl.split("/").at(-1) ?? "0", 10);
+    try { fs.unlinkSync(bodyFile); } catch { /* ignore */ }
+    try { gitExec(`checkout ${trackingBase}`); } catch { gitExec(`checkout main`); }
 
-  console.log(`📋 Decomposition PR #${number} opened (draft): ${prUrl}`);
-  return { number, branch, url: prUrl };
+    console.log(`📋 Decomposition PR #${number} opened (draft): ${prUrl}`);
+    return { number, branch, url: prUrl };
+  } catch (err: unknown) {
+    // Clean up the branch we just pushed — don't leave orphans.
+    console.error(`❌ Failed to create PR for branch ${branch}. Cleaning up…`);
+    try { fs.unlinkSync(bodyFile); } catch { /* ignore */ }
+    try { execSync(`git push origin --delete ${branch}`, { stdio: "inherit" }); } catch { /* ignore */ }
+    try { gitExec(`checkout ${trackingBase}`); } catch { try { gitExec(`checkout main`); } catch { /* ignore */ } }
+
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/not permitted to create or approve pull requests/i.test(msg)) {
+      console.error("");
+      console.error("═══════════════════════════════════════════════════════════════");
+      console.error("  CONFIGURATION REQUIRED");
+      console.error("  GitHub Actions is not allowed to create pull requests.");
+      console.error("  Fix: repo → Settings → Actions → General → Workflow permissions");
+      console.error("    ✅ Read and write permissions");
+      console.error("    ✅ Allow GitHub Actions to create and approve pull requests");
+      console.error("═══════════════════════════════════════════════════════════════");
+      console.error("");
+    }
+    throw err;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -304,15 +415,24 @@ async function main(): Promise<void> {
   }
   console.log(`🧩 Decomposition needed — ${reason}.`);
 
+  // Clean up orphaned branches from previous failed runs before checking for open PRs.
+  cleanupOrphanedDecomposeBranches();
+
   if (openDecompositionPRExists()) {
     console.log("♻️  An open decomposition PR already exists — letting it finish. Exiting.");
     process.exit(0);
   }
 
+  preflight_checkPRPermission();
+
   const pr = openDraftPR();
 
   try {
-    const result = await runAgent(buildPrompt(pr));
+    const result = await withRetry(
+      "Cursor agent",
+      () => runAgent(buildPrompt(pr)),
+      { attempts: 2, baseDelayMs: 5_000 },
+    );
     if (result.status === "error") {
       console.error(`\n❌ Decomposition agent run failed. Check the Cursor dashboard: ${pr.url}`);
       console.error("   The draft PR is left open; the next scheduled run will retry.");

@@ -360,16 +360,37 @@ function openTrackingPR(stepRow: PipelineStepRow): TrackingPR {
     ].join("\n"),
   );
 
-  const prUrl = gh(
-    `pr create --repo "${repo}" --base "${trackingBase}" --head "${branch}" --draft --title "${title}" --body-file "${bodyFile}"`,
-  );
-  const prNumber = parseInt(prUrl.split("/").at(-1) ?? "0", 10);
+  try {
+    const prUrl = gh(
+      `pr create --repo "${repo}" --base "${trackingBase}" --head "${branch}" --draft --title "${title}" --body-file "${bodyFile}"`,
+    );
+    const prNumber = parseInt(prUrl.split("/").at(-1) ?? "0", 10);
 
-  try { fs.unlinkSync(bodyFile); } catch { /* ignore */ }
-  try { gitExec(`checkout ${trackingBase}`); } catch { gitExec(`checkout main`); }
+    try { fs.unlinkSync(bodyFile); } catch { /* ignore */ }
+    try { gitExec(`checkout ${trackingBase}`); } catch { gitExec(`checkout main`); }
 
-  console.log(`📋 Tracking PR #${prNumber} opened (draft): ${prUrl}`);
-  return { number: prNumber, branch, url: prUrl };
+    console.log(`📋 Tracking PR #${prNumber} opened (draft): ${prUrl}`);
+    return { number: prNumber, branch, url: prUrl };
+  } catch (err: unknown) {
+    console.error(`❌ Failed to create tracking PR for step ${step} on branch ${branch}. Cleaning up…`);
+    try { fs.unlinkSync(bodyFile); } catch { /* ignore */ }
+    try { execSync(`git push origin --delete ${branch}`, { stdio: "inherit" }); } catch { /* ignore */ }
+    try { gitExec(`checkout ${trackingBase}`); } catch { try { gitExec(`checkout main`); } catch { /* ignore */ } }
+
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/not permitted to create or approve pull requests/i.test(msg)) {
+      console.error("");
+      console.error("═══════════════════════════════════════════════════════════════");
+      console.error("  CONFIGURATION REQUIRED");
+      console.error("  GitHub Actions is not allowed to create pull requests.");
+      console.error("  Fix: repo → Settings → Actions → General → Workflow permissions");
+      console.error("    ✅ Read and write permissions");
+      console.error("    ✅ Allow GitHub Actions to create and approve pull requests");
+      console.error("═══════════════════════════════════════════════════════════════");
+      console.error("");
+    }
+    throw err;
+  }
 }
 
 function readStatusFromGitRev(revLike: string): StatusJson | null {
