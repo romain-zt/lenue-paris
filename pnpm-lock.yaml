@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      next:
+        specifier: ^15.0.0
+        version: 15.5.19(@babel/core@7.29.7)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass@1.77.4)
     devDependencies:
       turbo:
         specifier: ^2.1.0
