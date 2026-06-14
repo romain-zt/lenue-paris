@@ -13,19 +13,23 @@
  *    the draft→ready transition; if it was missed, the PR just sits there. Re-merge it.
  *
  * 3. ORPHANED IN-PROGRESS STEPS — pipeline steps marked in-progress in status.json
- *    but with no open draft tracking PR (branch/PR deleted out-of-band). Reset them
+ *    but with no open tracking PR at all (branch/PR deleted out-of-band). Reset them
  *    to not-started so the next orchestrator tick can pick them up.
  *
- * 4. STALE DRAFT PRs — draft tracking PRs open longer than STALE_DRAFT_MINUTES are
- *    re-dispatched to the orchestrator (remediation) so a stalled agent gets retried
- *    quickly rather than sitting forever.
+ * 4. STALE PRs — tracking PRs (draft, or ready-but-unmergeable) open longer than
+ *    STALE_DRAFT_MINUTES are re-dispatched to the orchestrator (remediation) so a
+ *    stalled agent gets retried quickly rather than sitting forever.
  *
  * 5. STATUS / PR DESYNC — a step whose status.json says not-started or complete
- *    but which still has an open draft tracking PR. This happens when a worker
- *    races (resets to not-started, opens a PR, agent partially commits, exits
+ *    but which still has an open tracking PR (draft OR ready). This happens when a
+ *    worker races (resets to not-started, opens a PR, agent partially commits, exits
  *    without re-marking in-progress). Restore the step to in-progress so the
  *    next coordinator dispatches a remediation worker instead of opening a
  *    duplicate PR (or ignoring the orphaned one).
+ *
+ * Duplicate prevention: dedup (#1) and the orchestrator both treat the OLDEST open
+ * tracking PR per step as canonical, and tracking PRs are matched regardless of
+ * draft state, so a readied/failing PR can never masquerade as a missing one.
  */
 
 import fs from "node:fs";
@@ -190,13 +194,14 @@ async function main(): Promise<void> {
       continue;
     }
 
-    console.log(`\n⚠️  Step "${step}" has ${stepPRs.length} open tracking PRs — picking best one.`);
+    console.log(`\n⚠️  Step "${step}" has ${stepPRs.length} open tracking PRs — picking canonical one.`);
 
-    // Pick the winner: non-draft > draft; among equals, highest PR number (newest).
-    const sorted = [...stepPRs].sort((a, b) => {
-      if (a.isDraft !== b.isDraft) return a.isDraft ? 1 : -1; // non-draft first
-      return b.number - a.number; // newest first
-    });
+    // Canonical = the OLDEST tracking PR (lowest number). This matches
+    // findTrackingPR() in phase-orchestrator.ts, so the orchestrator remediates
+    // the exact PR the cleanup keeps. The oldest PR is the original one and
+    // typically holds the accumulated work; later duplicates are redundant
+    // re-scaffolds and get closed.
+    const sorted = [...stepPRs].sort((a, b) => a.number - b.number);
     const winner = sorted[0]!;
     const losers = sorted.slice(1);
 
@@ -261,27 +266,31 @@ async function main(): Promise<void> {
   }
 
   // -------------------------------------------------------------------------
-  // 3. Re-dispatch stale draft tracking PRs (likely a stalled agent)
+  // 3. Re-dispatch stale tracking PRs (likely a stalled agent).
+  //    Covers drafts AND any ready PR that survived the merge attempts above
+  //    (i.e. ready but unmergeable — failing CI / conflicts). Both need a fresh
+  //    remediation worker; the worker reuses the same PR (no duplicate).
   // -------------------------------------------------------------------------
-  console.log("\n🔍 Checking for stale draft tracking PRs…");
+  console.log("\n🔍 Checking for stale tracking PRs to re-dispatch…");
   for (const pr of survivingPRs) {
-    if (!pr.isDraft) continue;
     const age = minutesAgo(pr.createdAt);
     const step = extractStepFromTitle(pr.title)!;
+    const kind = pr.isDraft ? "draft" : "ready";
     if (age < STALE_DRAFT_MINUTES) {
-      console.log(`  ⏳ Draft PR #${pr.number} (${step}) open ${age.toFixed(1)}min — within budget.`);
+      console.log(`  ⏳ ${kind} PR #${pr.number} (${step}) open ${age.toFixed(1)}min — within budget.`);
       continue;
     }
-    console.log(`  🔁 Draft PR #${pr.number} (${step}) open ${age.toFixed(1)}min — re-dispatching remediation worker.`);
+    console.log(`  🔁 ${kind} PR #${pr.number} (${step}) open ${age.toFixed(1)}min — re-dispatching remediation worker.`);
     ghSilent(
       `workflow run phase-orchestrator.yml --repo "${repo}" -f step_id="${step}" ` +
-        `-f reason="cleanup: re-dispatch stale draft tracking PR #${pr.number} (${age.toFixed(0)}min)"`,
+        `-f reason="cleanup: re-dispatch stale ${kind} tracking PR #${pr.number} (${age.toFixed(0)}min)"`,
     );
   }
 
   // -------------------------------------------------------------------------
-  // 4. Reset orphaned in-progress steps (in-progress in status.json but no draft PR)
-  //    AND reconcile desynced steps (open draft PR but status not-started/complete).
+  // 4. Reset orphaned in-progress steps (in-progress in status.json but no
+  //    tracking PR at all) AND reconcile desynced steps (open tracking PR but
+  //    status not-started/complete).
   // -------------------------------------------------------------------------
   reconcileStatusAndPRs(survivingPRs);
 
@@ -289,10 +298,15 @@ async function main(): Promise<void> {
 }
 
 /**
- * Reconcile status.json against open draft tracking PRs:
- *   A. Step in-progress, no draft PR → reset to not-started (orphan).
- *   B. Step not-started/complete, draft PR exists → restore to in-progress
+ * Reconcile status.json against open tracking PRs (draft OR ready):
+ *   A. Step in-progress, no tracking PR → reset to not-started (orphan).
+ *   B. Step not-started/complete, a tracking PR exists → restore to in-progress
  *      (desync — the worker raced past status update or got killed mid-run).
+ *
+ * We count BOTH draft and ready tracking PRs as "live". A readied-but-unmergeable
+ * tracking PR (e.g. failing CI) is still this step's PR; treating it as live
+ * keeps the step in-progress for remediation instead of resetting it, which is
+ * what previously spawned duplicate tracking PRs.
  *
  * Either way the next coordinator tick lands the step + PR back in a coherent
  * state and dispatches a remediation worker instead of opening a duplicate PR.
@@ -302,19 +316,17 @@ function reconcileStatusAndPRs(survivingPRs: PrRow[]): void {
   if (!status) return;
 
   const steps = status.orchestration?.steps ?? {};
-  const draftStepIds = new Set(
-    survivingPRs.filter((p) => p.isDraft).map((p) => extractStepFromTitle(p.title)!),
-  );
+  const trackedStepIds = new Set(survivingPRs.map((p) => extractStepFromTitle(p.title)!));
 
   const inProgressSteps = Object.entries(steps)
     .filter(([, v]) => v === "in-progress")
     .map(([k]) => k);
   const desyncedSteps = Object.entries(steps)
-    .filter(([id, v]) => (v === "not-started" || v === "complete") && draftStepIds.has(id))
+    .filter(([id, v]) => (v === "not-started" || v === "complete") && trackedStepIds.has(id))
     .map(([k]) => k);
 
-  if (inProgressSteps.length === 0 && desyncedSteps.length === 0 && draftStepIds.size === 0) {
-    console.log("\nℹ️  No in-progress steps and no draft tracking PRs — nothing to reconcile.");
+  if (inProgressSteps.length === 0 && desyncedSteps.length === 0 && trackedStepIds.size === 0) {
+    console.log("\nℹ️  No in-progress steps and no tracking PRs — nothing to reconcile.");
     return;
   }
 
@@ -325,11 +337,11 @@ function reconcileStatusAndPRs(survivingPRs: PrRow[]): void {
   const updates: string[] = [];
 
   for (const stepId of inProgressSteps) {
-    if (draftStepIds.has(stepId)) {
-      console.log(`  ✅ ${stepId} (in-progress) has an active draft tracking PR — OK.`);
+    if (trackedStepIds.has(stepId)) {
+      console.log(`  ✅ ${stepId} (in-progress) has an active tracking PR — OK.`);
       continue;
     }
-    console.log(`  🔄 ${stepId} is in-progress but has no draft tracking PR — resetting to not-started.`);
+    console.log(`  🔄 ${stepId} is in-progress but has no tracking PR — resetting to not-started.`);
     if (!status.orchestration) status.orchestration = {};
     if (!status.orchestration.steps) status.orchestration.steps = {};
     status.orchestration.steps[stepId] = "not-started";
