@@ -72,4 +72,47 @@ describe("Products collection", () => {
     expect(images?.type).toBe("array");
     expect(images?.minRows).toBe(1);
   });
+
+  describe("relatedDress pairing field", () => {
+    const relatedDress = () =>
+      field("relatedDress") as {
+        type?: string;
+        relationTo?: string;
+        hasMany?: boolean;
+        required?: boolean;
+        admin?: {
+          condition?: (
+            data: unknown,
+            siblingData: { category?: string },
+          ) => boolean;
+        };
+      };
+
+    it("is a self-referential relationship field to products", () => {
+      expect(relatedDress()?.type).toBe("relationship");
+      expect(relatedDress()?.relationTo).toBe("products");
+    });
+
+    it("is optional (no required: true)", () => {
+      expect(relatedDress()?.required).toBeFalsy();
+    });
+
+    it("is hidden for dresses (category === robe)", () => {
+      expect(
+        relatedDress()?.admin?.condition?.(null, { category: "robe" }),
+      ).toBe(false);
+    });
+
+    it("is shown for bags (category === sac)", () => {
+      expect(
+        relatedDress()?.admin?.condition?.(null, { category: "sac" }),
+      ).toBe(true);
+    });
+
+    it("is shown for scarves (category === foulard)", () => {
+      expect(
+        relatedDress()?.admin?.condition?.(null, { category: "foulard" }),
+      ).toBe(true);
+    });
+  });
 });

@@ -82,6 +82,18 @@ export const Products: CollectionConfig = {
       defaultValue: true,
     },
     {
+      name: "relatedDress",
+      type: "relationship",
+      relationTo: "products",
+      hasMany: false,
+      required: false,
+      admin: {
+        condition: (_, siblingData) => !isDressCategory(siblingData),
+        description:
+          "Optional: link this bag or scarf to the dress it pairs with.",
+      },
+    },
+    {
       name: "lengthVariants",
       type: "select",
       hasMany: true,
