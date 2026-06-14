@@ -7,7 +7,7 @@
       "orch-product-detail--v0-pdp-variant-pickers": "complete",
       "orch-whatsapp-checkout--v0-checkout-and-wa-handoff": "complete",
       "orch-cms-products--v0-product-crud": "complete",
-      "orch-cms-products--v0-product-variants-and-pairings": "in-progress",
+      "orch-cms-products--v0-product-variants-and-pairings": "not-started",
       "orch-whatsapp-checkout--v0-admin-order-list": "not-started",
       "orch-editorial--v0-about-page": "not-started",
       "orch-i18n-localization--v0-buyer-locale-routing": "not-started",
