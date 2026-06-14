@@ -19,26 +19,31 @@ and the v0 boundary.
 
 ## Active work
 
-**`orch-product-catalog--category-grid` — COMPLETE (2026-06-14)**
+**`orch-product-detail--gallery-and-variants` — COMPLETE (2026-06-14)**
 
-Implemented in PR #40 (`orchestrator/tracking-orch-product-catalog--category-grid-1781456424537`):
+Implemented in PR #44 (`orchestrator/tracking-orch-product-detail--gallery-and-variants-1781461775624`):
 
-- **Governance**: PD-007 authored, two user stories (`US-001` browse grid, `US-002` filter by category) promoted to `ready-for-spec`, combined spec promoted to `ready-for-implementation`.
-- **Monorepo bootstrap**: Scaffolded from `.cursor/core/templates/starter-monorepo/` — `apps/web`, `apps/cms`, `packages/typescript-config`, root config files.
-- **Data/schema**: `apps/cms/src/collections/Products.ts` — Payload 3 collection with `title` (i18n), `slug`, `category` (dresses/bags/scarfs), `price` (EUR), `mainImage` (→ Media), draft/publish versions.
-- **UI (layer 5)**: `/catalogue` page (`apps/web/src/app/(storefront)/catalogue/`) with RSC data fetch from Payload REST API, `CategoryFilter` client component for client-side filtering, `ProductGrid`, `ProductCard`, `ProductCardSkeleton`, `EmptyState` states.
-- **Tests**: 11 unit tests (Vitest + Testing Library), all green.
+- **CMS schema**: Extended `Products.ts` with `gallery` (array of media uploads) and `description` (localized textarea).
+- **Types**: Updated `apps/web/src/types/product.ts` with `ProductGalleryItem`, `DressLength`, `DressSize`, `DRESS_SIZES`, `DRESS_LENGTHS`.
+- **UI (layer 5)**:
+  - `/produits/[slug]` page (RSC) with `generateMetadata`, `loading.tsx` skeleton, `not-found.tsx` error state.
+  - `ProductGallery` — main image + thumbnail strip, client-side switching.
+  - `VariantSelector` — length picker (Version longue / Version courte) for dresses.
+  - `SizePicker` — XS/S/M/L/XL picker for dresses.
+  - `OrderCTA` — carries selected variants into a WhatsApp deep-link; disabled and shows warning if dress has no selection yet. Bags/scarfs bypass selectors.
+- **Tests**: 22 unit tests (Vitest + Testing Library), all green.
+- **Vitest config**: Added `@/` alias (`resolve.alias`) so all tests using `@/types/product` resolve correctly.
 - **Typecheck**: `pnpm --filter web typecheck` passes (0 errors).
 
 ## Decomposition status (2026-06-14)
 
-**7 v0 Feature Areas `delivery-ready`, 8 Scope Slices `ready-for-user-stories`.**
+**7 v0 Feature Areas `delivery-ready`, 8 Scope Slices.**
 
 | Feature Area | Band | Scope Slice(s) | Implementation status |
 |---|---|---|---|
 | storefront-shell | P0 | storefront-shell--global-chrome | not-started |
 | product-catalog | P0 | product-catalog--category-grid | **complete** |
-| product-detail | P1 | product-detail--gallery-and-variants | not-started |
+| product-detail | P1 | product-detail--gallery-and-variants | **complete** |
 | whatsapp-checkout | P1 | whatsapp-checkout--order-save-and-handoff | not-started |
 | cms-products | P2 | cms-products--product-management; cms-products--order-viewing | not-started |
 | editorial | P2 | editorial--brand-page | not-started |
@@ -47,14 +52,14 @@ Implemented in PR #40 (`orchestrator/tracking-orch-product-catalog--category-gri
 ## Known issues / decisions in effect
 
 - **PD-007** (`docs/product-decisions/PD-007-implementation-phase.md`) authored and `approved` — implementation phase is now formally authorized.
-- **storefront-shell--global-chrome** is not yet implemented; the catalogue page renders without a shared chrome (acceptable stub for v0 category grid step). The next step should implement the global chrome first.
-- **Product detail page** (`/produits/[slug]`) is linked from `ProductCard` but not yet implemented — product-detail--gallery-and-variants slice is next in P1 band.
+- **storefront-shell--global-chrome** is not yet implemented; both the catalogue page and product detail page render without a shared chrome (acceptable stub for v0 slices). The next step should implement the global chrome.
+- **WhatsApp CTA** on product detail (`OrderCTA`) builds a `wa.me/?text=` link. The whatsapp-checkout slice will wire up order persistence before opening WhatsApp.
 - **`@payloadcms/next` peer dependency** expects a narrower Next.js range than 15.5.x; install succeeds and all checks pass. No action needed.
 - **Open questions folder**: `docs/prd/questions copy/open-questions.md` vs canonical `docs/prd/questions/open-questions.md` — content is complete; worth renaming.
 - **PD files** (PD-001, PD-006, PD-008) are not authored as standalone records; no blocker for current work.
 
 ## Next recommended step
 
-1. **`orch-storefront-shell--global-chrome`** (P0) — implement the shared layout/chrome (header, navigation) so the catalogue page has proper context; this also unblocks visual QA.
-2. **`orch-product-detail--gallery-and-variants`** (P1) — implement `/produits/[slug]` page so the catalogue card links resolve.
-3. **`orch-whatsapp-checkout--order-save-and-handoff`** (P1) — WhatsApp CTA flow.
+1. **`orch-storefront-shell--global-chrome`** (P0) — shared layout/chrome (header, navigation) so both pages have proper context; unblocks visual QA.
+2. **`orch-whatsapp-checkout--order-save-and-handoff`** (P1) — saves the order and opens WhatsApp; upgrades the OrderCTA stub.
+3. **`orch-cms-products--product-management`** (P2) — CMS authoring for products.
