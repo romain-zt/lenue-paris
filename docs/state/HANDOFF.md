@@ -31,6 +31,14 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 - Tests: Added `Products.test.ts` coverage for `minRows: 1` (all 13 CMS tests pass)
 - Typecheck: ✅ all packages clean
 
+**Step:** `orch-cms-products--v0-product-variants-and-pairings` — **complete**.
+
+- User story: `docs/product/user-stories/cms-products--v0-product-variants-and-pairings--US-001--set-dress-variants-and-pairings.md` (`ready-for-spec`)
+- Spec: `docs/product/specs/cms-products--v0-product-variants-and-pairings--US-001--set-dress-variants-and-pairings.spec.md` (`ready-for-implementation`)
+- Implementation: Added optional `relatedDress` relationship field to `apps/cms/src/collections/Products.ts` — self-referential to `products`, shown only for non-dress categories (`sac`, `foulard`, `autre`) via `!isDressCategory` condition
+- Tests: Added 2 unit tests for the `relatedDress` field (field shape + admin condition); all 15 CMS tests pass
+- Typecheck: ✅ clean
+
 ## Known issues / decisions in effect
 
 - PD-001 and PD-006 files still absent from `docs/product-decisions/` (only PD-007, PD-008). User stories + specs authored under orchestrator mandate.
@@ -40,6 +48,6 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Next recommended steps
 
-1. `orch-cms-products--v0-product-variants-and-pairings` — dress length variants + related-product links in admin
-2. `orch-whatsapp-checkout--v0-admin-order-list` — order management in Payload admin
-3. `orch-editorial--v0-about-page` — editorial about page
+1. `orch-whatsapp-checkout--v0-admin-order-list` — order management in Payload admin
+2. `orch-editorial--v0-about-page` — editorial about page
+3. `orch-i18n-localization--v0-buyer-locale-routing` — buyer locale routing

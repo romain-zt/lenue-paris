@@ -66,4 +66,30 @@ describe("Products collection", () => {
     expect(sizes?.admin?.condition?.(null, { category: "robe" })).toBe(true);
     expect(sizes?.admin?.condition?.(null, { category: "foulard" })).toBe(false);
   });
+
+  it("exposes an optional relatedDress relationship field for non-dress products", () => {
+    const relatedDress = field("relatedDress") as {
+      type?: string;
+      relationTo?: string;
+      hasMany?: boolean;
+      required?: boolean;
+      admin?: { condition?: (data: unknown, siblingData: { category?: string }) => boolean };
+    };
+
+    expect(relatedDress?.type).toBe("relationship");
+    expect(relatedDress?.relationTo).toBe("products");
+    expect(relatedDress?.hasMany).toBe(false);
+    expect(relatedDress?.required).toBeUndefined();
+  });
+
+  it("shows relatedDress only for non-dress categories", () => {
+    const relatedDress = field("relatedDress") as {
+      admin?: { condition?: (data: unknown, siblingData: { category?: string }) => boolean };
+    };
+
+    expect(relatedDress?.admin?.condition?.(null, { category: "robe" })).toBe(false);
+    expect(relatedDress?.admin?.condition?.(null, { category: "sac" })).toBe(true);
+    expect(relatedDress?.admin?.condition?.(null, { category: "foulard" })).toBe(true);
+    expect(relatedDress?.admin?.condition?.(null, { category: "autre" })).toBe(true);
+  });
 });
