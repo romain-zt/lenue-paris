@@ -19,7 +19,7 @@ and the v0 boundary.
 
 ## Active work
 
-**`orch-whatsapp-checkout--order-save-and-handoff` — IN-REVIEW (2026-06-14)**
+**`orch-whatsapp-checkout--order-save-and-handoff` — COMPLETE (2026-06-14)**
 
 Tracking PR #59 (`orchestrator/tracking-orch-whatsapp-checkout--order-save-and-handoff-1781471789620`).
 
@@ -82,7 +82,7 @@ Implemented in PR #58 (`orchestrator/tracking-orch-product-detail--gallery-and-v
 | storefront-shell | P0 | storefront-shell--global-chrome | not-started |
 | product-catalog | P0 | product-catalog--category-grid | **complete** |
 | product-detail | P1 | product-detail--gallery-and-variants | **complete** |
-| whatsapp-checkout | P1 | whatsapp-checkout--order-save-and-handoff | **in-review** |
+| whatsapp-checkout | P1 | whatsapp-checkout--order-save-and-handoff | **complete** |
 | cms-products | P2 | cms-products--product-management; cms-products--order-viewing | not-started |
 | editorial | P2 | editorial--brand-page | not-started |
 | i18n | P3 | i18n--localized-storefront | not-started |
