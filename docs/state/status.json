@@ -4,7 +4,7 @@
       "bootstrap": "complete",
       "setup": "complete",
       "orch-product-catalog--category-grid": "complete",
-      "orch-product-detail--gallery-and-variants": "complete",
+      "orch-product-detail--gallery-and-variants": "in-progress",
       "orch-whatsapp-checkout--order-save-and-handoff": "in-progress"
     },
     "remediation_counts": {
