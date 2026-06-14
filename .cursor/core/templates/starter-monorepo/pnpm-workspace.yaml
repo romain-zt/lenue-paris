@@ -2,25 +2,31 @@ packages:
   - "apps/*"
   - "packages/*"
 
-# Single source of truth for dependency versions.
-# Packages reference these with "catalog:" instead of pinning versions
-# in their own package.json. Update a version here once and it applies everywhere.
+# Single source of truth for dependency versions (pnpm catalog).
+# Packages MUST reference these with "catalog:" instead of pinning versions in
+# their own package.json — see 05-project-setup.mdc §1.2. Update a version here
+# once and it applies everywhere.
+#
+# START FROM LATEST: these are current-stable as of this template revision. At
+# setup, run `pnpm up --latest` (reviewing breaking changes) so a new project
+# never starts a major version behind. Don't let these go stale.
 catalog:
-  # Framework
-  next: "^15.0.0"
+  # Framework — Next 16 (current major), React 19.2 (bundled by Next 16)
+  next: "^16.0.0"
   react: "^19.0.0"
   react-dom: "^19.0.0"
 
   # Tooling
-  turbo: "^2.1.0"
-  typescript: "^5.6.0"
+  turbo: "^2.3.0"
+  typescript: "^5.7.0"
 
   # Testing
-  vitest: "^2.1.0"
+  vitest: "^3.0.0"
 
   # Types
   "@types/node": "^22.0.0"
   "@types/react": "^19.0.0"
+  "@types/react-dom": "^19.0.0"
 
   # Payload CMS
   payload: "^3.0.0"

@@ -15,12 +15,16 @@ Read with `40-architecture-baseline.mdc` (the stack), `50-code-quality.mdc` (cle
 ## 1. What setup must establish (the v0 minimum)
 
 1. **Clean-code rules are active.** `.cursor/core/rules/50-code-quality.mdc`, `51-backend-code.mdc`, `52-frontend-code.mdc` are present and loaded. Lint + typecheck + format run in CI (`quality`).
-2. **Stack pinned, up to date.** Fork `starter-monorepo`. Resolve the pnpm **catalog** (`pnpm-workspace.yaml`) to the **latest stable** of each framework/dep deliberately (`pnpm up --latest` reviewed, not blind). One catalog = one source of truth for versions; apps reference `catalog:`.
-3. **Minimal v0 catalog only.** Add a dependency to the catalog only when a v0 slice needs it. No speculative libraries. Keep the catalog small.
-4. **Apps picked (see §3).** Scaffold only the apps this project targets; keep the monorepo shape.
-5. **Local infra reproducible.** `docker compose up` + `.env` from `.env.example` runs the stack (Postgres + MinIO per baseline).
-6. **Seed data + base assets committed (see §2.5).** A seed script and the original/basic assets so the app renders real content immediately — never an empty shell.
-7. **A visible first page (see §2).** Something a human can open in a browser, deployable, on day one.
+2. **Latest stable, current runtime — never a major behind.** Fork `starter-monorepo`, then **`pnpm up --latest`** (review breaking changes; don't blind-bump) so every framework/tool starts on its **current stable major**. Concretely:
+   - **Node = current Active LTS** (≥ 22 — do **not** start a project on Node 20 when 22 is the LTS). Pin it (`.nvmrc` + `engines.node`) and use the same major in CI (`actions/setup-node` `node-version`).
+   - **Next.js = current major** (16+, not 15), React the version it bundles, and likewise for every other dep.
+   - The template's catalog versions are a *starting point* committed at template-revision time — they go stale; resolving to latest at setup is mandatory.
+3. **Versions live ONLY in the pnpm catalog.** Every app/package dependency references **`catalog:`**; the version is declared once in `pnpm-workspace.yaml` → `catalog:`. **Never pin a version in an individual `package.json`** — that defeats the single source of truth and is the bug that left old setups on mismatched/stale versions.
+4. **Minimal v0 catalog only.** Add a dependency to the catalog only when a v0 slice needs it. No speculative libraries. Keep the catalog small.
+5. **Apps picked (see §3).** Scaffold only the apps this project targets; keep the monorepo shape.
+6. **Local infra reproducible.** `docker compose up` + `.env` from `.env.example` runs the stack (Postgres + MinIO per baseline).
+7. **Seed data + base assets committed (see §2.5).** A seed script and the original/basic assets so the app renders real content immediately — never an empty shell.
+8. **A visible first page (see §2).** Something a human can open in a browser, deployable, on day one.
 
 ## 2. First content / first paint — ASAP
 
@@ -54,6 +58,8 @@ The starter is a monorepo with multiple apps (`web`, `cms`, …). **Keep the mon
 
 - Starting feature slices before `setup` is `complete`.
 - Scaffolding every app in the template when the project targets one surface.
+- **Starting a major version behind** — Node 20 when 22 is LTS, Next 15 when 16 is current, etc.
+- **Pinning a version in an individual `package.json`** instead of `catalog:` — leaving the pnpm catalog unused. Versions live in the catalog, full stop.
 - Pinning stale versions, or blindly `pnpm up --latest` without reviewing breaking changes.
 - A "first page" that needs a seeded DB or that is just nested `<div>`s.
 - Bloating the pnpm catalog with libraries no v0 slice uses.

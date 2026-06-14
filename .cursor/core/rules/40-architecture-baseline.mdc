@@ -52,3 +52,4 @@ Do not just tell the user to "use this stack." A clonable skeleton lives at
 | Localization | Payload locales + Next i18n routing, default + at least one secondary locale wired |
 | Config/secrets | `.env` (never committed); `.env.example` documents every key |
 | Types | Generated Payload types shared across the monorepo |
+| Versions | **pnpm catalog is the single source of truth** — every dep is `catalog:`, never pinned per-`package.json`. Start on the **latest stable** major (Node current LTS ≥ 22, Next 16+); resolve with `pnpm up --latest` at setup (`05-project-setup.mdc` §1). |
