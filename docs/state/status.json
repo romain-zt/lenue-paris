@@ -2,7 +2,7 @@
   "orchestration": {
     "steps": {
       "bootstrap": "complete",
-      "orch-product-catalog--category-grid": "not-started",
+      "orch-product-catalog--category-grid": "in-progress",
       "orch-product-detail--gallery-and-variants": "not-started",
       "orch-whatsapp-checkout--order-save-and-handoff": "not-started",
       "orch-cms-products--product-management": "not-started",
