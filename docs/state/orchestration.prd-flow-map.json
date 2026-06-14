@@ -1,5 +1,27 @@
 {
   "version": 1,
   "attachAfterStepId": "bootstrap",
-  "flows": {}
+  "flows": {
+    "browse catalogue & discover products": {
+      "slices": ["docs/product/scope-slices/product-catalog--category-grid.md"]
+    },
+    "view product detail, price, length & size": {
+      "slices": ["docs/product/scope-slices/product-detail--gallery-and-variants.md"]
+    },
+    "place order (cms save + whatsapp)": {
+      "slices": ["docs/product/scope-slices/whatsapp-checkout--order-save-and-handoff.md"]
+    },
+    "admin: manage products in cms": {
+      "slices": ["docs/product/scope-slices/cms-products--product-management.md"]
+    },
+    "admin: view orders in cms": {
+      "slices": ["docs/product/scope-slices/cms-products--order-viewing.md"]
+    },
+    "brand / editorial page": {
+      "slices": ["docs/product/scope-slices/editorial--brand-page.md"]
+    },
+    "localized experience (fr / en / ru)": {
+      "slices": ["docs/product/scope-slices/i18n--localized-storefront.md"]
+    }
+  }
 }
