@@ -19,6 +19,14 @@ PRDs are updated via **deltas**, not rewrites.
 
 Flow: conversation → discovery → PRD delta proposal → human validation → write (when warranted).
 
+## Start Fast & Chunked
+
+The main `docs/prd/PRD.md` is an **overview, not an exhaustive document**. Start fast: thesis, global picture, Flow Inventory, blockers — then stop. A bloated, "complete" PRD is a failure (`prd-builder` §1.5).
+
+- Detail that would bloat the PRD is **offloaded to chunk files** at `docs/prd/chunks/<slug>.md` (template: `.cursor/core/templates/prd/chunk.template.md`), linked from the PRD's `# PRD Chunks` index. Chunks are still product-level — never specs/schemas/architecture.
+- This keeps the PRD **editable**: you change a small chunk, not a monolith. Prefer editing/adding a chunk over growing the overview.
+- `TBD` / `UNKNOWN` is a valid state for overview sections early — don't block discovery on exhaustiveness (but see Surface Discipline for what blocks *implementation-ready*).
+
 ## Surface Discipline
 
 A PRD that names *what* the product does without naming *where* it lives is not ready for implementation.
