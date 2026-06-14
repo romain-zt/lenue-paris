@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { Products } from "./Products";
+import {
+  DRESS_LENGTH_VARIANTS,
+  DRESS_SIZE_OPTIONS,
+  Products,
+} from "./Products";
 
 describe("Products collection", () => {
   const field = (name: string) =>
@@ -13,6 +17,42 @@ describe("Products collection", () => {
   it("allows public read, requires auth for writes", () => {
     expect(Products.access?.read?.({ req: { user: null } } as never)).toBe(true);
     expect(Products.access?.create?.({ req: { user: null } } as never)).toBeFalsy();
+  });
+
+  it("exposes dress length variants with longer and shorter options", () => {
+    const lengthVariants = field("lengthVariants") as {
+      type?: string;
+      hasMany?: boolean;
+      options?: Array<{ value: string }>;
+      admin?: { condition?: (data: unknown, siblingData: { category?: string }) => boolean };
+    };
+
+    expect(lengthVariants?.type).toBe("select");
+    expect(lengthVariants?.hasMany).toBe(true);
+    expect(lengthVariants?.options?.map((option) => option.value)).toEqual([
+      ...DRESS_LENGTH_VARIANTS,
+    ]);
+    expect(lengthVariants?.admin?.condition?.(null, { category: "robe" })).toBe(true);
+    expect(lengthVariants?.admin?.condition?.(null, { category: "sac" })).toBe(false);
+  });
+
+  it("exposes dress sizes as a fixed XS–XL select with defaults", () => {
+    const sizes = field("sizes") as {
+      type?: string;
+      hasMany?: boolean;
+      defaultValue?: string[];
+      options?: Array<{ value: string }>;
+      admin?: { condition?: (data: unknown, siblingData: { category?: string }) => boolean };
+    };
+
+    expect(sizes?.type).toBe("select");
+    expect(sizes?.hasMany).toBe(true);
+    expect(sizes?.defaultValue).toEqual([...DRESS_SIZE_OPTIONS]);
+    expect(sizes?.options?.map((option) => option.value)).toEqual([
+      ...DRESS_SIZE_OPTIONS,
+    ]);
+    expect(sizes?.admin?.condition?.(null, { category: "robe" })).toBe(true);
+    expect(sizes?.admin?.condition?.(null, { category: "foulard" })).toBe(false);
   });
 });
 

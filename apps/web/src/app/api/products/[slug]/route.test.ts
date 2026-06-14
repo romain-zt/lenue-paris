@@ -53,6 +53,7 @@ describe("GET /api/products/[slug]", () => {
             alt: "Robe en lin",
           },
         ],
+        variantPickers: null,
         orderHref: "/en/order/robe-lin",
         catalogueHref: "/en/catalogue",
       },

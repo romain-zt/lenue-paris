@@ -24,3 +24,13 @@ export type {
   ProductGalleryImage,
   ProductNotFoundResponse,
 } from "./types";
+export {
+  PRODUCT_LENGTH_VARIANTS,
+  PRODUCT_SIZE_CODES,
+} from "./variants";
+export type {
+  ProductLengthVariant,
+  ProductSizeCode,
+  ProductVariantPickers,
+  ProductVariantSelection,
+} from "./variants";

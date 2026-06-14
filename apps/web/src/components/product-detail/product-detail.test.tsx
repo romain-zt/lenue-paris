@@ -24,6 +24,7 @@ const product: ProductDetail = {
       alt: "Robe en lin",
     },
   ],
+  variantPickers: null,
   orderHref: "/fr/order/robe-lin",
   catalogueHref: "/fr/catalogue",
 };
