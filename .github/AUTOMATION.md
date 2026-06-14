@@ -90,9 +90,11 @@ The orchestrator is **data-driven** — it never hardcodes your product. It read
 
 | File | Role |
 |---|---|
-| `orchestration.pipeline.json` | Ordered steps + `dependsOn`. Ships with a permanent `bootstrap` anchor |
-| `status.json` | Per-step state: `not-started` / `in-progress` / `complete` / `blocked` (+ remediation counts) |
-| `orchestration.planner-queue.json` | Manual steps to append (you edit this) |
+| `orchestration.pipeline.json` | Ordered steps + `dependsOn` + optional `priority` (0–5). Ships with a permanent `bootstrap` anchor |
+| `status-events.ndjson` | **Append-only source of truth** for status (`merge=union`, never hand-edited). One transition = one line. See `60-status-lifecycle.mdc` |
+| `status.json` | **Generated snapshot** projected from the event log: `todo` / `in-progress` / `in-review` / `validated` / `to-qa-human` / `complete` / `blocked` (+ remediation counts) |
+| `inbox.ndjson` | **Append-only** priority input queue fed by `/btw` (`merge=union`). See `61-input-queue.mdc` |
+| `orchestration.planner-queue.json` | Manual steps to append (you edit this); steps may carry `priority` |
 | `orchestration.prd-flow-map.json` | Maps PRD Flow Inventory rows → Scope Slice files |
 | `HANDOFF.md` | Living context every agent reads first |
 | `seed-anchor.md` | Target of the `bootstrap` anchor — don't delete |

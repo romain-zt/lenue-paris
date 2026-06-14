@@ -25,6 +25,16 @@
 import { Agent, CursorAgentError, type RunResult } from "@cursor/sdk";
 import { buildCursorCloudOptions } from "./cursor-sdk-options";
 import { formatPickedModel, pickOrchestratorWorkerModel } from "./cursor-models.config";
+import {
+  appendStatusEvent,
+  isFireable,
+  NEEDS_HUMAN,
+  parseStatusLog,
+  projectStatus,
+  projectStatusFromLog,
+  satisfiesDependency,
+  type StatusValue,
+} from "./status-log";
 import fs from "node:fs";
 import path from "node:path";
 import { execSync, execFileSync } from "node:child_process";
@@ -130,26 +140,35 @@ Default DOWN: do as much as you can yourself at Manager; delegate to \`executor\
 Run the repo's check commands (typically \`pnpm typecheck\`, \`pnpm build\`, \`pnpm test\`; prefer the narrowest relevant command first).
 Do not mark the step complete if required checks fail.
 
+## Status: append-only — NEVER hand-edit docs/state/status.json
+Status is an **append-only event log** at \`docs/state/status-events.ndjson\` (\`merge=union\`, so concurrent agents never conflict). Record every transition with the helper — do **not** edit \`status.json\` (it is a generated snapshot):
+\`\`\`bash
+npx --prefix .github/scripts/core tsx .github/scripts/core/status-log.ts set "{STEP_ID}" <status> --note "<short>" [--blocker "NEED_HUMAN: …"]
+\`\`\`
+Lifecycle (see \`.cursor/core/rules/60-status-lifecycle.mdc\`):
+\`todo → in-progress → in-review → validated → complete\`, plus \`to-qa-human\` (needs a human QA pass) and \`blocked\` (NEED_HUMAN). Set \`in-review\` when implementation + tests are done and the PR is up; \`validated\` after re-test + review pass; \`complete\` only when it is mergeable.
+
 ## Human blocker behavior
 If work cannot proceed without a person (secrets, product decision, access, ambiguous architecture, unresolved conflict):
-1. Set \`docs/state/status.json\` → \`orchestration.steps["{STEP_ID}"] = "blocked"\` and \`orchestration.blocker\` starting with \`NEED_HUMAN:\`.
+1. \`status-log.ts set "{STEP_ID}" blocked --blocker "NEED_HUMAN: <exact input needed>"\` (append-only — commit \`docs/state/status-events.ndjson\`).
 2. Update \`docs/state/HANDOFF.md\` (what was attempted, what's blocked, the exact input needed).
 3. Commit + push to \`{TRACKING_PR_BRANCH}\`. **Do not** call \`gh pr ready\`.
 The orchestrator mirrors the blocked state to \`{TRACKING_BASE}\` and skips this step so it can pick other work.
+If the work is built but only needs a human QA pass (not a decision), use \`to-qa-human\` instead of \`blocked\`.
 
 ## Completion behavior
-Only when the step is fully implemented, checks pass, and \`orchestration.steps["{STEP_ID}"] = "complete"\` is committed on the tracking branch:
+Only when the step is fully implemented, checks pass, validation (re-test) is green, and you have appended \`status-log.ts set "{STEP_ID}" complete\` (committed on the tracking branch):
 \`\`\`bash
 gh pr ready {TRACKING_PR_NUMBER} --repo {REPO}
 \`\`\`
-Otherwise commit the partial layer, update HANDOFF, and stop without calling \`gh pr ready\`.
+Otherwise append the appropriate in-flight status, commit the partial layer, update HANDOFF, and stop without calling \`gh pr ready\`.
 `;
 
 // ---------------------------------------------------------------------------
 // Pipeline + status schema (slice-only, data-driven)
 // ---------------------------------------------------------------------------
 
-type PhaseStatus = "not-started" | "in-progress" | "complete" | "blocked";
+type PhaseStatus = StatusValue;
 
 interface StatusJson {
   orchestration?: {
@@ -159,6 +178,37 @@ interface StatusJson {
     remediation_counts?: Record<string, number>;
   };
   [key: string]: unknown;
+}
+
+const STATUS_LOG_REL = "docs/state/status-events.ndjson";
+const STATUS_LOG_FULL = path.join(process.cwd(), STATUS_LOG_REL);
+
+/**
+ * Overlay the append-only event log onto an in-memory status snapshot. The log
+ * is the source of truth (agents append to it instead of editing status.json),
+ * and `status.json` is just a cache. The latest event per step wins.
+ */
+function overlayLogOntoStatus(status: StatusJson): StatusJson {
+  const projected = projectStatusFromLog(STATUS_LOG_FULL);
+  if (Object.keys(projected).length === 0) return status;
+  status.orchestration ??= {};
+  status.orchestration.steps ??= {};
+  for (const [step, event] of Object.entries(projected)) {
+    status.orchestration.steps[step] = event.status;
+    if (event.blocker && (event.status === "blocked" || event.status === "to-qa-human")) {
+      status.orchestration.blocker = event.blocker;
+    }
+  }
+  return status;
+}
+
+/** Record one transition in the append-only log so concurrent writers never conflict. */
+function recordStatusEvent(id: string, status: PhaseStatus, opts?: { note?: string; blocker?: string }): void {
+  try {
+    appendStatusEvent({ step: id, status, actor: "orchestrator", note: opts?.note, blocker: opts?.blocker });
+  } catch (err) {
+    console.warn("⚠️  Could not append status event (non-fatal):", err);
+  }
 }
 
 interface PipelineWorkloadSlice {
@@ -175,6 +225,27 @@ interface PipelineStepRow {
   id: string;
   dependsOn: string[];
   workload: PipelineWorkloadSlice;
+  /**
+   * Optional scheduling priority, 0 (highest — "pick next, absolutely") to 5
+   * (lowest, the default). Used to order ready steps; see the /btw input queue
+   * (61-input-queue.mdc). Missing → DEFAULT_PRIORITY.
+   */
+  priority?: number;
+}
+
+/** Lowest priority band; steps without an explicit priority sit here. */
+const DEFAULT_PRIORITY = 5;
+const MIN_PRIORITY = 0;
+const MAX_PRIORITY = 5;
+
+function clampPriority(p: number | undefined): number {
+  if (typeof p !== "number" || Number.isNaN(p)) return DEFAULT_PRIORITY;
+  return Math.min(MAX_PRIORITY, Math.max(MIN_PRIORITY, Math.round(p)));
+}
+
+function stepPriority(id: string): number {
+  const row = loadPipeline().steps.find((s) => s.id === id);
+  return clampPriority(row?.priority);
 }
 
 interface PipelineConfig {
@@ -227,17 +298,23 @@ function writeStepState(status: StatusJson, id: string, value: PhaseStatus): voi
 }
 
 function readStatus(): StatusJson | null {
-  if (!fs.existsSync(STATUS_PATH)) {
-    console.warn("⚠️  docs/state/status.json not found — no automated steps will fire.");
+  let base: StatusJson;
+  if (fs.existsSync(STATUS_PATH)) {
+    try {
+      base = JSON.parse(fs.readFileSync(STATUS_PATH, "utf8")) as StatusJson;
+    } catch (err) {
+      console.error("❌ Failed to parse docs/state/status.json:", err);
+      process.exit(1);
+      throw err;
+    }
+  } else if (fs.existsSync(STATUS_LOG_FULL)) {
+    // No snapshot yet, but the append-only log exists — project from it.
+    base = {};
+  } else {
+    console.warn("⚠️  docs/state/status.json and status-events.ndjson not found — no automated steps will fire.");
     return null;
   }
-  try {
-    return JSON.parse(fs.readFileSync(STATUS_PATH, "utf8")) as StatusJson;
-  } catch (err) {
-    console.error("❌ Failed to parse docs/state/status.json:", err);
-    process.exit(1);
-    throw err;
-  }
+  return overlayLogOntoStatus(base);
 }
 
 function writeStatus(updated: StatusJson): void {
@@ -264,19 +341,22 @@ function determineReadySteps(status: StatusJson): string[] {
 
   for (const row of cfg.steps) {
     const stepStatus = statusMap.get(row.id);
-    if (stepStatus === "complete" || stepStatus === "in-progress") continue;
 
-    if (stepStatus === "blocked") {
-      console.log(`⏭️  Skipping "${row.id}" (blocked). Will try next eligible step.`);
-      blocked.push(row.id);
+    // Anything that is in-flight, in review, validated, awaiting QA, complete, or
+    // blocked is NOT eligible to fire a fresh agent.
+    if (!isFireable(stepStatus)) {
+      if (stepStatus && NEEDS_HUMAN.has(stepStatus)) {
+        console.log(`⏭️  Skipping "${row.id}" (${stepStatus} — needs a human). Will try next eligible step.`);
+        blocked.push(row.id);
+      }
       continue;
     }
 
-    const unmetDep = row.dependsOn.find((dep) => statusMap.get(dep) !== "complete");
+    const unmetDep = row.dependsOn.find((dep) => !satisfiesDependency(statusMap.get(dep)));
     if (unmetDep) {
       const depStatus = statusMap.get(unmetDep);
-      if (depStatus === "blocked") {
-        console.log(`⏭️  Skipping "${row.id}" (dependency "${unmetDep}" is blocked).`);
+      if (depStatus && NEEDS_HUMAN.has(depStatus)) {
+        console.log(`⏭️  Skipping "${row.id}" (dependency "${unmetDep}" is ${depStatus}).`);
         blocked.push(row.id);
       } else {
         console.log(`⏭️  Skipping "${row.id}" (dependency "${unmetDep}" is ${depStatus ?? "not-started"}).`);
@@ -288,9 +368,13 @@ function determineReadySteps(status: StatusJson): string[] {
   }
 
   if (blocked.length > 0) {
-    console.log(`\n🚧 Blocked steps: ${blocked.join(", ")}`);
-    console.log("   Check docs/state/status.json for blocker details.");
+    console.log(`\n🚧 Steps awaiting a human: ${blocked.join(", ")}`);
+    console.log("   Check docs/state/status-events.ndjson for blocker details.");
   }
+
+  // Priority ordering: a lower `priority` number runs first. Priority 0 is
+  // "pick this next, absolutely" (see 61-input-queue.mdc / the /btw queue).
+  ready.sort((a, b) => stepPriority(a) - stepPriority(b));
 
   return ready;
 }
@@ -404,15 +488,43 @@ function openTrackingPR(stepRow: PipelineStepRow): TrackingPR {
 }
 
 function readStatusFromGitRev(revLike: string): StatusJson | null {
+  let snapshot: StatusJson | null = null;
   try {
     const raw = execFileSync("git", ["show", `${revLike}:docs/state/status.json`], {
       encoding: "utf8",
       maxBuffer: 4 * 1024 * 1024,
     });
-    return JSON.parse(raw) as StatusJson;
+    snapshot = JSON.parse(raw) as StatusJson;
   } catch {
-    return null;
+    snapshot = null;
   }
+
+  // Overlay the append-only log at the same rev — agents record completion there
+  // (not by editing status.json), so verification must read the log too.
+  let logProjected: ReturnType<typeof projectStatus> = {};
+  try {
+    const logRaw = execFileSync("git", ["show", `${revLike}:${STATUS_LOG_REL}`], {
+      encoding: "utf8",
+      maxBuffer: 8 * 1024 * 1024,
+    });
+    logProjected = projectStatus(parseStatusLog(logRaw));
+  } catch {
+    /* no log at this rev */
+  }
+
+  if (!snapshot && Object.keys(logProjected).length === 0) return null;
+  const merged: StatusJson = snapshot ?? {};
+  if (Object.keys(logProjected).length > 0) {
+    merged.orchestration ??= {};
+    merged.orchestration.steps ??= {};
+    for (const [step, event] of Object.entries(logProjected)) {
+      merged.orchestration.steps[step] = event.status;
+      if (event.blocker && (event.status === "blocked" || event.status === "to-qa-human")) {
+        merged.orchestration.blocker = event.blocker;
+      }
+    }
+  }
+  return merged;
 }
 
 function extractStepFromTrackingTitle(title: string): string | null {
@@ -493,10 +605,11 @@ function syncBlockedFromRemoteToBase(step: string, remoteRev: string): boolean {
     baseS.orchestration.blocker = blockerFromRemote;
   }
   writeStatus(baseS);
+  recordStatusEvent(step, "blocked", { blocker: blockerFromRemote });
   try {
     gitExec(`config user.email "github-actions[bot]@users.noreply.github.com"`);
     gitExec(`config user.name "github-actions[bot]"`);
-    gitExec(`add docs/state/status.json`);
+    gitExec(`add docs/state/status.json ${STATUS_LOG_REL}`);
     gitExec(`commit -m "chore(orchestrator): mirror blocked state for ${step} from agent branch [skip ci]"`);
     gitExec(`push`);
     console.log(`📌 Mirrored '${step}' → blocked on ${trackingBase} (orchestrator will skip this step).`);
@@ -510,13 +623,14 @@ function syncBlockedFromRemoteToBase(step: string, remoteRev: string): boolean {
 function markInProgress(status: StatusJson, id: string): void {
   writeStepState(status, id, "in-progress");
   writeStatus(status);
+  recordStatusEvent(id, "in-progress");
   try {
     gitExec(`config user.email "github-actions[bot]@users.noreply.github.com"`);
     gitExec(`config user.name "github-actions[bot]"`);
-    gitExec(`add docs/state/status.json`);
+    gitExec(`add docs/state/status.json ${STATUS_LOG_REL}`);
     gitExec(`commit -m "chore(orchestrator): mark ${id} as in-progress [skip ci]"`);
     gitExec(`push`);
-    console.log(`📝 status.json updated: ${id} → in-progress`);
+    console.log(`📝 status updated: ${id} → in-progress`);
   } catch (err) {
     console.warn("⚠️  Could not commit status update (non-fatal):", err);
   }
@@ -534,10 +648,11 @@ function resetInProgress(id: string): void {
 
   writeStepState(current, id, "not-started");
   writeStatus(current);
+  recordStatusEvent(id, "not-started", { note: "orphan reset (agent failed)" });
   try {
     gitExec(`config user.email "github-actions[bot]@users.noreply.github.com"`);
     gitExec(`config user.name "github-actions[bot]"`);
-    gitExec(`add docs/state/status.json`);
+    gitExec(`add docs/state/status.json ${STATUS_LOG_REL}`);
     gitExec(`commit -m "chore(orchestrator): reset ${id} from in-progress to not-started (agent failed) [skip ci]"`);
     gitExec(`push`);
     console.log(`🔄 Reset ${id} → not-started (will retry on next cron).`);
@@ -617,17 +732,18 @@ function sliceWorkloadMarkdown(stepRow: PipelineStepRow): string {
 
   return `## Step workload — ${w.title}
 
-Current pipeline step id: \`${stepRow.id}\`. Set \`docs/state/status.json\` → \`orchestration.steps["${stepRow.id}"]\` to \`"complete"\` or \`"blocked"\` before declaring the step done (also set \`orchestration.blocker\` when blocked).
+Current pipeline step id: \`${stepRow.id}\`. Record status via the append-only log (\`status-log.ts set "${stepRow.id}" <status>\`) — never hand-edit \`status.json\`.
 
 Read \`docs/state/HANDOFF.md\` and \`docs/project.config.md\`, then anchor on:
 - Feature Area: \`${w.featureAreaFile}\`
 - Scope Slice: \`${w.scopeSliceFile}\`
 ${us}${plan}${notes}
 ### Done criteria
-1. Smallest coherent layer implemented for this Slice, inside its scope only.
-2. Repo check commands pass on every head you push.
-3. \`orchestration.steps["${stepRow.id}"] = "complete"\` committed on \`{TRACKING_PR_BRANCH}\`, then \`gh pr ready {TRACKING_PR_NUMBER} --repo {REPO}\`.
-4. If blocked on a human/policy decision: \`blocked\`, refresh HANDOFF, omit \`gh pr ready\`.
+1. Decompose this Slice into per-part tasks and delegate each part to the matching specialist (see \`.cursor/core/rules/62-feature-decomposition.mdc\`) — do not build the whole slice as one undifferentiated blob.
+2. Workflow order per part: spec → plan → tests (failing) → implement → re-test (validation) → review.
+3. Repo check commands pass on every head you push.
+4. Append \`status-log.ts set "${stepRow.id}" in-review\` when built + tested, \`validated\` after re-test/review pass, then \`complete\` on \`{TRACKING_PR_BRANCH}\`, then \`gh pr ready {TRACKING_PR_NUMBER} --repo {REPO}\`.
+5. If blocked on a human/policy decision: \`blocked\` (+ blocker); if it only needs human QA: \`to-qa-human\`. Refresh HANDOFF, omit \`gh pr ready\`.
 `;
 }
 
@@ -757,7 +873,7 @@ function commitStatus(message: string): void {
   try {
     gitExec(`config user.email "github-actions[bot]@users.noreply.github.com"`);
     gitExec(`config user.name "github-actions[bot]"`);
-    gitExec(`add docs/state/status.json`);
+    gitExec(`add docs/state/status.json ${STATUS_LOG_REL}`);
     gitExec(`commit -m "${message}"`);
     gitExec(`push`);
   } catch (err) {
@@ -778,6 +894,7 @@ function bumpRemediationOrTrip(status: StatusJson, id: string): boolean {
     writeStepState(status, id, "blocked");
     status.orchestration.blocker = blocker;
     writeStatus(status);
+    recordStatusEvent(id, "blocked", { blocker });
     commitStatus(`chore(orchestrator): auto-block ${id} after ${MAX_REMEDIATION_RUNS} remediation attempts [skip ci]`);
     return true;
   }

@@ -1,0 +1,9 @@
+# Append-only state logs: never edit, only add lines. The `union` merge driver
+# keeps lines from BOTH sides on conflict instead of failing the merge, so
+# concurrent cloud agents recording status/inbox events never stall the pipeline.
+# See .cursor/core/rules/60-status-lifecycle.mdc and 61-input-queue.mdc.
+docs/state/status-events.ndjson merge=union
+docs/state/inbox.ndjson         merge=union
+
+# Generated lockfile — let tooling regenerate rather than hand-merge.
+pnpm-lock.yaml -diff
