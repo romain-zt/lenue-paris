@@ -23,12 +23,13 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Active work
 
-**Step:** `orch-product-catalog--v0-category-grid` — API/route handlers layer complete; next is UI.
+**Step:** `orch-product-catalog--v0-category-grid` — UI layer complete; next is tests + state finalization.
 
 - User story: `docs/product/user-stories/product-catalog--v0-category-grid--US-001--browse-and-filter-grid.md` (`ready-for-spec`)
 - Spec: `docs/product/specs/product-catalog--v0-category-grid--US-001--browse-and-filter-grid.spec.md` (`ready-for-implementation`)
 - Package: `@repo/catalog` — types, category mapping, `ProductCard`, catalogue fetch helper + unit tests
 - API: `GET /api/catalog` in `apps/web` — wires `fetchCatalogList` to Payload REST via `CMS_URL`
+- UI: `/[locale]/catalogue` — mobile-first grid, category filter chips, empty/error/loading states
 
 ## Layer progress (v0 Category Grid)
 
@@ -38,16 +39,17 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 | 2. contracts/types | ✅ complete | `packages/catalog` — `ProductCard`, `CatalogListQuery/Response`, filter↔CMS mapping |
 | 3. domain/business logic | ✅ complete | `fetchCatalogList`, `buildPayloadProductsWhere`, locale/query normalization |
 | 4. API/route handlers | ✅ complete | `apps/web/src/app/api/catalog/route.ts` + Payload REST adapter + contract tests |
-| 5. UI | ⏳ next | `/[locale]/catalogue` grid + filter chips + empty states |
-| 6. tests + state finalization | pending | Integration tests + step `complete` |
+| 5. UI | ✅ complete | `/[locale]/catalogue` page + filter chips + grid + empty/error/loading states |
+| 6. tests + state finalization | ⏳ next | Integration tests + step `complete` + `gh pr ready 12` |
 
 ## Known issues / decisions in effect
 
 - PD-001 and PD-006 files still absent from `docs/product-decisions/` (only PD-007, PD-008). User story + spec were authored under orchestrator mandate for this step.
 - Payload `(payload)` app route group not yet generated — run `npx create-payload-app@latest --no-deps` from `apps/cms` first time. Web API fetches via `CMS_URL/api/products` until local Payload routes exist.
 - `.env` not created yet — copy `.env.example` and fill in real values.
+- Next.js `i18n` config in `next.config.mjs` is Pages Router legacy; App Router uses `[locale]` segment directly.
 
 ## Next recommended step
 
-1. Build catalogue UI page at `/[locale]/catalogue` with mobile-first grid + filter chips (layer 5).
-2. Run full checks; set `orchestration.steps["orch-product-catalog--v0-category-grid"] = "complete"` and `gh pr ready 11`.
+1. Add integration/UI tests for catalogue page (layer 6).
+2. Run full monorepo checks; set `orchestration.steps["orch-product-catalog--v0-category-grid"] = "complete"` and `gh pr ready 12 --repo romain-zt/lenue-paris`.
