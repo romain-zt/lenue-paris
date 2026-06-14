@@ -1,5 +1,0 @@
-{
-  "version": 1,
-  "description": "Manual step queue. Add slice steps here, then run the 'Orchestration Planner' workflow (or 'Orchestration automation') to append them into orchestration.pipeline.json. Each step.workload must be kind:\"slice\" pointing at real files under docs/product/**. `dependsOn` ids must already exist in the pipeline or earlier in this queue.",
-  "steps": []
-}
