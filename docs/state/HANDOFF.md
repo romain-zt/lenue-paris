@@ -19,6 +19,13 @@ and the v0 boundary.
 
 ## Active work
 
+**`setup` — COMPLETE (2026-06-14)**
+
+Tracking PR #55 (`orchestrator/tracking-setup-1781469264704`).
+
+- Replaced dev-placeholder home page with branded Lénue Paris landing page (hero, category grid, brand note).
+- All checks pass: typecheck clean, 24 tests green (22 web + 2 cms).
+
 **`orch-product-catalog--category-grid` — COMPLETE (2026-06-14)**
 
 Tracking PR #47 (`orchestrator/tracking-orch-product-catalog--category-grid-1781463077496`).
