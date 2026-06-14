@@ -9,7 +9,7 @@
     },
     "remediation_counts": {
       "orch-product-detail--gallery-and-variants": 2,
-      "orch-whatsapp-checkout--order-save-and-handoff": 1
+      "orch-whatsapp-checkout--order-save-and-handoff": 2
     }
   }
 }
