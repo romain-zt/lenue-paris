@@ -794,6 +794,45 @@ Automation is re-invoking you to **continue** until the work merges or you block
     .replace(/\{STEP_ID\}/g, id);
 }
 
+/**
+ * Keep a tracking branch merged up with `trackingBase` so GitHub never reports it
+ * CONFLICTING. This matters because GitHub's auto-merge does NOT apply the
+ * `.gitattributes merge=union` driver to `docs/state/status-events.ndjson` — so a
+ * branch and main that both appended status events show up as a conflict and the
+ * tracking PR can never auto-merge (the pipeline gets stuck). Locally the union
+ * driver resolves it cleanly, so we merge base→branch here and push.
+ *
+ * Returns true if the branch is now in sync (or already was); false if a real
+ * conflict (beyond the union-resolvable state log) remains — left for the
+ * conflict-resolver agent.
+ */
+function syncTrackingBranchWithBase(branch: string): boolean {
+  try {
+    gitExec(`fetch origin ${trackingBase} ${branch}`);
+    gitExec(`checkout -B ${branch} origin/${branch}`);
+    gitExec(`config user.email "github-actions[bot]@users.noreply.github.com"`);
+    gitExec(`config user.name "github-actions[bot]"`);
+    try {
+      execSync(
+        `git merge origin/${trackingBase} -m "chore(orchestrator): sync ${branch} with ${trackingBase} (union-resolve state log) [skip ci]"`,
+        { stdio: "inherit" },
+      );
+    } catch {
+      // Conflict beyond the union-resolvable state log — abort and let the
+      // conflict-resolver agent handle it rather than guessing.
+      try { execSync(`git merge --abort`, { stdio: "inherit" }); } catch { /* ignore */ }
+      console.warn(`⚠️  '${branch}' has conflicts beyond the state log — leaving for the conflict-resolver.`);
+      return false;
+    }
+    gitExec(`push origin ${branch}`);
+    console.log(`🔁 Synced '${branch}' with '${trackingBase}' (no GitHub-merge conflict).`);
+    return true;
+  } catch (e) {
+    console.warn(`⚠️  Could not sync '${branch}' with '${trackingBase}' (non-fatal):`, e);
+    return false;
+  }
+}
+
 async function executeAgentRun(step: string, trackingPR: TrackingPR, remediate: boolean): Promise<void> {
   validateRunnableStep(step);
   const prompt = buildOrchestratorPrompt(step, trackingPR, remediate);
@@ -842,6 +881,10 @@ async function executeAgentRun(step: string, trackingPR: TrackingPR, remediate: 
     }
 
     if (phaseIsComplete) {
+      // Keep the branch merged up with base so GitHub doesn't flag it CONFLICTING
+      // on the union-merged state log (GitHub auto-merge ignores merge=union).
+      syncTrackingBranchWithBase(trackingPR.branch);
+
       // Work is done on the branch. If the agent forgot to flip the PR ready,
       // do it for them (idempotent) so pr-ready.yml / cleanup can merge it.
       if (trackingPRIsDraft) {
