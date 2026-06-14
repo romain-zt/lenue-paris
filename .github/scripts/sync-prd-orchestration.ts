@@ -16,6 +16,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 const ROOT = process.cwd();
 const PRD_PATH = path.join(ROOT, "docs/prd/PRD.md");
@@ -308,4 +309,15 @@ function main(): void {
   console.log(`✅ PRD sync appended ${toAppend.length} slice step(s): ${toAppend.map((s) => s.id).join(", ")}`);
 }
 
-main();
+/**
+ * Only run as a CLI when invoked directly (e.g. `tsx sync-prd-orchestration.ts`).
+ * Guarded so other scripts (prd-decomposer.ts) can import parseFlowInventory /
+ * normalizeFlowCell without triggering a full sync on import.
+ */
+const invokedDirectly =
+  typeof process.argv[1] === "string" &&
+  import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (invokedDirectly) {
+  main();
+}

@@ -196,7 +196,7 @@ Severity examples: **`info`**, **`watch`**, **`risk`**.
 
 Stop when:
 
-1. **Implementation boundary:** Writing **application runtime code**, adding **runtime deps**, or materializing **`User Story`**, **`Spec`**, **`Task`**, **`Test`** queue artifacts **beyond** explicitly opened governance (**current:** stop **before** these; loop performs **feature-area**, **checker**, queue, blocker, lock, log steps only — **§12**).
+1. **Implementation boundary:** Writing **application runtime code**, adding **runtime deps**, or materializing **`User Story`**, **`Spec`**, **`Task`**, **`Test`** queue artifacts **beyond** explicitly opened governance. **Current state:** the implementation phase is **enabled** (`docs/project.config.md` → "Implementation phase", governed by PD-007), so this boundary is opened for `delivery-ready` Feature Areas via `/implement` / the phase orchestrator within the v0 boundary. If the phase is ever disabled again, revert to "stop before these; loop performs feature-area, checker, queue, blocker, lock, log steps only" (§12.1).
 2. **Eligible set empty** after **`scan`**.
 3. **Stall:** **3** successive iterations with identical **`next`** result and no **`run-one`** progress — log **`stall`**.
 4. **Subtree blocked** and no eligible sibling or other FA under current priority band (**normal idle**).
@@ -205,8 +205,21 @@ Stop when:
 
 ## 12. Safety invariants
 
-1. **No implementation without governance path.** No production code paths on this loop (**v0**).
-2. **No `NEED_HUMAN` bypass** — resolving human flags requires **human** edits + **`EXECUTION_LOG`** + blocker **Resolution**.
-3. **No readiness without checker** — no claiming **`CLEAR`** or promotion-equivalent semantics without **`/feature-area check`** (**FA** or **SS** as applicable) or the same checklist text from **`scope-readiness-checker.md`** inlined in audit output (**feature-area-workflow** + checker).
+1. **No implementation without governance path.** Production code paths are allowed **only** once the implementation phase is enabled in `docs/project.config.md` (governed by `docs/product-decisions/PD-007-implementation-phase.md`) and **only** through `/implement` / the phase orchestrator on a `delivery-ready` Feature Area, within the v0 boundary. While the phase is disabled, the v0 "stop before implementation" rule (§11.1) still binds.
+2. **No `NEED_HUMAN` bypass** — resolving human flags requires **human** edits + **`EXECUTION_LOG`** + blocker **Resolution**. This invariant is **never** waived, including in autonomous mode (§13).
+3. **No readiness without checker** — no claiming **`CLEAR`** or promotion-equivalent semantics without **`/feature-area check`** (**FA** or **SS** as applicable) or the same checklist text from **`scope-readiness-checker.md`** inlined in audit output (**feature-area-workflow** + checker). This binds in autonomous mode too — the checker verdict is what substitutes for human approval, so it must be a real run.
 4. **`NEED_UPDATE` on workflow** — if **rules**, **templates**, or **`scope-readiness-checker`** cannot evaluate an artifact (**feature-area-workflow** §7), set **`NEED_UPDATE: true`**, log, add **`POINTS_OF_ATTENTION`**; subtree work that depends on advancement **must not** forge ahead with invented fixes.
-5. **SISO (`00-siso.mdc`)** — autonomous loop stays in **workflow DISCOVERY ops** territory; switches to gated **EXECUTION** only where this rule + **`feature-area`** command explicitly permit file edits (**allowed_files** subset).
+5. **SISO (`00-siso.mdc`)** — interactive loops stay in **workflow DISCOVERY ops** territory and switch to gated **EXECUTION** only where this rule + **`feature-area`** command explicitly permit file edits (**allowed_files** subset). Autonomous CI decomposition runs under the standing SISO waiver (§13 + `00-siso.mdc` "Standing waiver").
+
+---
+
+## 13. Autonomous decomposition mode (CI)
+
+When `docs/project.config.md` → **Autonomous decomposition enabled: yes** (governed by `docs/product-decisions/PD-008-autonomous-decomposition.md`), the CI decomposer agent (`.github/scripts/prd-decomposer.ts`) drives the decomposition chain (Feature Area `map`→`scaffold`→`validate`→`promote`→`clear-for-vertical`; Scope Slice `slice`→`scaffold-slices`→`refine-slice`→`promote-slice`; then wires `orchestration.prd-flow-map.json`) **without** a human in the conversation.
+
+In this mode:
+
+- A **`CLEAR`** checker verdict substitutes for the in-conversation human approval (`feature-area-workflow` §1a).
+- Stop conditions §11.1 (implementation boundary) are relaxed only as far as PD-007 allows.
+- Invariants §12.2 (`NEED_HUMAN`), §12.3 (checker), §12.4 (`NEED_UPDATE`) are **fully** retained. A genuine blocker → `blocked` + `NEED_HUMAN:` on that item; siblings stay eligible (§6).
+- Set the flag to `no` (or repo variable `ORCHESTRATOR_ENABLED=false`) to return to human-driven decomposition.

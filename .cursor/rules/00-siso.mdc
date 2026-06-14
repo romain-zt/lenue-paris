@@ -49,6 +49,16 @@ When input is insufficient:
 
 Ambiguity is accepted only when the user explicitly validates assumptions, answers clarification questions, or says "proceed anyway" / "use your judgment." Even then, avoid irreversible decisions under uncertainty.
 
+### Standing waiver — autonomous CI decomposition
+
+When `docs/project.config.md` → **Autonomous decomposition enabled: yes** (governed by `docs/product-decisions/PD-008-autonomous-decomposition.md`), a CI cloud agent running `.github/scripts/prd-decomposer.ts` operates under a **standing, pre-approved SISO waiver** for the decomposition chain (PRD → Feature Area → Scope Slice → flow-map wiring). This waiver exists because the owner has explicitly authorized unattended decomposition; it is the human validation SISO requires.
+
+Under this waiver:
+
+- A **`CLEAR`** verdict from `.cursor/checkers/scope-readiness-checker.md` substitutes for the "approved by the user in the current conversation" gate.
+- The waiver does **not** lower input quality standards. If input is genuinely `ORANGE`/`RED` for a given Feature Area or Scope Slice — missing product truth, a blocking open question, two materially different valid interpretations — the agent must **not** invent an answer. It sets that item `blocked` with `NEED_HUMAN:` and continues with siblings.
+- The waiver covers decomposition only. It does not waive `NEED_HUMAN`, and it does not authorize editing the PRD itself.
+
 ## Request Mode Classification
 
 Before applying SISO blocking, classify the request:

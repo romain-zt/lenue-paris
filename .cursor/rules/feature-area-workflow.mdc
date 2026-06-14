@@ -22,6 +22,34 @@ It applies to any agent turn that:
 
 ---
 
+## 1a. Autonomous decomposition mode (CI)
+
+This section **overrides** the "approved by the user in the current conversation"
+precondition wherever it appears below (Forbidden Actions §4, Readiness Gates §5),
+**only** when **all** of these hold:
+
+1. `docs/project.config.md` → **Autonomous decomposition enabled: yes** (governed by `docs/product-decisions/PD-008-autonomous-decomposition.md`).
+2. The actor is the CI decomposer agent (`.github/scripts/prd-decomposer.ts`) or the phase orchestrator worker, not an interactive Cursor session.
+
+When active, the human-approval gate is satisfied by a **`CLEAR`** verdict from
+`.cursor/checkers/scope-readiness-checker.md` for the artifact being written or
+promoted. Concretely, the CI agent **may**, without a human in the conversation:
+
+- run `map` and treat its own checker-clean proposal as the approved map for `scaffold`;
+- run `slice` and treat its own checker-clean proposal as the approved proposal for `scaffold-slices`;
+- apply `promote`, `promote-slice`, and `clear-for-vertical` transitions after the relevant checker part returns `CLEAR`.
+
+Everything else is unchanged. In particular the CI agent **must still**:
+
+- run the actual checker checks and only transition on a real `CLEAR` (no self-asserted readiness — §12.3 of `execution-loop.mdc` still binds);
+- respect every `NEED_HUMAN`/`NEED_UPDATE` flag and open blocker — set the item `blocked` and move on rather than inventing product truth;
+- never edit `docs/prd/PRD.md`, never skip hierarchy levels, never name architecture during slice/scaffold.
+
+Outside this mode (interactive sessions, or flag = `no`), the in-conversation
+human-approval gates below apply in full.
+
+---
+
 ## 2. Required Read Order
 
 Before any decomposition work, read in this order:

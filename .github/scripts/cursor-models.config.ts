@@ -42,6 +42,15 @@ export const CURSOR_MODELS = {
    * per-step router, so it runs at Manager tier.
    */
   orchestratorWorker: "claude-4.6-sonnet",
+
+  /**
+   * prd-decomposer.ts — drives the full PRD → Feature Area → Scope Slice
+   * decomposition chain autonomously (no human in the conversation) and wires
+   * orchestration.prd-flow-map.json. It commits durable product-scope decisions
+   * that directly feed implementation, so per 20-model-routing.mdc ("irreversible
+   * or strategic → Vision") it runs at Vision tier.
+   */
+  prdDecomposer: "claude-opus-4-8",
 } as const;
 
 /**
