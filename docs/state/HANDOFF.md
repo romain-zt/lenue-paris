@@ -6,69 +6,64 @@
 
 ## What this project is
 
-Lénue Paris — a luxury fashion boutique storefront built with Next.js 15 (App Router) +
-Payload CMS 3 (Postgres/Neon), deployed on Vercel. Buyers browse dresses, bags, and scarfs
-and order via WhatsApp. See `docs/project.config.md` for identity, stack, priority bands,
-and the v0 boundary.
+Lénue Paris — a luxury fashion boutique storefront. Buyers browse dresses, bags, and
+scarfs and order via WhatsApp. See `docs/project.config.md` for identity, stack,
+priority bands, the v0 boundary, and the picked apps.
+
+## 🔄 FRESH RESTART (2026-06-14)
+
+The earlier build was **reset to start fresh on the upgraded setup**. The half-built
+monorepo (`apps/**`, `packages/**`, root build config, lockfile) was removed on purpose.
+Nothing about the product definition changed — the **original PRD and the product
+decomposition are intact** and remain the source of truth:
+
+- `docs/prd/PRD.md` (+ `docs/prd/chunks/` for any offloaded detail)
+- `docs/product/feature-areas/**`, `docs/product/scope-slices/**`, `docs/product/specs/**`, `docs/product/user-stories/**`
+
+The pipeline is reset so it **rebuilds from `setup` first**, on the current framework:
+latest stable stack (Node 22, Next 16, pnpm catalog as single source), pickable apps,
+seed + committed base assets, a visible first page, then per-part specialist builds.
 
 ## Current architecture
 
-- Monorepo: `apps/web` (Next.js 15, App Router), `apps/cms` (Payload 3), `packages/typescript-config` (pnpm + turbo).
-- Stack: Next.js 15 · Payload 3 · Postgres (Neon) · S3/MinIO media · Tailwind CSS v4 · Vitest.
-- See `.cursor/core/rules/40-architecture-baseline.mdc` and `docs/project.config.md`.
+No product code yet — the repo is governance + product docs only until the `setup`
+step runs. The `setup` step forks `.cursor/core/templates/starter-monorepo/` (the
+upgraded skeleton) per `05-project-setup.mdc` + `/setup`, scaffolding only the apps
+selected in `docs/project.config.md` (`web`, `cms`) on the latest stable stack.
 
-## Active work
+## Active work — restart sequence
 
-**`orch-product-catalog--category-grid` — COMPLETE (2026-06-14)**
+The pipeline runs in order (every feature depends on `setup`):
 
-Tracking PR #47 (`orchestrator/tracking-orch-product-catalog--category-grid-1781463077496`).
+1. **`setup`** (priority 0) — fork the upgraded starter, pin latest, pick apps, enable
+   clean-code rules, seed + commit base assets, ship a visible first page, wire deploy.
+2. **`orch-product-catalog--category-grid`** (P0)
+3. **`orch-product-detail--gallery-and-variants`** (P1)
+4. **`orch-whatsapp-checkout--order-save-and-handoff`** (P1)
+5. **`orch-cms-products--product-management`** then **`--order-viewing`** (P2)
+6. **`orch-editorial--brand-page`** (P2)
+7. **`orch-i18n--localized-storefront`** (P3)
 
-Implemented in main via prior merged commits:
-- **UI**: `/catalogue` page (RSC) with `CatalogueClient`, `CategoryFilter` (Robes/Sacs/Foulards), `ProductGrid`, `ProductCard`, `ProductCardSkeleton`.
-- **Tests**: 22 unit tests (Vitest + Testing Library), all green. Typecheck clean.
-- **UX states**: populated grid, empty state, loading skeletons, error state, filtered view.
+Status starts clean: **only `bootstrap` is recorded (complete)**. `setup` and the
+feature steps are implicitly `todo` and record their own events as the pipeline runs.
+Status is the append-only log `docs/state/status-events.ndjson` (never hand-edit
+`status.json`, which is a generated snapshot).
 
-**`orch-product-detail--gallery-and-variants` — COMPLETE (2026-06-14)**
+## How features get built now (new doctrine)
 
-Implemented in PR #44 (`orchestrator/tracking-orch-product-detail--gallery-and-variants-1781461775624`):
-
-- **CMS schema**: Extended `Products.ts` with `gallery` (array of media uploads) and `description` (localized textarea).
-- **Types**: Updated `apps/web/src/types/product.ts` with `ProductGalleryItem`, `DressLength`, `DressSize`, `DRESS_SIZES`, `DRESS_LENGTHS`.
-- **UI (layer 5)**:
-  - `/produits/[slug]` page (RSC) with `generateMetadata`, `loading.tsx` skeleton, `not-found.tsx` error state.
-  - `ProductGallery` — main image + thumbnail strip, client-side switching.
-  - `VariantSelector` — length picker (Version longue / Version courte) for dresses.
-  - `SizePicker` — XS/S/M/L/XL picker for dresses.
-  - `OrderCTA` — carries selected variants into a WhatsApp deep-link; disabled and shows warning if dress has no selection yet. Bags/scarfs bypass selectors.
-- **Tests**: 22 unit tests (Vitest + Testing Library), all green.
-- **Vitest config**: Added `@/` alias (`resolve.alias`) so all tests using `@/types/product` resolve correctly.
-- **Typecheck**: `pnpm --filter web typecheck` passes (0 errors).
-
-## Decomposition status (2026-06-14)
-
-**7 v0 Feature Areas `delivery-ready`, 8 Scope Slices.**
-
-| Feature Area | Band | Scope Slice(s) | Implementation status |
-|---|---|---|---|
-| storefront-shell | P0 | storefront-shell--global-chrome | not-started |
-| product-catalog | P0 | product-catalog--category-grid | **complete** |
-| product-detail | P1 | product-detail--gallery-and-variants | **complete** |
-| whatsapp-checkout | P1 | whatsapp-checkout--order-save-and-handoff | not-started |
-| cms-products | P2 | cms-products--product-management; cms-products--order-viewing | not-started |
-| editorial | P2 | editorial--brand-page | not-started |
-| i18n | P3 | i18n--localized-storefront | not-started |
+- **Inventory first / reuse-first** (`62-feature-decomposition.mdc` §0): before building,
+  see what exists; build missing primitives as reusable shared pieces.
+- **Per-part specialists**: the Manager decomposes each slice on pickup and delegates
+  each part (data/contract/domain/api/ui/design/copy) to its specialist.
+- **Loop per part**: spec → plan → tests → implement → re-test (validation) → review.
+- **Two-model challenge** of every plan/decomposition; **composer** does the typing.
+- **Record setup gaps** at review (`64-self-improvement.mdc`); `/btw` for product inputs.
 
 ## Known issues / decisions in effect
 
-- **PD-007** (`docs/product-decisions/PD-007-implementation-phase.md`) authored and `approved` — implementation phase is now formally authorized.
-- **storefront-shell--global-chrome** is not yet implemented; both the catalogue page and product detail page render without a shared chrome (acceptable stub for v0 slices). The next step should implement the global chrome.
-- **WhatsApp CTA** on product detail (`OrderCTA`) builds a `wa.me/?text=` link. The whatsapp-checkout slice will wire up order persistence before opening WhatsApp.
-- **`@payloadcms/next` peer dependency** expects a narrower Next.js range than 15.5.x; install succeeds and all checks pass. No action needed.
-- **Open questions folder**: `docs/prd/questions copy/open-questions.md` vs canonical `docs/prd/questions/open-questions.md` — content is complete; worth renaming.
-- **PD files** (PD-001, PD-006, PD-008) are not authored as standalone records; no blocker for current work.
+- **PD-007** (implementation phase) `approved`; **PD-008** (autonomous decomposition) per `docs/project.config.md`.
+- Prior open question: `docs/prd/questions copy/open-questions.md` vs canonical `docs/prd/questions/open-questions.md` — worth renaming.
 
 ## Next recommended step
 
-1. **`orch-storefront-shell--global-chrome`** (P0) — shared layout/chrome (header, navigation) so both pages have proper context; unblocks visual QA.
-2. **`orch-whatsapp-checkout--order-save-and-handoff`** (P1) — saves the order and opens WhatsApp; upgrades the OrderCTA stub.
-3. **`orch-cms-products--product-management`** (P2) — CMS authoring for products.
+Run the pipeline (orchestrator) — the first ready step is **`setup`**.
