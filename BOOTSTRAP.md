@@ -35,6 +35,9 @@ cp -r /path/to/framework/.github/scripts/core/ .github/scripts/core/
 cp /path/to/framework/.github/workflows/*.yml .github/workflows/
 # (skip project--*.yml if any)
 
+# PR template (so opened PRs are crystal clear) — source lives in core
+cp /path/to/framework/.cursor/core/templates/pr/PULL_REQUEST_TEMPLATE.md .github/PULL_REQUEST_TEMPLATE.md
+
 # Create your project overlay scaffold (gitignore core, commit project)
 mkdir -p .cursor/project/{rules,skills,commands,agents,templates,hooks}
 touch .cursor/project/rules/.gitkeep

@@ -1391,6 +1391,19 @@
       "dependsOn": ["rule.64-self-improvement"],
       "since": "2026-06-14",
       "status": "active"
+    },
+    {
+      "id": "template.pull-request",
+      "kind": "template",
+      "path": ".cursor/core/templates/pr/PULL_REQUEST_TEMPLATE.md",
+      "purpose": "PR template for crystal-clear, skimmable pull requests; copied to .github/PULL_REQUEST_TEMPLATE.md so GitHub auto-applies it.",
+      "stage": ["all"],
+      "tier": "n/a",
+      "expectedTier": "n/a",
+      "owners": ["framework-team"],
+      "dependsOn": [],
+      "since": "2026-06-14",
+      "status": "active"
     }
   ]
 }
