@@ -13,6 +13,8 @@
       "orch-i18n-localization--v0-buyer-locale-routing": "not-started",
       "orch-i18n-localization--v0-cms-localized-fields": "not-started"
     },
-    "remediation_counts": {}
+    "remediation_counts": {
+      "orch-product-catalog--v0-category-grid": 1
+    }
   }
 }
