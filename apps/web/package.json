@@ -18,10 +18,13 @@
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.0.0",
+    "happy-dom": "^20.10.3",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
   }
