@@ -30,7 +30,7 @@ Implemented in main via prior merged commits:
 
 **`orch-product-detail--gallery-and-variants` — COMPLETE (2026-06-14)**
 
-Implemented in PR #44 (`orchestrator/tracking-orch-product-detail--gallery-and-variants-1781461775624`):
+Implemented in main (tracking PR #50, `orchestrator/tracking-orch-product-detail--gallery-and-variants-1781465513478`):
 
 - **CMS schema**: Extended `Products.ts` with `gallery` (array of media uploads) and `description` (localized textarea).
 - **Types**: Updated `apps/web/src/types/product.ts` with `ProductGalleryItem`, `DressLength`, `DressSize`, `DRESS_SIZES`, `DRESS_LENGTHS`.
@@ -52,7 +52,7 @@ Implemented in PR #44 (`orchestrator/tracking-orch-product-detail--gallery-and-v
 |---|---|---|---|
 | storefront-shell | P0 | storefront-shell--global-chrome | not-started |
 | product-catalog | P0 | product-catalog--category-grid | **complete** |
-| product-detail | P1 | product-detail--gallery-and-variants | **complete** |
+| product-detail | P1 | product-detail--gallery-and-variants | **complete** (PR #50) |
 | whatsapp-checkout | P1 | whatsapp-checkout--order-save-and-handoff | not-started |
 | cms-products | P2 | cms-products--product-management; cms-products--order-viewing | not-started |
 | editorial | P2 | editorial--brand-page | not-started |
