@@ -17,6 +17,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { appendStatusEvent } from "./status-log";
 
 const ROOT = process.cwd();
 const PRD_PATH = path.join(ROOT, "docs/prd/PRD.md");
@@ -310,6 +311,8 @@ function main(): void {
   for (const s of toAppend) {
     if (status.orchestration.steps![s.id] === undefined) {
       status.orchestration.steps![s.id] = "not-started";
+      // Append-only status log is the source of truth — seed a `todo` event too.
+      appendStatusEvent({ step: s.id, status: "todo", actor: "prd-sync", note: "queued from PRD flow inventory" });
     }
   }
   fs.writeFileSync(STATUS_PATH, `${JSON.stringify(status, null, 2)}\n`);

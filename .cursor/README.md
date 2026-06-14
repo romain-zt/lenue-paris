@@ -38,6 +38,8 @@ Project specifics live in **`docs/project.config.md`** — nothing project-speci
 
 Start anything you're unsure about with **`/intake`** — it routes you to the right command and checks the setup can handle the request first.
 
+Other entry points: **`/setup`** (always-first project setup), **`/btw "…" pN`** (queue an input with priority 0–5), **`/quality-sweep`** (periodic code-health pass).
+
 ## Model tiers (`rules/20-model-routing.mdc`)
 
 | Tier | Model | Owns |
@@ -51,6 +53,7 @@ Start anything you're unsure about with **`/intake`** — it routes you to the r
 | Rule | Enforces |
 |------|----------|
 | `00-siso.mdc` | input quality before execution |
+| `05-project-setup.mdc` | setup is always first: clean stack pinned latest, minimal v0 catalog, pickable apps, visible first page |
 | `10-prd-discovery.mdc` · `11-prd-question-loop.mdc` | PRD discovery |
 | `feature-area-workflow.mdc` · `user-story-workflow.mdc` | product decomposition chain |
 | `20-model-routing.mdc` | model tier per action |
@@ -62,6 +65,10 @@ Start anything you're unsure about with **`/intake`** — it routes you to the r
 | `implementation-workflow.mdc` | spec → test → implementation gates |
 | `execution-loop.mdc` | autonomous queue orchestration |
 | `intake-flow.mdc` | the front-door router |
+| `60-status-lifecycle.mdc` | status lifecycle (todo→in-progress→in-review→validated→complete, +to-qa-human/blocked) + append-only status log |
+| `61-input-queue.mdc` | `/btw` priority input queue + 0–5 step scheduling (priority 0 = next, absolutely) |
+| `62-feature-decomposition.mdc` | split features on pickup; each part built by its specialist (design/backend/frontend/http/copy) |
+| `63-two-model-challenge.mdc` | every plan/decomposition challenged by a second, different model before converging |
 
 ## Domain specialists (`/domain <name>`)
 

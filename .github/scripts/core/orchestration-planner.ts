@@ -12,11 +12,13 @@
 import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { appendStatusEvent } from "./status-log";
 
 const ROOT = process.cwd();
 const PIPELINE_PATH = path.join(ROOT, "docs/state/orchestration.pipeline.json");
 const PLANNER_QUEUE_PATH = path.join(ROOT, "docs/state/orchestration.planner-queue.json");
 const STATUS_PATH = path.join(ROOT, "docs/state/status.json");
+const STATUS_LOG_REL = "docs/state/status-events.ndjson";
 
 type PhaseStatus = "not-started" | "in-progress" | "complete" | "blocked";
 
@@ -42,6 +44,8 @@ interface PipelineStepRow {
   id: string;
   dependsOn: string[];
   workload: PipelineWorkloadSlice;
+  /** Optional scheduling priority 0 (highest) – 5 (lowest, default). See 61-input-queue.mdc. */
+  priority?: number;
 }
 
 interface PipelineConfig {
@@ -71,6 +75,10 @@ function validateStepRow(step: PipelineStepRow, index: number): void {
   }
   if (!Array.isArray(step.dependsOn)) {
     console.error(`❌ planner-queue steps[${index}] (${step.id}): dependsOn must be an array`);
+    process.exit(1);
+  }
+  if (step.priority !== undefined && (typeof step.priority !== "number" || step.priority < 0 || step.priority > 5)) {
+    console.error(`❌ planner-queue steps[${index}] (${step.id}): priority must be a number 0–5`);
     process.exit(1);
   }
   const w = step.workload;
@@ -152,6 +160,8 @@ function main(): void {
   for (const s of toAppend) {
     if (status.orchestration.steps![s.id] === undefined) {
       status.orchestration.steps![s.id] = "not-started";
+      // Append-only log is the source of truth — seed a `todo` event too.
+      appendStatusEvent({ step: s.id, status: "todo", actor: "planner", note: "queued from planner-queue" });
     }
   }
   fs.writeFileSync(STATUS_PATH, `${JSON.stringify(status, null, 2)}\n`);
@@ -170,7 +180,7 @@ function main(): void {
 
   gitExec(`config user.email "github-actions[bot]@users.noreply.github.com"`);
   gitExec(`config user.name "github-actions[bot]"`);
-  gitExec(`add docs/state/orchestration.pipeline.json docs/state/status.json`);
+  gitExec(`add docs/state/orchestration.pipeline.json docs/state/status.json ${STATUS_LOG_REL}`);
   if (clearQueue) {
     gitExec(`add docs/state/orchestration.planner-queue.json`);
   }

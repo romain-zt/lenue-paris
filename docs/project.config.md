@@ -25,6 +25,16 @@ Mind to always start with the latest up-to-date release of each dependencies/fra
 | Deployment | —                    | Vercel (monorepo: apps/web + apps/cms same project) |
 
 
+## Apps (pickable — keep the monorepo, scaffold only what you need)
+
+Setup (`05-project-setup.mdc`) scaffolds only the selected apps. See `.cursor/core/templates/starter-monorepo/apps/CATALOG.md`.
+
+| App | Selected? | Why |
+|-----|-----------|-----|
+| `web` | yes | Buyer-facing storefront (browse, product detail, WhatsApp checkout). |
+| `cms` | yes | Merchant edits products, pages & media in Payload; source of truth. |
+| `api` | no | `web` route handlers + `cms` cover all server needs in v0. |
+
 ## Priority bands
 
 

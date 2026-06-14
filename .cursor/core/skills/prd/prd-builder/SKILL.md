@@ -47,6 +47,18 @@ When enough discovery material exists, `docs/prd/PRD.md` should include:
 - Integration Boundaries — what external systems participate and what role they play.
 - MVP Completeness Checklist — what must be resolved before implementation-ready status.
 
+### Chunked PRD — start fast, keep the main doc an overview
+
+The main `docs/prd/PRD.md` is an **overview**, not an exhaustive document. Start fast: capture the thesis, the global picture, the Flow Inventory, and the open blockers — then stop. Don't try to write everything up front.
+
+When a flow / feature group / business-object area needs more detail than fits comfortably in the overview, **offload it to a chunk file** instead of bloating the PRD:
+
+- Chunk files live at `docs/prd/chunks/<slug>.md` (template: `.cursor/core/templates/prd/chunk.template.md`).
+- The main PRD keeps a short summary + a link to the chunk (see the `# PRD Chunks` index section in the template).
+- A chunk is editable on its own and is the natural hand-off unit toward a Feature Area / Spec.
+
+This keeps the PRD **editable and fast to change** (you edit a small chunk, not a monolith) and avoids the "bloated PRD is a failure" anti-goal. A chunk is still product definition — it must not become a spec/architecture/schema (that's the Feature Area / Spec layer).
+
 ### Flow Inventory format
 
 Use this format for each flow:

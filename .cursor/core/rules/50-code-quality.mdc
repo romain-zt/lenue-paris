@@ -52,6 +52,18 @@ Same for recursion: the recursive step delegates to a single-node handler.
 - Reuse existing utilities/components before writing new ones; factor shared logic into one place (DRY, but don't over-abstract a one-off).
 - Optimize for the reader: clear names, early returns over deep nesting, small functions. Comments explain *why*, never narrate *what*.
 
+## Concrete thresholds (smells, not hard fails)
+
+These are review heuristics — cross one and you should usually refactor, not argue:
+
+- **Function length:** > ~40 lines → extract helpers. One function, one job.
+- **Nesting depth:** > 3 levels of `if`/`for`/`try` (or JSX) → flatten with early returns / guard clauses / extracted functions/components.
+- **Parameters:** > ~4 positional params → pass an options object.
+- **File length:** > ~300 lines → split by responsibility.
+- **Naming:** names say what/why; no `data2`, `tmp`, `doStuff`, single letters outside tiny loops.
+- **No dead code, no commented-out blocks, no `console.log` left in.** Delete it; git remembers.
+- **No magic numbers/strings** repeated — name them.
+
 ## Tooling-first — never hand-roll what a tool owns
 
 If a CLI/generator owns a task, use it; don't author the artifact by hand. This is true for **everything**, not just migrations.

@@ -12,13 +12,29 @@
         "scopeSliceFile": "docs/state/seed-anchor.md",
         "userStoryFile": null,
         "planFile": null,
-        "notes": "Permanent anchor. Kept `complete` in status.json so it never executes. New slice steps attach after this id (orchestration.prd-flow-map.json attachAfterStepId)."
+        "notes": "Permanent anchor. Kept `complete` in status.json so it never executes. New slice steps attach after the `setup` step (orchestration.prd-flow-map.json attachAfterStepId)."
+      }
+    },
+    {
+      "id": "setup",
+      "dependsOn": [
+        "bootstrap"
+      ],
+      "priority": 0,
+      "workload": {
+        "kind": "slice",
+        "title": "Project setup (always first)",
+        "featureAreaFile": "docs/state/seed-anchor.md",
+        "scopeSliceFile": "docs/state/seed-anchor.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "ALWAYS the first phase (see .cursor/core/rules/05-project-setup.mdc + /setup). Pin a clean, up-to-date stack + minimal v0 pnpm catalog, enable clean-code rules, pick only the apps in docs/project.config.md (keep the monorepo), and ship a visible first page. Every feature step depends on this. Priority 0 so it is picked first."
       }
     },
     {
       "id": "orch-product-catalog--category-grid",
       "dependsOn": [
-        "bootstrap"
+        "setup"
       ],
       "workload": {
         "kind": "slice",

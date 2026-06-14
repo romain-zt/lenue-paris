@@ -5,6 +5,14 @@ supersedes: null
 date: {{DATE}}
 ---
 
+<!--
+  This PRD is an OVERVIEW — start fast, don't try to be exhaustive. Capture the
+  thesis, global picture, Flow Inventory and blockers, then stop. Detail that
+  would bloat this doc goes into chunk files under docs/prd/chunks/ (see the
+  `# PRD Chunks` index below). Edit small chunks, not a monolith.
+  Sections you don't know yet: leave as TBD — that's expected early.
+-->
+
 # Why This Version Exists
 
 {{WHY_THIS_VERSION_EXISTS}}
@@ -49,6 +57,16 @@ date: {{DATE}}
 # Flow Inventory
 
 {{FLOW_INVENTORY_OR_TBD}}
+
+# PRD Chunks
+
+Detailed product definition offloaded from this overview lives in chunk files
+(`docs/prd/chunks/<slug>.md`, from `.cursor/core/templates/prd/chunk.template.md`).
+Keep this index short; link each chunk with a one-line summary.
+
+| Chunk | Covers | Status | Link |
+|-------|--------|--------|------|
+| {{CHUNK_NAME_OR_NONE}} | {{CHUNK_COVERS}} | {{CHUNK_STATUS}} | {{CHUNK_LINK}} |
 
 # Business Objects
 

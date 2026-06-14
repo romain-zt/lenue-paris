@@ -48,16 +48,24 @@ Gate: PASS (phase enabled, Spec ready-for-implementation, FA delivery-ready, no 
 4. Architecture notes
 - baseline adherence / any deviation + reason
 
-5. Subdivision
-- Tasks needed? yes/no. If yes → /task propose with these bricks: <list>
+5. Per-part decomposition (62-feature-decomposition.mdc)
+- Parts this Spec needs + the specialist per part:
+  | Part | Specialist | Scope |
+  |------|-----------|-------|
+  | data/domain | backend-specialist | ... |
+  | contract/API | http-specialist | ... |
+  | UI/design | design-specialist + frontend-specialist | ... |
+  | copy | copywriter-specialist | ... |
+- Dependency order between parts: <data → contract → domain → API → UI → copy>
 
 6. Next step
-- /implement test <path>  (or /task propose <spec-path>)
+- /implement test <path>  (or /task propose <spec-path>); delegate each part to its specialist (composer Executor)
 ```
 
 # Hard rules
 
 - No application code. No test files (that is the Executor in `/implement test`).
+- Delegate every part to its specialist Executor (composer) — design and backend are first-class parts, not afterthoughts. Don't type the bulk yourself (`20-model-routing.mdc` #6–7).
 - E2E only if the Spec named a journey; otherwise push coverage to contract + integration.
 - One brick = one Executor; split multi-surface Specs first.
 - Escalate to Vision review for auth / money / migration / external contract / security work.
