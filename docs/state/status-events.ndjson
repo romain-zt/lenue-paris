@@ -29,3 +29,4 @@
 {"ts":"2026-06-14T20:38:34.243Z","step":"setup","status":"complete","note":"Branded home page live; monorepo scaffold complete; all checks pass","actor":"agent"}
 {"ts":"2026-06-14T20:34:27.077Z","step":"setup","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-14T20:43:59.704Z","step":"orch-product-catalog--category-grid","status":"in-progress","actor":"orchestrator"}
+{"ts":"2026-06-14T20:44:14.256Z","step":"orch-product-catalog--category-grid","status":"not-started","note":"orphan reset (agent failed)","actor":"orchestrator"}

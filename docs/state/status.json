@@ -3,7 +3,7 @@
     "steps": {
       "bootstrap": "complete",
       "setup": "complete",
-      "orch-product-catalog--category-grid": "in-progress"
+      "orch-product-catalog--category-grid": "not-started"
     },
     "remediation_counts": {}
   }
