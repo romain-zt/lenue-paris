@@ -16,6 +16,13 @@ on:
       - "docs/state/orchestration.planner-queue.json"
       - "docs/product/scope-slices/**"
       - "docs/product/feature-areas/**"
+  # When pr-automation merges via GITHUB_TOKEN, the push event above is suppressed by
+  # GitHub (tokens can't trigger push listeners on the same repo). We catch the
+  # decompose PR close explicitly so the pipeline is always populated after a
+  # successful decomposition run, even without a PAT.
+  pull_request:
+    types: [closed]
+    branches: [main]
   schedule:
     - cron: "0 */6 * * *"
   workflow_dispatch:
@@ -42,6 +49,14 @@ concurrency:
 
 jobs:
   sync-and-run:
+    # For pull_request events only run when an orchestrator/decompose-* PR is merged.
+    # All other triggers (push, schedule, workflow_dispatch) always run.
+    if: >-
+      github.event_name != 'pull_request'
+      || (
+        github.event.pull_request.merged == true
+        && startsWith(github.event.pull_request.head.ref, 'orchestrator/decompose-')
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
