@@ -17,3 +17,6 @@
 {"ts":"2026-06-14T19:48:48.102Z","step":"orch-product-detail--gallery-and-variants","status":"not-started","note":"orphan reset (agent failed)","actor":"orchestrator"}
 {"ts":"2026-06-14T19:48:48.961Z","step":"orch-product-detail--gallery-and-variants","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-14T19:49:06.796Z","step":"orch-product-detail--gallery-and-variants","status":"not-started","note":"orphan reset (agent failed)","actor":"orchestrator"}
+{"ts":"2026-06-14T19:50:34.438Z","step":"orch-product-detail--gallery-and-variants","status":"in-review","note":"Implementation already on main: gallery, variants, size picker, OrderCTA, 22 tests green, typecheck clean","actor":"agent"}
+{"ts":"2026-06-14T19:50:39.036Z","step":"orch-product-detail--gallery-and-variants","status":"validated","note":"Re-test pass: 22/22 tests green, typecheck clean; all slice acceptance criteria met","actor":"agent"}
+{"ts":"2026-06-14T19:50:43.711Z","step":"orch-product-detail--gallery-and-variants","status":"complete","note":"ProductGallery, VariantSelector, SizePicker, OrderCTA on /produits/[slug]; 22 tests; typecheck; CMS gallery+description schema","actor":"agent"}
