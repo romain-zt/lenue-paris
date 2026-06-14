@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "attachAfterStepId": "bootstrap",
+  "attachAfterStepId": "setup",
   "flows": {
     "browse catalogue & discover products": {
       "slices": ["docs/product/scope-slices/product-catalog--category-grid.md"]
