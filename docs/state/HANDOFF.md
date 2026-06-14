@@ -23,33 +23,33 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Active work
 
-**Step:** `orch-product-catalog--v0-category-grid` — **complete**.
+**Step:** `orch-product-detail--v0-pdp-gallery-and-copy` — **complete**.
 
-- User story: `docs/product/user-stories/product-catalog--v0-category-grid--US-001--browse-and-filter-grid.md` (`ready-for-spec`)
-- Spec: `docs/product/specs/product-catalog--v0-category-grid--US-001--browse-and-filter-grid.spec.md` (`ready-for-implementation`)
-- Package: `@repo/catalog` — types, category mapping, `ProductCard`, catalogue fetch helper + unit tests
-- API: `GET /api/catalog` in `apps/web` — wires `fetchCatalogList` to Payload REST via `CMS_URL`
-- UI: `/[locale]/catalogue` — mobile-first grid, category filter chips, empty/error/loading states
-- Tests: contract + acceptance + UI component tests; all monorepo checks green
+- User story: `docs/product/user-stories/product-detail--v0-pdp-gallery-and-copy--US-001--view-gallery-and-copy.md` (`ready-for-spec`)
+- Spec: `docs/product/specs/product-detail--v0-pdp-gallery-and-copy--US-001--view-gallery-and-copy.spec.md` (`ready-for-implementation`)
+- Package: `@repo/product-detail` — types, gallery mapping, richText extraction, fetch helper + unit tests
+- API: `GET /api/products/[slug]` in `apps/web` — wires `fetchProductDetail` to Payload REST via `CMS_URL`
+- UI: `/[locale]/products/[slug]` — mobile-first gallery, localized copy, EUR price, order CTA
+- Tests: contract + UI component tests; all monorepo checks green
 
-## Layer progress (v0 Category Grid)
+## Layer progress (v0 PDP Gallery and Copy)
 
 | Layer | Status | Notes |
 |-------|--------|-------|
-| 1. data/schema | ✅ complete | CMS `products` collection already has category, price, localized name, images |
-| 2. contracts/types | ✅ complete | `packages/catalog` — `ProductCard`, `CatalogListQuery/Response`, filter↔CMS mapping |
-| 3. domain/business logic | ✅ complete | `fetchCatalogList`, `buildPayloadProductsWhere`, locale/query normalization |
-| 4. API/route handlers | ✅ complete | `apps/web/src/app/api/catalog/route.ts` + Payload REST adapter + contract tests |
-| 5. UI | ✅ complete | `/[locale]/catalogue` page + filter chips + grid + empty/error/loading states |
-| 6. tests + state finalization | ✅ complete | Dress-filter acceptance, UI component tests, step marked `complete` |
+| 1. data/schema | ✅ complete | CMS `products` collection already has name, description, price, images, available |
+| 2. contracts/types | ✅ complete | `packages/product-detail` — `ProductDetail`, `ProductGalleryImage`, query/response types |
+| 3. domain/business logic | ✅ complete | `fetchProductDetail`, gallery + richText mapping, unavailable → not found |
+| 4. API/route handlers | ✅ complete | `apps/web/src/app/api/products/[slug]/route.ts` + Payload slug adapter + contract tests |
+| 5. UI | ✅ complete | PDP page + gallery browsing + not-found/error/loading states |
+| 6. tests + state finalization | ✅ complete | Step marked `complete` |
 
 ## Known issues / decisions in effect
 
-- PD-001 and PD-006 files still absent from `docs/product-decisions/` (only PD-007, PD-008). User story + spec were authored under orchestrator mandate for this step.
-- Payload `(payload)` app route group not yet generated — run `npx create-payload-app@latest --no-deps` from `apps/cms` first time. Web API fetches via `CMS_URL/api/products` until local Payload routes exist.
+- PD-001 and PD-006 files still absent from `docs/product-decisions/` (only PD-007, PD-008). User story + spec authored under orchestrator mandate.
+- Order CTA links to `/[locale]/order/[slug]` — route owned by `whatsapp-checkout` slice (may 404 until that step lands).
+- Payload `(payload)` app route group not yet generated — run `npx create-payload-app@latest --no-deps` from `apps/cms` first time.
 - `.env` not created yet — copy `.env.example` and fill in real values.
-- Next.js `i18n` config in `next.config.mjs` is Pages Router legacy; App Router uses `[locale]` segment directly.
 
 ## Next recommended step
 
-Pick the next orchestrator step from `docs/state/orchestration.prd-flow-map.json` — likely `orch-product-detail--v0-pdp-gallery-and-copy` or another P0 slice per flow map priority.
+Pick the next orchestrator step from `docs/state/orchestration.prd-flow-map.json` — likely `orch-product-detail--v0-pdp-variant-pickers` or `orch-whatsapp-checkout--v0-checkout-and-wa-handoff`.
