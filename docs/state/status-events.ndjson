@@ -45,4 +45,8 @@
 {"ts":"2026-06-14T21:16:07.471Z","step":"orch-whatsapp-checkout--order-save-and-handoff","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-14T21:16:28.468Z","step":"orch-whatsapp-checkout--order-save-and-handoff","status":"not-started","note":"orphan reset (agent failed)","actor":"orchestrator"}
 {"ts":"2026-06-14T21:16:31.594Z","step":"orch-whatsapp-checkout--order-save-and-handoff","status":"in-progress","actor":"orchestrator"}
+{"ts":"2026-06-14T21:22:03.281Z","step":"orch-product-detail--gallery-and-variants","status":"in-review","note":"Re-verified: 22 tests green, typecheck clean on tracking branch; all slice criteria met","actor":"agent"}
+{"ts":"2026-06-14T21:22:07.355Z","step":"orch-product-detail--gallery-and-variants","status":"validated","note":"Re-test pass: 22 tests green, typecheck clean; all gallery+variants UI components verified","actor":"agent"}
+{"ts":"2026-06-14T21:22:11.813Z","step":"orch-product-detail--gallery-and-variants","status":"complete","note":"All slice criteria met: gallery+variants UI, CMS schema, types, loading/not-found states, 22 tests green, typecheck clean","actor":"agent"}
 {"ts":"2026-06-14T21:20:22.726Z","step":"orch-product-detail--gallery-and-variants","status":"in-progress","actor":"orchestrator"}
+{"ts":"2026-06-14T22:11:19.907Z","step":"orch-product-detail--gallery-and-variants","status":"complete","note":"Re-verified: 22 tests green, typecheck clean; all gallery+variants criteria met","actor":"agent"}
