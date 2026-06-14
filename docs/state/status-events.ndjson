@@ -44,3 +44,4 @@
 {"ts":"2026-06-14T21:09:54.977Z","step":"orch-product-detail--gallery-and-variants","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-14T21:16:07.471Z","step":"orch-whatsapp-checkout--order-save-and-handoff","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-14T21:16:28.468Z","step":"orch-whatsapp-checkout--order-save-and-handoff","status":"not-started","note":"orphan reset (agent failed)","actor":"orchestrator"}
+{"ts":"2026-06-14T21:16:31.594Z","step":"orch-whatsapp-checkout--order-save-and-handoff","status":"in-progress","actor":"orchestrator"}
