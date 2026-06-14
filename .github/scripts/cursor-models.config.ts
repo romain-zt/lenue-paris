@@ -3,11 +3,15 @@
  *
  * Single source of truth. Aligned with .cursor/rules/20-model-routing.mdc:
  *
- *   Vision   → claude-opus-4-8-thinking-high   (strategy, irreversible/high-stakes decisions)
- *   Manager  → claude-4.6-sonnet-medium-thinking  (routing, planning, routine review — most CI agents)
- *   Executor → composer-2.5-fast                (smallest concrete brick; sub-delegated from a Manager)
+ *   Vision   → claude-opus-4-8-thinking-high  (strategy, irreversible/high-stakes decisions)
+ *   Manager  → "auto"                          (Cursor picks; Cloud API slug for Sonnet-tier models
+ *                                               is not publicly documented — use Cursor.models.list()
+ *                                               to discover the exact id for your account)
+ *   Executor → composer-2.5                    (smallest concrete brick; sub-delegated from a Manager)
  *
  * These are Cursor Cloud Agent API slugs (not IDE agent frontmatter short names).
+ * NOTE: Cloud API slugs differ from Cursor IDE Task tool slugs. Confirmed valid Cloud API
+ * slugs: "auto", "composer-2.5", "claude-opus-4-8-thinking-high".
  *
  * Why a constants file (not env vars / Actions Variables):
  *   - Grep-able and type-checked at build time.
@@ -22,7 +26,7 @@ export const CURSOR_MODELS = {
    * pr-automation.ts — reviews PR against .cursor/rules and squash-merges.
    * PRs in this repo are kept under ~20 files, so Manager is sufficient.
    */
-  prReview: "claude-4.6-sonnet-medium-thinking",
+  prReview: "auto",
 
   /**
    * conflict-resolver.ts — file-level merge judgment.
@@ -33,7 +37,7 @@ export const CURSOR_MODELS = {
    *     subtle, hard-to-reverse ways, so the resolver escalates to Vision.
    */
   conflictResolver: {
-    default: "claude-4.6-sonnet-medium-thinking",
+    default: "auto",
     sensitive: "claude-opus-4-8-thinking-high",
   },
 
@@ -43,7 +47,7 @@ export const CURSOR_MODELS = {
    * subagents via .cursor/rules/20-model-routing.mdc. The worker IS the
    * per-step router, so it runs at Manager tier.
    */
-  orchestratorWorker: "claude-4.6-sonnet-medium-thinking",
+  orchestratorWorker: "auto",
 
   /**
    * prd-decomposer.ts — drives the full PRD → Feature Area → Scope Slice
@@ -63,7 +67,7 @@ export const CURSOR_MODELS = {
    *     a wrong fix there is hard to reverse, so it escalates to Vision.
    */
   ciAutofix: {
-    default: "claude-4.6-sonnet-medium-thinking",
+    default: "auto",
     sensitive: "claude-opus-4-8-thinking-high",
   },
 } as const;
