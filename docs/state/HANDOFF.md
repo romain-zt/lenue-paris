@@ -21,18 +21,18 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 - CMS collections: `users`, `media`, `products`, `orders`.
 - Checkout: web form → WhatsApp deep-link (pre-filled message) + POST to `/api/orders` (Payload).
 
-## Active work
+## Completed steps (this session)
 
 **Step:** `orch-cms-products--v0-product-crud` — **complete**.
 
 ### What was implemented (layer 1 — data/schema)
 
-- User story authored: `docs/product/user-stories/cms-products--v0-product-crud--US-001--create-edit-archive-product.md`
-- Spec authored: `docs/product/specs/cms-products--v0-product-crud--US-001--create-edit-archive-product.spec.md`
-- `apps/cms/src/collections/Products.ts` — added `minRows: 1` to the `images` array field (enforces at least one gallery image, per AC-4).
-- `apps/cms/src/collections/Products.test.ts` — added test `"requires at least one gallery image"`.
+- User story authored: `docs/product/user-stories/cms-products--v0-product-crud--US-001--create-edit-archive-product.md` (also tracked as `…--US-001--manage-product-catalogue.md`, `ready-for-spec`)
+- Spec authored: `docs/product/specs/cms-products--v0-product-crud--US-001--create-edit-archive-product.spec.md` (also tracked as `…--US-001--manage-product-catalogue.spec.md`, `ready-for-implementation`)
+- `apps/cms/src/collections/Products.ts` — added `minRows: 1` to the `images` array field (enforces at least one gallery image before saving a product, per AC-4).
+- `apps/cms/src/collections/Products.test.ts` — added test `"requires at least one gallery image"` (`minRows: 1` coverage).
 - All existing schema (localized name/description, EUR price, category, `available` archive flag) was already in place.
-- `pnpm --filter cms test` → 13/13 pass. `pnpm --filter cms typecheck` → clean.
+- `pnpm --filter cms test` → 13/13 pass. `pnpm --filter cms typecheck` → clean (all packages).
 
 ### Layer progress (v0 Product CRUD)
 
@@ -51,11 +51,13 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Known issues / decisions in effect
 
-- PD-001 and PD-006 files still absent from `docs/product-decisions/` (only PD-007, PD-008). User story + spec authored under orchestrator mandate.
+- PD-001 and PD-006 files still absent from `docs/product-decisions/` (only PD-007, PD-008). User stories + specs authored under orchestrator mandate.
 - Order CTA for dresses appends `?length=&size=` query params; checkout reads them on the order page.
 - Payload `(payload)` app route group not yet generated — run `npx create-payload-app@latest --no-deps` from `apps/cms` first time.
 - `.env` not created yet — copy `.env.example` and fill in real values.
 
-## Next recommended step
+## Next recommended steps
 
-Next eligible orchestration step: `orch-cms-products--v0-product-variants-and-pairings` (dress length variants and related-product pairings in the CMS admin — data model only, no buyer-facing UI in v0).
+1. `orch-cms-products--v0-product-variants-and-pairings` — dress length variants + related-product pairings in the CMS admin (data model only, no buyer-facing UI in v0)
+2. `orch-whatsapp-checkout--v0-admin-order-list` — order management in Payload admin
+3. `orch-editorial--v0-about-page` — editorial about page

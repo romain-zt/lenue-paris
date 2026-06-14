@@ -9,6 +9,18 @@ describe("Products collection", () => {
   const field = (name: string) =>
     Products.fields.find((f) => "name" in f && f.name === name);
 
+  it("requires at least one image (minRows: 1)", () => {
+    const images = field("images") as {
+      type?: string;
+      minRows?: number;
+      fields?: Array<{ name: string; required?: boolean }>;
+    };
+
+    expect(images?.type).toBe("array");
+    expect(images?.minRows).toBe(1);
+    expect(images?.fields?.find((f) => f.name === "image")?.required).toBe(true);
+  });
+
   it("localizes user-facing content but not the slug", () => {
     expect((field("name") as { localized?: boolean }).localized).toBe(true);
     expect((field("slug") as { localized?: boolean }).localized).toBeUndefined();
