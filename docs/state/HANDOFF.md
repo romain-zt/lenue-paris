@@ -25,11 +25,29 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 **Step:** `orch-cms-products--v0-product-crud` — **complete**.
 
-- User story: `docs/product/user-stories/cms-products--v0-product-crud--US-001--manage-product-catalogue.md` (`ready-for-spec`)
-- Spec: `docs/product/specs/cms-products--v0-product-crud--US-001--manage-product-catalogue.spec.md` (`ready-for-implementation`)
-- Implementation: Added `minRows: 1` to the `images` array in `apps/cms/src/collections/Products.ts` — enforces at least one image before saving a product
-- Tests: Added `Products.test.ts` coverage for `minRows: 1` (all 13 CMS tests pass)
-- Typecheck: ✅ all packages clean
+### What was implemented (layer 1 — data/schema)
+
+- User story authored: `docs/product/user-stories/cms-products--v0-product-crud--US-001--create-edit-archive-product.md` (also tracked as `…--US-001--manage-product-catalogue.md`, `ready-for-spec`)
+- Spec authored: `docs/product/specs/cms-products--v0-product-crud--US-001--create-edit-archive-product.spec.md` (also tracked as `…--US-001--manage-product-catalogue.spec.md`, `ready-for-implementation`)
+- `apps/cms/src/collections/Products.ts` — added `minRows: 1` to the `images` array field (enforces at least one gallery image before saving a product, per AC-4).
+- `apps/cms/src/collections/Products.test.ts` — added test `"requires at least one gallery image"` (`minRows: 1` coverage).
+- All existing schema (localized name/description, EUR price, category, `available` archive flag) was already in place.
+- `pnpm --filter cms test` → 13/13 pass. `pnpm --filter cms typecheck` → clean (all packages).
+
+### Layer progress (v0 Product CRUD)
+
+| Layer | Status | Notes |
+|-------|--------|-------|
+| 1. data/schema | ✅ complete | `Products.ts` — all fields, `minRows: 1` on images, `available` for archive |
+| 2. contracts/types | ✅ n/a | No custom API route; Payload auto-generates REST + types |
+| 3. domain/business logic | ✅ n/a | Validation handled by Payload field constraints |
+| 4. API/route handlers | ✅ n/a | Payload admin REST auto-generated |
+| 5. UI | ✅ n/a | Payload admin panel auto-generated from collection config |
+| 6. tests + state finalization | ✅ complete | Unit tests pass; status.json → complete |
+
+## Previous completed steps
+
+- `orch-whatsapp-checkout--v0-checkout-and-wa-handoff` — complete (layers 1–6 shipped, PR #24).
 
 ## Known issues / decisions in effect
 
@@ -40,6 +58,6 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Next recommended steps
 
-1. `orch-cms-products--v0-product-variants-and-pairings` — dress length variants + related-product links in admin
+1. `orch-cms-products--v0-product-variants-and-pairings` — dress length variants + related-product pairings in the CMS admin (data model only, no buyer-facing UI in v0)
 2. `orch-whatsapp-checkout--v0-admin-order-list` — order management in Payload admin
 3. `orch-editorial--v0-about-page` — editorial about page
