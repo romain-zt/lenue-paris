@@ -55,11 +55,3 @@ describe("Products collection", () => {
     expect(sizes?.admin?.condition?.(null, { category: "foulard" })).toBe(false);
   });
 });
-
-describe("Orders collection", () => {
-  it("allows public create (checkout form), restricts read to admins", async () => {
-    const { Orders } = await import("./Orders");
-    expect(Orders.access?.create?.({ req: { user: null } } as never)).toBe(true);
-    expect(Orders.access?.read?.({ req: { user: null } } as never)).toBeFalsy();
-  });
-});

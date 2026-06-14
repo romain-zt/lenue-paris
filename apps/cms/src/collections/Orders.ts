@@ -12,7 +12,15 @@ export const Orders: CollectionConfig = {
   },
   admin: {
     useAsTitle: "customerName",
-    defaultColumns: ["customerName", "product", "size", "status", "createdAt"],
+    defaultColumns: [
+      "customerName",
+      "product",
+      "length",
+      "size",
+      "priceEur",
+      "status",
+      "createdAt",
+    ],
   },
   fields: [
     {
@@ -36,8 +44,31 @@ export const Orders: CollectionConfig = {
       required: true,
     },
     {
+      name: "length",
+      type: "select",
+      options: [
+        { label: "Longer", value: "longer" },
+        { label: "Shorter", value: "shorter" },
+      ],
+    },
+    {
       name: "size",
       type: "text",
+    },
+    {
+      name: "priceEur",
+      type: "number",
+      required: true,
+      min: 0,
+    },
+    {
+      name: "locale",
+      type: "select",
+      options: [
+        { label: "Français", value: "fr" },
+        { label: "English", value: "en" },
+        { label: "Русский", value: "ru" },
+      ],
     },
     {
       name: "message",
