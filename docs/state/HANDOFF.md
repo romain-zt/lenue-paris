@@ -19,6 +19,15 @@ and the v0 boundary.
 
 ## Active work
 
+**`orch-product-catalog--category-grid` — COMPLETE (2026-06-14)**
+
+Tracking PR #47 (`orchestrator/tracking-orch-product-catalog--category-grid-1781463077496`).
+
+Implemented in main via prior merged commits:
+- **UI**: `/catalogue` page (RSC) with `CatalogueClient`, `CategoryFilter` (Robes/Sacs/Foulards), `ProductGrid`, `ProductCard`, `ProductCardSkeleton`.
+- **Tests**: 22 unit tests (Vitest + Testing Library), all green. Typecheck clean.
+- **UX states**: populated grid, empty state, loading skeletons, error state, filtered view.
+
 **`orch-product-detail--gallery-and-variants` — COMPLETE (2026-06-14)**
 
 Implemented in PR #44 (`orchestrator/tracking-orch-product-detail--gallery-and-variants-1781461775624`):
