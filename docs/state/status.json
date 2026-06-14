@@ -12,7 +12,8 @@
       "orch-i18n--localized-storefront": "todo"
     },
     "remediation_counts": {
-      "orch-product-catalog--category-grid": 3
+      "orch-product-catalog--category-grid": 3,
+      "orch-product-detail--gallery-and-variants": 1
     }
   }
 }
