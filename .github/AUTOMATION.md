@@ -34,6 +34,8 @@ with scheduled "re-catch" jobs so **nothing stays stuck for more than ~1h**.
 | `REQUIRED_CHECKS` | `quality` | Comma-separated checks that gate merges. Add `playwright` once you have E2E |
 | `ORCHESTRATOR_TRACKING_BASE` | `main` | Integration branch for tracking PRs (e.g. `feature/my-epic`) |
 | `MAX_REMEDIATION_RUNS` | `5` | Circuit breaker — auto-block a step after this many stalled retries |
+| `MAX_CI_AUTOFIX_ATTEMPTS` | `3` | Budget for `ci-failure-autofix` — stop and post `NEED_HUMAN` after this many `[ci-autofix]` commits on a PR |
+| `CI_AUTOFIX_SKIP_BRANCH_PREFIXES` | `orchestrator/` | Branch prefixes the CI autofixer leaves alone (they run their own remediation) |
 
 > **Model selection is not an env var.** Each CI script picks its model from
 > `.github/scripts/cursor-models.config.ts` (see §1e). Change models there, not in
@@ -53,6 +55,8 @@ The mapping lives in [`.github/scripts/cursor-models.config.ts`](scripts/cursor-
 | `pr-automation.ts` | Manager | `claude-4.6-sonnet` | Routine PR review against governance; PRs stay < ~20 files |
 | `conflict-resolver.ts` (default) | Manager | `claude-4.6-sonnet` | File-level merge judgment on most PRs |
 | `conflict-resolver.ts` (sensitive) | Vision | `claude-opus-4-8` | Auto-escalates when ANY conflicted file touches `.cursor/**`, `docs/state/**`, `docs/product/**`, or `docs/product-decisions/**` |
+| `ci-failure-autofix.ts` (default) | Manager | `claude-4.6-sonnet` | Diagnoses a failed CI/E2E run and pushes the smallest fix to the PR branch |
+| `ci-failure-autofix.ts` (sensitive) | Vision | `claude-opus-4-8` | Auto-escalates when the PR diff touches `.cursor/**`, `docs/state/**`, `docs/product/**`, or `docs/product-decisions/**` |
 | `phase-orchestrator.ts` worker | Manager | `claude-4.6-sonnet` | The worker IS the per-step router — picks the smallest coherent layer, decides blocked vs proceed, then sub-delegates the actual typing to Executor subagents (`composer-2.5-fast`) via `Task` |
 | `prd-decomposer.ts` | Vision | `claude-opus-4-8` | Drives the full PRD → Feature Area → Scope Slice chain autonomously and commits durable product-scope decisions that feed implementation — irreversible/strategic, so Vision |
 
@@ -72,6 +76,7 @@ Inside the run, the cloud agent itself respects `20-model-routing.mdc` and route
 | `pr-cascade.yml` | merge to main/`feature/*` | Rebases + merges stacked draft PRs |
 | `auto-rebase.yml` | PR → ready | Regenerates a stale `pnpm-lock.yaml` |
 | `conflict-resolver.yml` | push to main, **cron */30m**, manual | Cursor agent resolves conflicts on conflicting PRs |
+| `ci-failure-autofix.yml` | **CI / E2E run fails on a PR** | Cursor agent reads the failing logs and pushes the smallest fix to the PR branch. Budget-capped; skips `orchestrator/*` |
 | `prd-decomposition.yml` | push to `docs/prd/PRD.md` / feature-areas, **cron 6h**, manual | **Autonomous decomposition** (opt-in): a Vision agent runs the `.cursor/` map→slice chain and wires the flow map, opening a PR that `pr-automation` merges. Gated by `docs/project.config.md` → *Autonomous decomposition enabled* + PD-008 |
 | `orchestration-automation.yml` | push to PRD/slice files, **cron 6h**, manual | Refills the pipeline from the PRD Flow Inventory + planner queue |
 | `orchestration-planner.yml` | manual | Appends `planner-queue.json` steps into the pipeline |
@@ -138,6 +143,7 @@ Every long step is bounded and every path has a scheduled re-catch:
 - **Bounded waits** — `wait-for-required-pr-checks.sh` caps at `MAX_WAIT_SEC` (30 min) then fails loudly.
 - **Orchestrator cron */30m** — recovers missed merge webhooks; reruns coordinator.
 - **Conflict-resolver cron */30m** — catches conflicts the push trigger missed.
+- **CI autofix on failure** — a failed CI/E2E run on a PR fires a Cursor agent that pushes the smallest fix, capped at `MAX_CI_AUTOFIX_ATTEMPTS` before it escalates to `NEED_HUMAN`.
 - **Cleanup cron hourly** (`orchestrator-cleanup.yml`) — the catch-all:
   1. closes duplicate tracking PRs,
   2. merges "ready" tracking PRs that missed `pr-ready.yml`,
@@ -168,14 +174,40 @@ Net effect: any single failure is re-attempted or surfaced as `NEED_HUMAN` withi
 | `GH_TOKEN lacks merge permission` | Enable Actions write + PR approve (§1b) |
 | Agent posts a blocker comment | Read it — it states exactly what a human must resolve |
 | Workflow never triggers | The workflow file must be on the default branch (or in a PR to it) |
+| `ci-failure-autofix` never runs | `workflow_run` only fires from the default-branch copy — merge it to `main` first. It also only acts on PR-event failures, not `main`-push failures |
+| CI autofix stopped trying | Budget hit (`MAX_CI_AUTOFIX_ATTEMPTS`) — read the `NEED_HUMAN:` PR comment, fix manually or raise the limit |
 | Orchestrator exits "missing pipeline" | Ensure `docs/state/orchestration.pipeline.json` is committed (it's git-tracked via a `.gitignore` exception) |
 | First PR's `quality` is green but did nothing | Expected on a governance-only repo with no root monorepo yet |
 
 ---
 
-## 7. Not enabled yet: Vercel build-log watch
+## 7. CI failure auto-fix
 
-Vercel monitoring is intentionally **off** in this template. To add it later: enable
-Vercel's Git integration, add `VERCEL_TOKEN` / `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID`
-secrets, and add a workflow on `deployment_status` (failure) that fires a Cursor agent
-to read the build log and push a fix to the PR branch — mirroring `conflict-resolver.ts`.
+`ci-failure-autofix.yml` watches the **CI** and **E2E** workflows. When either
+finishes with `failure` on a pull request, `ci-failure-autofix.ts`:
+
+1. resolves the open PR for the failing branch (skips `orchestrator/*` and other
+   `CI_AUTOFIX_SKIP_BRANCH_PREFIXES`),
+2. checks the budget — counts existing `[ci-autofix]` commits on the PR; at
+   `MAX_CI_AUTOFIX_ATTEMPTS` (default 3) it posts a `NEED_HUMAN:` comment and stops,
+3. pulls the failing logs (`gh run view --log-failed`, tail-truncated),
+4. fires a Cursor agent (Manager tier, Vision if the diff touches sensitive paths)
+   that checks out the branch, applies the smallest fix, and pushes a commit
+   carrying the `[ci-autofix]` marker — which re-runs CI.
+
+**Loop safety:** the `[ci-autofix]` marker is the counter, so each retry is
+bounded; `ORCHESTRATOR_ENABLED=false` pauses it like the rest of the pipeline.
+The agent is told never to disable/weaken a check or test just to go green — if it
+can't fix the root cause confidently it escalates to `NEED_HUMAN` instead.
+
+> **Heads up:** `workflow_run` triggers only fire from the copy of the workflow on
+> the **default branch**, so this starts working once merged to `main`.
+
+## 8. Not enabled yet: Vercel build-log watch
+
+Vercel deploys run through Vercel's own Git integration (not a workflow here), so a
+failed Vercel build surfaces as a failed **check** rather than a failed Actions run —
+`ci-failure-autofix` won't see it. To auto-fix Vercel build failures too: add
+`VERCEL_TOKEN` / `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` secrets and a workflow on
+`deployment_status` (failure) that reads the build log and reuses
+`ci-failure-autofix.ts`'s prompt to push a fix to the PR branch.
