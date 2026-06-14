@@ -23,19 +23,20 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Active work
 
-**Step:** `orch-product-detail--v0-pdp-variant-pickers` — **in progress** (layer 1 complete).
+**Step:** `orch-product-detail--v0-pdp-variant-pickers` — **in progress** (layer 2 complete).
 
 - User story: `docs/product/user-stories/product-detail--v0-pdp-variant-pickers--US-001--select-dress-variants.md` (`ready-for-spec`)
 - Spec: `docs/product/specs/product-detail--v0-pdp-variant-pickers--US-001--select-dress-variants.spec.md` (`ready-for-implementation`)
-- Layer 1 (data/schema): CMS `products` — `lengthVariants` (longer/shorter) + `sizes` (XS–XL select, dress-only admin conditions)
+- Layer 1 (data/schema): CMS `products` — `lengthVariants` + `sizes` select fields (dress-only)
+- Layer 2 (contracts/types): `@repo/product-detail` — `ProductLengthVariant`, `ProductSizeCode`, `ProductVariantPickers`, extended `ProductDetail` + `PayloadProductDetailDoc`; `toProductDetail` stubs `variantPickers: null` until layer 3
 
 ## Layer progress (v0 PDP Variant Pickers)
 
 | Layer | Status | Notes |
 |-------|--------|-------|
 | 1. data/schema | ✅ complete | CMS `products.lengthVariants` + `sizes` select fields; schema unit tests |
-| 2. contracts/types | ⏳ next | Extend `@repo/product-detail` with `ProductVariantPickers`, length/size types |
-| 3. domain/business logic | pending | `resolveVariantPickers`, `buildOrderHrefWithVariants`, selection validation |
+| 2. contracts/types | ✅ complete | `variants.ts` types + exports; `ProductDetail.variantPickers`; Payload doc fields |
+| 3. domain/business logic | ⏳ next | `resolveVariantPickers`, `buildOrderHrefWithVariants`, `isVariantSelectionComplete` |
 | 4. API/route handlers | pending | Extend `GET /api/products/[slug]` response |
 | 5. UI | pending | Dress pickers + disabled CTA states on PDP |
 | 6. tests + state finalization | pending | Contract + UI tests; mark step `complete` |
@@ -49,4 +50,4 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Next recommended step
 
-Continue `orch-product-detail--v0-pdp-variant-pickers` at **layer 2 (contracts/types)** — extend `@repo/product-detail` types and Payload doc shape per spec.
+Continue `orch-product-detail--v0-pdp-variant-pickers` at **layer 3 (domain/business logic)** — implement variant resolution and order href builders in `@repo/product-detail`, wire into `toProductDetail`.

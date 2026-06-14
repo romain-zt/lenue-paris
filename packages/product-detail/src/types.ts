@@ -1,4 +1,5 @@
 import type { ProductCategoryCms, SupportedLocale } from "@repo/catalog";
+import type { ProductVariantPickers } from "./variants";
 
 export type ProductCurrency = "EUR";
 
@@ -17,6 +18,8 @@ export interface ProductDetail {
   currency: ProductCurrency;
   category: ProductCategoryCms;
   gallery: ProductGalleryImage[];
+  /** Dress length + size pickers; null for bags and scarfs. */
+  variantPickers: ProductVariantPickers | null;
   orderHref: string;
   catalogueHref: string;
 }

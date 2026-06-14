@@ -61,6 +61,7 @@ export function toProductDetail(
     currency: "EUR",
     category: doc.category,
     gallery: resolveGalleryImages(doc),
+    variantPickers: null,
     orderHref: buildOrderHref(locale, doc.slug),
     catalogueHref: buildCatalogueHref(locale),
   };
