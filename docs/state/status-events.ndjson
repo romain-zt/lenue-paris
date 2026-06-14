@@ -22,3 +22,4 @@
 {"ts":"2026-06-14T19:50:39.036Z","step":"orch-product-detail--gallery-and-variants","status":"validated","note":"Re-test pass: 22/22 tests green, typecheck clean; all slice acceptance criteria met","actor":"agent"}
 {"ts":"2026-06-14T19:50:43.711Z","step":"orch-product-detail--gallery-and-variants","status":"complete","note":"ProductGallery, VariantSelector, SizePicker, OrderCTA on /produits/[slug]; 22 tests; typecheck; CMS gallery+description schema","actor":"agent"}
 {"ts":"2026-06-14T19:49:09.862Z","step":"orch-product-detail--gallery-and-variants","status":"in-progress","actor":"orchestrator"}
+{"ts":"2026-06-14T19:58:57.695Z","step":"orch-product-detail--gallery-and-variants","status":"complete","note":"ProductGallery, VariantSelector, SizePicker, OrderCTA on /produits/[slug]; 22/22 tests green; typecheck clean; CMS gallery+description schema","actor":"agent"}
