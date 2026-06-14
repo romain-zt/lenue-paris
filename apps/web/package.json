@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@repo/catalog": "workspace:*",
+    "@repo/checkout": "workspace:*",
     "@repo/product-detail": "workspace:*",
     "next": "^15.0.0",
     "react": "^19.0.0",
