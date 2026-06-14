@@ -3,9 +3,5 @@
   "version": 2,
   "buildCommand": "turbo run build",
   "installCommand": "pnpm install",
-  "framework": null,
-  "env": {
-    "TURBO_TOKEN": "@turbo-token",
-    "TURBO_TEAM": "@turbo-team"
-  }
+  "framework": null
 }
