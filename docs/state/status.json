@@ -2,7 +2,7 @@
   "orchestration": {
     "steps": {
       "bootstrap": "complete",
-      "setup": "in-progress"
+      "setup": "not-started"
     },
     "remediation_counts": {}
   }
