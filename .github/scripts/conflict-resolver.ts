@@ -13,7 +13,7 @@
 
 import { Agent, CursorAgentError } from "@cursor/sdk";
 import { buildCursorCloudOptions } from "./cursor-sdk-options";
-import { pickConflictResolverModel } from "./cursor-models.config";
+import { formatPickedModel, pickConflictResolverModel } from "./cursor-models.config";
 import { execSync } from "node:child_process";
 
 // ---------------------------------------------------------------------------
@@ -195,22 +195,23 @@ for (const pr of conflicted) {
   console.log(`\n━━━ Resolving PR #${pr.number}: ${pr.title} ━━━`);
 
   const changedFiles = listPrChangedFiles(pr.number);
-  const { modelId, tier, matchedPaths } = pickConflictResolverModel(changedFiles);
+  const picked = pickConflictResolverModel(changedFiles);
 
-  if (tier === "sensitive") {
+  if (picked.sensitivity === "sensitive") {
+    const matched = picked.matchedPaths ?? [];
     console.log(
-      `🛡  Escalating to Vision tier (${modelId}) — sensitive paths touched: ${matchedPaths
+      `🛡  Escalating to ${formatPickedModel(picked)} — sensitive paths touched: ${matched
         .slice(0, 5)
-        .join(", ")}${matchedPaths.length > 5 ? `, +${matchedPaths.length - 5} more` : ""}`,
+        .join(", ")}${matched.length > 5 ? `, +${matched.length - 5} more` : ""}`,
     );
   } else {
-    console.log(`🔧 Manager tier (${modelId}) — no sensitive paths in this PR.`);
+    console.log(`🔧 ${formatPickedModel(picked)} — no sensitive paths in this PR.`);
   }
 
   const prompt = buildPrompt(pr);
 
   try {
-    const result = await Agent.prompt(prompt, buildCursorCloudOptions(apiKey!, repo!, modelId));
+    const result = await Agent.prompt(prompt, buildCursorCloudOptions(apiKey!, repo!, picked.modelSelection));
 
     if (result.status === "error") {
       console.error(`❌ Agent failed for PR #${pr.number}.`);

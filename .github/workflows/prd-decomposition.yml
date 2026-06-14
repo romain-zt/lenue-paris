@@ -58,8 +58,12 @@ jobs:
       - name: Run PRD decomposer
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
-          # Model is fixed in .github/scripts/cursor-models.config.ts (Vision tier:
-          # autonomous product-scope commitments that feed implementation).
+          # Model tier is Vision (.github/scripts/cursor-models.config.ts) — autonomous
+          # product-scope commitments that feed implementation. Override per-tier ids via
+          # repo variables when bumping model versions.
+          CURSOR_MODEL_VISION_ID: ${{ vars.CURSOR_MODEL_VISION_ID }}
+          CURSOR_MODEL_MANAGER_ID: ${{ vars.CURSOR_MODEL_MANAGER_ID }}
+          CURSOR_MODEL_EXECUTOR_ID: ${{ vars.CURSOR_MODEL_EXECUTOR_ID }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           ORCHESTRATOR_ENABLED: ${{ vars.ORCHESTRATOR_ENABLED || 'true' }}

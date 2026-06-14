@@ -30,8 +30,12 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
-      # Model is selected per-PR in .github/scripts/cursor-models.config.ts
-      # (Manager by default, Vision when sensitive paths are touched).
+      # Model tier is selected per-PR in .github/scripts/cursor-models.config.ts
+      # (Manager by default, Vision when sensitive paths are touched). Override
+      # per-tier ids via repo variables when bumping model versions.
+      CURSOR_MODEL_VISION_ID: ${{ vars.CURSOR_MODEL_VISION_ID }}
+      CURSOR_MODEL_MANAGER_ID: ${{ vars.CURSOR_MODEL_MANAGER_ID }}
+      CURSOR_MODEL_EXECUTOR_ID: ${{ vars.CURSOR_MODEL_EXECUTOR_ID }}
       REPO: ${{ github.repository }}
       BASE_BRANCH: ${{ vars.ORCHESTRATOR_TRACKING_BASE || 'main' }}
     steps:

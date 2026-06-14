@@ -48,8 +48,12 @@ jobs:
       - name: Run CI failure autofix
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
-          # Model is selected in .github/scripts/cursor-models.config.ts
+          # Model tier is selected in .github/scripts/cursor-models.config.ts
           # (Manager by default, Vision when the PR touches sensitive paths).
+          # Override per-tier ids via repo variables when bumping model versions.
+          CURSOR_MODEL_VISION_ID: ${{ vars.CURSOR_MODEL_VISION_ID }}
+          CURSOR_MODEL_MANAGER_ID: ${{ vars.CURSOR_MODEL_MANAGER_ID }}
+          CURSOR_MODEL_EXECUTOR_ID: ${{ vars.CURSOR_MODEL_EXECUTOR_ID }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.event.workflow_run.id }}
