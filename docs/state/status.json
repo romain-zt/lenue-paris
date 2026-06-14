@@ -2,7 +2,8 @@
   "orchestration": {
     "steps": {
       "bootstrap": "complete",
-      "setup": "in-progress"
+      "setup": "complete",
+      "orch-product-catalog--category-grid": "in-progress"
     },
     "remediation_counts": {}
   }
