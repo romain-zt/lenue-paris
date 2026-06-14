@@ -56,6 +56,9 @@ Start anything you're unsure about with **`/intake`** — it routes you to the r
 | `20-model-routing.mdc` | model tier per action |
 | `30-test-strategy.mdc` | test-first; contract/integration/unit over e2e |
 | `40-architecture-baseline.mdc` | monorepo · Payload (i18n+S3) · Postgres · MinIO |
+| `50-code-quality.mdc` | thin boundaries · extract core logic · single-item handlers · tooling-first |
+| `51-backend-code.mdc` | server layering (boundary→domain→data) · validate at edge · typed errors |
+| `52-frontend-code.mdc` | thin components · logic in hooks · design tokens · mobile-first a11y |
 | `implementation-workflow.mdc` | spec → test → implementation gates |
 | `execution-loop.mdc` | autonomous queue orchestration |
 | `intake-flow.mdc` | the front-door router |

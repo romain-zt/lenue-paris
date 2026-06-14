@@ -1,0 +1,63 @@
+---
+description: Frontend code quality for Next.js + React + Tailwind — small composable components, logic in hooks not JSX, server/client boundary discipline, design tokens over magic values, mobile-first & accessible. Applies to React/TSX and styling.
+globs:
+  - "**/*.tsx"
+  - "**/*.jsx"
+  - "**/*.css"
+  - "**/tailwind.config.{js,ts}"
+alwaysApply: false
+---
+
+# Frontend / React Code
+
+Read with `50-code-quality.mdc` and the `design` skill (`.cursor/core/skills/domains/design/SKILL.md`).
+
+## Components stay thin; logic lives in hooks
+
+A component renders. Non-trivial logic (data fetching, derived state, side effects, event orchestration) goes into a **custom hook** or a plain function, not inline in JSX.
+
+```tsx
+// ❌ BAD — fetching, filtering, formatting all inline in the component
+function Orders() {
+  const [data, setData] = useState([]);
+  useEffect(() => { fetch("/api/orders").then(r => r.json()).then(setData); }, []);
+  const visible = data.filter(o => o.status === "open").map(o => ({ ...o, total: o.items.reduce(...) }));
+  return <ul>{visible.map(o => <li key={o.id}>{o.total}</li>)}</ul>;
+}
+
+// ✅ GOOD — logic in a hook, component just renders
+function Orders() {
+  const { orders, isLoading, error } = useOpenOrders();
+  if (isLoading) return <OrdersSkeleton />;
+  if (error) return <OrdersError error={error} />;
+  return <OrderList orders={orders} />;
+}
+```
+
+## Server vs client boundary
+
+- Default to **Server Components**; add `"use client"` only where interactivity/browser APIs are needed, as low in the tree as possible.
+- Never embed secrets or server-only logic in client components. Fetch on the server; pass typed props down.
+
+## Lists call a single-item component
+
+Rendering a collection maps to one item component — `items.map(i => <Item key={i.id} item={i} />)` — not flat per-item markup + logic inside the loop (mirrors the single-handler rule in `50-code-quality.mdc`).
+
+## Styling — tokens, mobile-first, accessible
+
+- Use **design tokens** (Tailwind theme scale: spacing, color, type) — no magic px/hex. Extend the theme rather than sprinkling arbitrary values (`p-[13px]`, `text-[#3a3a3a]`).
+- **Mobile-first:** base styles target 320–375px, scale up with `sm: md: lg:`. Touch targets ≥ 44×44px.
+- Accessible by default: semantic HTML, labels on inputs, alt text, visible focus, WCAG AA contrast, keyboard operable.
+- **i18n:** never hardcode UI strings — externalize; expect text expansion and RTL.
+
+## Reusability
+
+- Reuse existing components before creating new ones; extract shared UI into one place.
+- Keep props typed and minimal; lift shared state deliberately, don't prop-drill deep chains.
+
+## Anti-patterns
+
+- Fat components with fetching/business logic inline in JSX.
+- `"use client"` at the top of the tree by default; secrets in client code.
+- Arbitrary Tailwind values instead of theme tokens; desktop-first then "make it responsive."
+- Hardcoded strings; missing loading/error/empty states; sub-44px touch targets.
