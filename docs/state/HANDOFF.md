@@ -23,20 +23,21 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Active work
 
-**Step:** `orch-whatsapp-checkout--v0-checkout-and-wa-handoff` — **in progress** (layer 1 complete).
+**Step:** `orch-whatsapp-checkout--v0-checkout-and-wa-handoff` — **in progress** (layer 2 complete).
 
 - User story: `docs/product/user-stories/whatsapp-checkout--v0-checkout-and-wa-handoff--US-001--submit-order-and-handoff.md` (`ready-for-spec`)
 - Spec: `docs/product/specs/whatsapp-checkout--v0-checkout-and-wa-handoff--US-001--submit-order-and-handoff.spec.md` (`ready-for-implementation`)
 - Layer 1 shipped: CMS `orders` schema extended with `length`, `priceEur`, `locale` + unit tests
-- Tracking PR #20 — **not ready** (layers 2–6 remain)
+- Layer 2 shipped: `@repo/checkout` — `CreateOrderInput`/response types, `OrderSavePayload`, WhatsApp message contracts + contract tests
+- Tracking PR #21 — **not ready** (layers 3–6 remain)
 
 ## Layer progress (v0 Checkout and WhatsApp Handoff)
 
 | Layer | Status | Notes |
 |-------|--------|-------|
 | 1. data/schema | ✅ complete | CMS `orders.length`, `priceEur`, `locale`; `Orders.test.ts` |
-| 2. contracts/types | ⏳ next | `@repo/checkout` package — order input/output, WA message types |
-| 3. domain/business logic | ⏳ pending | Validation, `buildWhatsAppMessage`, handoff URL builder |
+| 2. contracts/types | ✅ complete | `@repo/checkout` — API + WA message types, field keys, contract tests |
+| 3. domain/business logic | ⏳ next | Validation, `buildWhatsAppMessage`, handoff URL builder |
 | 4. API/route handlers | ⏳ pending | `POST /api/orders` |
 | 5. UI | ⏳ pending | `/[locale]/order/[slug]` checkout page |
 | 6. tests + state finalization | ⏳ pending | Contract tests, component tests, step `complete` |
@@ -50,4 +51,4 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Next recommended step
 
-Continue `orch-whatsapp-checkout--v0-checkout-and-wa-handoff` **layer 2**: scaffold `@repo/checkout` with order create types and WhatsApp message contracts traced to the spec.
+Continue `orch-whatsapp-checkout--v0-checkout-and-wa-handoff` **layer 3**: implement `@repo/checkout` domain — `validateOrderInput`, `buildWhatsAppMessage`, `buildWhatsAppHandoffUrl` with unit tests traced to spec AC-3/AC-6.

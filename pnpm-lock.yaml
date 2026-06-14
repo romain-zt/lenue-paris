@@ -132,6 +132,25 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@22.19.21)(happy-dom@20.10.3)(sass@1.77.4)
 
+  packages/checkout:
+    dependencies:
+      '@repo/catalog':
+        specifier: workspace:*
+        version: link:../catalog
+      '@repo/product-detail':
+        specifier: workspace:*
+        version: link:../product-detail
+    devDependencies:
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.19.21)(happy-dom@20.10.3)(sass@1.77.4)
+
   packages/product-detail:
     dependencies:
       '@repo/catalog':
