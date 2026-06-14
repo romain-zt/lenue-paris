@@ -72,7 +72,12 @@ Then configure the repo once (full detail in [`.github/AUTOMATION.md`](.github/A
 2. **Settings → Actions → General**: enable *Read and write permissions* and *Allow
    GitHub Actions to create and approve pull requests*.
 3. **Branch protection** on `main`: require the `quality` check.
-4. Optional **variables**: `CURSOR_AGENT_MODEL`, `REQUIRED_CHECKS`, `ORCHESTRATOR_ENABLED`.
+4. Optional **variables**: `REQUIRED_CHECKS`, `ORCHESTRATOR_ENABLED`,
+   `ORCHESTRATOR_TRACKING_BASE`, `MAX_REMEDIATION_RUNS`.
+
+> Model selection is **not** an env var. Each CI script picks its model from
+> `.github/scripts/cursor-models.config.ts`, aligned with
+> `.cursor/rules/20-model-routing.mdc`. Change models there, in a PR.
 
 ---
 
