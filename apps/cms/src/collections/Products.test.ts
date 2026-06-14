@@ -72,4 +72,28 @@ describe("Products collection", () => {
     expect(images?.type).toBe("array");
     expect(images?.minRows).toBe(1);
   });
+
+  it("shows relatedDress relationship for non-dress categories", () => {
+    const relatedDress = field("relatedDress") as {
+      type?: string;
+      relationTo?: string;
+      hasMany?: boolean;
+      required?: boolean;
+      admin?: { condition?: (data: unknown, siblingData: { category?: string }) => boolean };
+    };
+
+    expect(relatedDress?.type).toBe("relationship");
+    expect(relatedDress?.relationTo).toBe("products");
+    expect(relatedDress?.hasMany).toBe(false);
+    expect(relatedDress?.required).toBeFalsy();
+    expect(relatedDress?.admin?.condition?.(null, { category: "sac" })).toBe(true);
+    expect(relatedDress?.admin?.condition?.(null, { category: "foulard" })).toBe(true);
+    expect(relatedDress?.admin?.condition?.(null, { category: "autre" })).toBe(true);
+    expect(relatedDress?.admin?.condition?.(null, { category: "robe" })).toBe(false);
+  });
+
+  it("relatedDress is optional — non-dress can be saved without a pairing", () => {
+    const relatedDress = field("relatedDress") as { required?: boolean };
+    expect(relatedDress?.required).toBeFalsy();
+  });
 });

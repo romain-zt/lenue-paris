@@ -23,6 +23,29 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Completed steps (this session)
 
+**Step:** `orch-cms-products--v0-product-variants-and-pairings` — **complete**.
+
+### What was implemented (layer 1 — data/schema, all layers complete)
+
+- User story authored: `docs/product/user-stories/cms-products--v0-product-variants-and-pairings--US-001--set-variants-and-pairings.md`
+- Spec authored: `docs/product/specs/cms-products--v0-product-variants-and-pairings--US-001--set-variants-and-pairings.spec.md`
+- `apps/cms/src/collections/Products.ts` — `lengthVariants` + `sizes` (dress-only) were pre-existing; added `relatedDress` relationship field (optional, condition: `category !== "robe"`, self-referential to `products`).
+- `apps/cms/src/collections/Products.test.ts` — added 2 new tests covering `relatedDress` field type, `relationTo`, `hasMany`, admin condition (sac/foulard/autre → shown; robe → hidden), and optionality.
+- `pnpm --filter cms test` → 16/16 pass. `pnpm --filter cms typecheck` → clean.
+
+### Layer progress (v0 Product Variants and Pairings)
+
+| Layer | Status | Notes |
+|-------|--------|-------|
+| 1. data/schema | ✅ complete | `relatedDress` relationship field added; lengthVariants + sizes pre-existing |
+| 2. contracts/types | ✅ n/a | No custom API route; Payload auto-generates REST + types |
+| 3. domain/business logic | ✅ n/a | Validation handled by Payload field constraints |
+| 4. API/route handlers | ✅ n/a | Payload admin REST auto-generated |
+| 5. UI | ✅ n/a | Payload admin panel auto-generated from collection config |
+| 6. tests + state finalization | ✅ complete | Unit tests pass; status.json → complete |
+
+---
+
 **Step:** `orch-cms-products--v0-product-crud` — **complete**.
 
 ### What was implemented (layer 1 — data/schema)
@@ -58,6 +81,5 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Next recommended steps
 
-1. `orch-cms-products--v0-product-variants-and-pairings` — dress length variants + related-product pairings in the CMS admin (data model only, no buyer-facing UI in v0)
-2. `orch-whatsapp-checkout--v0-admin-order-list` — order management in Payload admin
-3. `orch-editorial--v0-about-page` — editorial about page
+1. `orch-whatsapp-checkout--v0-admin-order-list` — order management in Payload admin
+2. `orch-editorial--v0-about-page` — editorial about page
