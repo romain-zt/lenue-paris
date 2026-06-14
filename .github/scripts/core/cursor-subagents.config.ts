@@ -123,6 +123,53 @@ export const SUBAGENT_DEFINITIONS: Record<string, AgentDefinition> = {
   },
 };
 
+/**
+ * Per-part specialist executors (Executor tier — composer-2.5).
+ *
+ * A feature is NOT built by one agent end-to-end (see 62-feature-decomposition.mdc).
+ * The Manager decomposes the picked slice into parts and delegates each part to the
+ * matching specialist below. Each specialist owns one layer of the feature, follows
+ * its domain skill, and builds test-first at Executor tier — which is how composer-2.5
+ * gets triggered for the bulk of the work.
+ */
+const DOMAIN_SPECIALISTS: { key: string; label: string; skill: string; owns: string }[] = [
+  { key: "design-specialist", label: "Design", skill: "design", owns: "UX flow, layout, design tokens, states (loading/empty/error), responsive + accessible markup" },
+  { key: "frontend-specialist", label: "Frontend", skill: "design", owns: "React/Next components & hooks, client/server boundary, wiring UI to data" },
+  { key: "backend-specialist", label: "Backend", skill: "backend", owns: "domain logic, data model/migrations, server layering (boundary→domain→data)" },
+  { key: "http-specialist", label: "HTTP/API", skill: "http", owns: "route/contract surface, request/response shapes, typed errors, validation at the edge" },
+  { key: "copywriter-specialist", label: "Copy", skill: "copywriter", owns: "user-facing copy — simple, human, i18n-ready strings" },
+];
+
+function buildDomainSpecialist(spec: (typeof DOMAIN_SPECIALISTS)[number]): AgentDefinition {
+  return {
+    description:
+      `${spec.label} specialist (Executor tier). Builds the ${spec.label.toLowerCase()} part of a feature: ` +
+      `${spec.owns}. Test-first, strictly inside the part the caller scoped. Follows ` +
+      `.cursor/core/skills/domains/${spec.skill}/SKILL.md and the code-quality rules. Never widens scope or promotes.`,
+    prompt: [
+      `You are the ${spec.label} specialist subagent (Executor tier, composer).`,
+      `The caller (a Manager) hands you ONE part of a feature to build: ${spec.owns}.`,
+      "",
+      "Operating rules:",
+      `- Follow your domain skill: .cursor/core/skills/domains/${spec.skill}/SKILL.md, plus`,
+      "  .cursor/core/rules/50-code-quality.mdc, 51-backend-code.mdc / 52-frontend-code.mdc as relevant.",
+      "- Test-first when behavior changes (30-test-strategy.mdc): failing test, then smallest fix.",
+      "- Build ONLY your part. If you need another part (e.g. an API the frontend calls), stop and",
+      "  report the dependency to the caller — do not build outside your layer.",
+      "- Markup must be semantic and not a div-soup (52-frontend-code.mdc) for any UI you touch.",
+      "- Run the narrowest relevant check command before declaring done.",
+      "- Never promote artifacts (status log, PR ready) — only the Manager does that.",
+      "",
+      "Output: what you built, files touched, tests added, and any cross-part dependency the caller must sequence.",
+    ].join("\n"),
+    model: TIER_MODELS.executor,
+  };
+}
+
+for (const spec of DOMAIN_SPECIALISTS) {
+  SUBAGENT_DEFINITIONS[spec.key] = buildDomainSpecialist(spec);
+}
+
 /** Helper used by buildCursorCloudOptions — kept here so additions/removals
  *  flow from one place into every script. */
 export function getSubagentDefinitions(): Record<string, AgentDefinition> {

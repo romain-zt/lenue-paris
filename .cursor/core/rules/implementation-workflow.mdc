@@ -40,15 +40,17 @@ If any fails: stop, name the failing gate, recommend the unblocking command. Do 
 ## 3. Order of work (per Spec or Task)
 
 ```
-plan → tests (failing) → implement → tests pass → review → ready-for-merge
+spec → plan → tests (failing) → implement → re-test (validation) → review → ready-for-merge
 ```
 
-1. **Plan** (Manager tier). Read the Spec; produce a thin implementation plan: files to touch, the contract surface, the test list traced to ACs. If the Spec needs multiple commits, split via `/task`.
+The Spec is decomposed **on pickup** into per-part tasks delegated to specialists — see `62-feature-decomposition.mdc`. The loop below runs per part.
+
+1. **Spec/Plan** (Manager tier). Read the Spec; produce a thin implementation plan: files to touch, the contract surface, the test list traced to ACs. If the Spec needs multiple commits or parts, split via `/task` and delegate each part to its specialist.
 2. **Tests first** (Executor tier). Write the tests named in the Spec `## Tests` section **before** the implementation. They must fail for the right reason. Layer per `30-test-strategy.mdc`: unit + contract + integration; e2e only if the Spec justifies a named journey.
-3. **Implement** (Executor tier). Smallest change that turns the traced tests green. Follow `40-architecture-baseline.mdc`; record any deviation in the Spec's Implementation notes.
-4. **Verify.** All traced tests pass; lints clean; the Spec's Contract error table is covered.
-5. **Review.** Routine review = Manager. High-risk (auth, money, data migration, external contract, security) = **Vision** (`claude-opus-4-8`).
-6. **Promote.** A Task moves to `ready-for-merge` only via `/task promote` after tests pass and checks are CLEAR.
+3. **Implement** (Executor tier — composer). Smallest change that turns the traced tests green. Follow `40-architecture-baseline.mdc`; record any deviation in the Spec's Implementation notes.
+4. **Re-test (validation).** Re-run the part's traced tests **and** the slice's check commands; lints clean; the Spec's Contract error table is covered. The part is not done while anything is red. Record `in-review` once built + tested.
+5. **Review.** Routine review = Manager. High-risk (auth, money, data migration, external contract, security) = **Vision** (`claude-opus-4-8`). Review also asks whether the work revealed a **setup gap** (missing/weak rule, skill, agent, command, or hook) — if so, surface it (`/framework-audit propose` for framework gaps; `/btw` for product gaps), don't silently work around it. Record `validated` after re-test + review pass.
+6. **Promote.** A Task moves to `ready-for-merge` (`complete`) only via `/task promote` after validation passes and checks are CLEAR. Use `to-qa-human` when it's green but needs a human QA pass.
 
 ## 4. What an Executor may / may not do
 
