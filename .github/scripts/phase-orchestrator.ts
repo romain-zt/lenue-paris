@@ -767,33 +767,49 @@ async function mainOrchestrator(): Promise<void> {
     }
 
     const currentStepStatus = resolveStepStatus(status, stepId);
-
-    if (currentStepStatus === "in-progress") {
-      const draftPR = findDraftTrackingPR(stepId);
-      if (draftPR) {
-        if (bumpRemediationOrTrip(status, stepId)) process.exit(2);
-        validateRunnableStep(stepId);
-        await executeAgentRun(stepId, draftPR, true);
-        return;
-      }
-      console.log(`⚠️  Worker: "${stepId}" in-progress but no draft tracking PR for '${trackingBase}'. Resetting.`);
-      resetInProgress(stepId);
-      status = readStatus();
-      if (!status) { process.exit(0); return; }
-    }
-
     validateRunnableStep(stepId);
 
-    // Idempotency guard: reuse an existing draft PR opened by a concurrent run.
+    // Always look for an existing draft PR for this step first — the worker is
+    // idempotent and may be re-dispatched (cron, CI failure, manual). If one
+    // exists, that's the source of truth; reuse it.
     const existingPR = findDraftTrackingPR(stepId);
+
     if (existingPR) {
-      console.log(`♻️  Reusing existing draft tracking PR #${existingPR.number} for "${stepId}".`);
-      await executeAgentRun(stepId, existingPR, false);
+      // If a tracking PR already exists for this step, by definition the agent
+      // is continuing previous work, not starting fresh. Always run in
+      // remediation mode and ensure status.json reflects in-progress so the
+      // coordinator + cleanup see a coherent state.
+      if (currentStepStatus !== "in-progress") {
+        console.log(
+          `🔧 Worker: status was "${currentStepStatus ?? "unset"}" but draft PR #${existingPR.number} exists — restoring in-progress.`,
+        );
+        markInProgress(status, stepId);
+        status = readStatus() ?? status;
+      }
+      console.log(`♻️  Reusing existing draft tracking PR #${existingPR.number} for "${stepId}" (remediation).`);
+      if (bumpRemediationOrTrip(status, stepId)) process.exit(2);
+      await executeAgentRun(stepId, existingPR, true);
       return;
+    }
+
+    // No draft PR exists. If the status still says in-progress that is an
+    // actual orphan (a previous agent run died before/after committing). Reset
+    // and continue with a fresh PR. (If status is anything else this is just a
+    // fresh dispatch — no reset needed.)
+    if (currentStepStatus === "in-progress") {
+      console.log(
+        `⚠️  Worker: "${stepId}" in-progress but no draft tracking PR for '${trackingBase}' — orphaned, resetting before retry.`,
+      );
+      resetInProgress(stepId);
+      status = readStatus() ?? status;
     }
 
     console.log(`\n📋 Opening draft tracking PR for ${stepId}…`);
     const trackingPR = openTrackingPR(pipelineStepById(stepId));
+    // Mark the step in-progress as soon as we own a PR — keeps status.json and
+    // the open PR in sync even if the agent run dies before completing.
+    markInProgress(status, stepId);
+    status = readStatus() ?? status;
     await executeAgentRun(stepId, trackingPR, false);
     return;
   }

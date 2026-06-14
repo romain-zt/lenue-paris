@@ -1,9 +1,9 @@
 /**
- * Orchestrator Cleanup — the hourly safety net ("re-catch").
+ * Orchestrator Cleanup — frequent safety net ("re-catch").
  *
- * This is the workflow that guarantees nothing stays stuck: it runs on a cron
- * (≤ 1h) independent of any PR event, so even if a webhook is missed or an agent
- * dies, the pipeline recovers on the next tick.
+ * This is the workflow that guarantees nothing stays stuck: it runs on a 15-min
+ * cron independent of any PR event, plus immediately when CI fails on a tracking
+ * branch (see orchestrator-cleanup.yml workflow_run trigger).
  *
  * 1. DUPLICATE PRs — when multiple tracking PRs exist for the same step,
  *    keep the best one (non-draft > draft, newest wins on tie) and close the rest.
@@ -18,7 +18,14 @@
  *
  * 4. STALE DRAFT PRs — draft tracking PRs open longer than STALE_DRAFT_MINUTES are
  *    re-dispatched to the orchestrator (remediation) so a stalled agent gets retried
- *    within the hour rather than sitting forever.
+ *    quickly rather than sitting forever.
+ *
+ * 5. STATUS / PR DESYNC — a step whose status.json says not-started or complete
+ *    but which still has an open draft tracking PR. This happens when a worker
+ *    races (resets to not-started, opens a PR, agent partially commits, exits
+ *    without re-marking in-progress). Restore the step to in-progress so the
+ *    next coordinator dispatches a remediation worker instead of opening a
+ *    duplicate PR (or ignoring the orphaned one).
  */
 
 import fs from "node:fs";
@@ -32,9 +39,9 @@ import { execSync } from "node:child_process";
 const repo = process.env.REPO ?? "";
 const trackingBase = (process.env.ORCHESTRATOR_TRACKING_BASE ?? "main").trim() || "main";
 /** Close + reset a "ready" tracking PR if it's been open longer than this. */
-const STALE_READY_MINUTES = parseInt(process.env.STALE_READY_MINUTES ?? "30", 10);
+const STALE_READY_MINUTES = parseInt(process.env.STALE_READY_MINUTES ?? "10", 10);
 /** Re-dispatch a still-draft tracking PR (likely a stalled agent) after this long. */
-const STALE_DRAFT_MINUTES = parseInt(process.env.STALE_DRAFT_MINUTES ?? "45", 10);
+const STALE_DRAFT_MINUTES = parseInt(process.env.STALE_DRAFT_MINUTES ?? "15", 10);
 const REQUIRED_CHECKS = process.env.REQUIRED_CHECKS ?? "quality";
 
 if (!repo) {
@@ -160,8 +167,8 @@ async function main(): Promise<void> {
   );
 
   if (prs.length === 0) {
-    console.log("\n✅ Nothing to clean up.");
-    maybeResetOrphans([]);
+    console.log("\n✅ No tracking PRs.");
+    reconcileStatusAndPRs([]);
     return;
   }
 
@@ -274,46 +281,73 @@ async function main(): Promise<void> {
 
   // -------------------------------------------------------------------------
   // 4. Reset orphaned in-progress steps (in-progress in status.json but no draft PR)
+  //    AND reconcile desynced steps (open draft PR but status not-started/complete).
   // -------------------------------------------------------------------------
-  maybeResetOrphans(survivingPRs);
+  reconcileStatusAndPRs(survivingPRs);
 
   console.log("\n✅ Cleanup complete.");
 }
 
-function maybeResetOrphans(survivingPRs: PrRow[]): void {
+/**
+ * Reconcile status.json against open draft tracking PRs:
+ *   A. Step in-progress, no draft PR → reset to not-started (orphan).
+ *   B. Step not-started/complete, draft PR exists → restore to in-progress
+ *      (desync — the worker raced past status update or got killed mid-run).
+ *
+ * Either way the next coordinator tick lands the step + PR back in a coherent
+ * state and dispatches a remediation worker instead of opening a duplicate PR.
+ */
+function reconcileStatusAndPRs(survivingPRs: PrRow[]): void {
   const status = readStatusJson();
   if (!status) return;
 
   const steps = status.orchestration?.steps ?? {};
-  const inProgressSteps = Object.entries(steps)
-    .filter(([, v]) => v === "in-progress")
-    .map(([k]) => k);
-
-  if (inProgressSteps.length === 0) {
-    console.log("\nℹ️  No in-progress steps found in status.json.");
-    return;
-  }
-
-  console.log(`\n🔍 Checking ${inProgressSteps.length} in-progress step(s) for orphans…`);
-
   const draftStepIds = new Set(
     survivingPRs.filter((p) => p.isDraft).map((p) => extractStepFromTitle(p.title)!),
   );
 
-  let anyReset = false;
+  const inProgressSteps = Object.entries(steps)
+    .filter(([, v]) => v === "in-progress")
+    .map(([k]) => k);
+  const desyncedSteps = Object.entries(steps)
+    .filter(([id, v]) => (v === "not-started" || v === "complete") && draftStepIds.has(id))
+    .map(([k]) => k);
+
+  if (inProgressSteps.length === 0 && desyncedSteps.length === 0 && draftStepIds.size === 0) {
+    console.log("\nℹ️  No in-progress steps and no draft tracking PRs — nothing to reconcile.");
+    return;
+  }
+
+  console.log(
+    `\n🔍 Reconciling ${inProgressSteps.length} in-progress step(s) and ${desyncedSteps.length} desync candidate(s)…`,
+  );
+
+  const updates: string[] = [];
+
   for (const stepId of inProgressSteps) {
     if (draftStepIds.has(stepId)) {
-      console.log(`  ✅ ${stepId} has an active draft tracking PR — OK.`);
+      console.log(`  ✅ ${stepId} (in-progress) has an active draft tracking PR — OK.`);
       continue;
     }
     console.log(`  🔄 ${stepId} is in-progress but has no draft tracking PR — resetting to not-started.`);
     if (!status.orchestration) status.orchestration = {};
     if (!status.orchestration.steps) status.orchestration.steps = {};
     status.orchestration.steps[stepId] = "not-started";
-    anyReset = true;
+    updates.push(`reset orphan ${stepId} → not-started`);
   }
 
-  if (!anyReset) return;
+  for (const stepId of desyncedSteps) {
+    const previous = status.orchestration?.steps?.[stepId];
+    console.log(
+      `  🔧 ${stepId} is "${previous}" but a draft tracking PR is open — restoring to in-progress.`,
+    );
+    if (!status.orchestration) status.orchestration = {};
+    if (!status.orchestration.steps) status.orchestration.steps = {};
+    status.orchestration.steps[stepId] = "in-progress";
+    updates.push(`restore desync ${stepId} (was ${previous}) → in-progress`);
+  }
+
+  if (updates.length === 0) return;
 
   writeStatusJson(status);
 
@@ -321,11 +355,15 @@ function maybeResetOrphans(survivingPRs: PrRow[]): void {
     git(`config user.email "github-actions[bot]@users.noreply.github.com"`);
     git(`config user.name "github-actions[bot]"`);
     git(`add docs/state/status.json`);
-    git(`commit -m "chore(orchestrator): cleanup — reset orphaned in-progress steps [skip ci]"`);
+    git(
+      `commit -m "chore(orchestrator): cleanup — reconcile status.json (${updates.length} fix${
+        updates.length === 1 ? "" : "es"
+      }) [skip ci]"`,
+    );
     git(`push`);
-    console.log("  📝 Committed orphan reset to status.json.");
+    console.log(`  📝 Committed reconciliation: ${updates.join("; ")}`);
   } catch (err) {
-    console.warn("  ⚠️  Could not commit status reset (non-fatal):", err);
+    console.warn("  ⚠️  Could not commit reconciliation (non-fatal):", err);
   }
 }
 
