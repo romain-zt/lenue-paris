@@ -137,6 +137,14 @@ export const SCRIPT_TIERS = {
    *   - `sensitive` → Vision   (governance / pipeline state / product decomposition).
    */
   ciAutofix: { default: "manager", sensitive: "vision" },
+
+  /**
+   * quality-sweep.ts — scheduled maintenance: run quality checks, identify the
+   * top code-quality / refactor / cleanup opportunities, make ONE small safe
+   * batch of improvements (delegating typing to Executor), open a draft PR.
+   * Plan-and-delegate recurring work → Manager.
+   */
+  qualitySweep: "manager",
 } as const;
 
 /**
@@ -190,6 +198,12 @@ export function pickPrdDecomposerModel(): PickedModel {
 /** Phase orchestrator worker (phase-orchestrator.ts). */
 export function pickOrchestratorWorkerModel(): PickedModel {
   const tier = SCRIPT_TIERS.orchestratorWorker as Tier;
+  return { modelSelection: tierModel(tier), tier };
+}
+
+/** Quality sweep (quality-sweep.ts). */
+export function pickQualitySweepModel(): PickedModel {
+  const tier = SCRIPT_TIERS.qualitySweep as Tier;
   return { modelSelection: tierModel(tier), tier };
 }
 
