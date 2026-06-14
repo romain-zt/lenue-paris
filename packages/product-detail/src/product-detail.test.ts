@@ -6,6 +6,7 @@ import {
   isProductAvailable,
   toProductDetail,
 } from "./product-detail";
+import { resolveVariantPickers, type ProductLengthVariant, type ProductSizeCode } from "./variants";
 import { extractPlainTextFromRichText } from "./rich-text";
 
 const sampleDoc = {
@@ -99,10 +100,29 @@ describe("toProductDetail", () => {
           alt: "Robe en lin",
         },
       ],
-      variantPickers: null,
+      variantPickers: resolveVariantPickers(sampleDoc),
       orderHref: "/en/order/robe-lin",
       catalogueHref: "/en/catalogue",
     });
+  });
+
+  it("includes variant pickers for dresses with CMS variant fields", () => {
+    const dressWithVariants = {
+      ...sampleDoc,
+      lengthVariants: ["longer", "shorter"] as ProductLengthVariant[],
+      sizes: ["S", "M", "L"] as ProductSizeCode[],
+    };
+
+    expect(toProductDetail(dressWithVariants, "fr").variantPickers).toEqual({
+      lengthOptions: ["longer", "shorter"],
+      sizeOptions: ["S", "M", "L"],
+    });
+  });
+
+  it("returns null variant pickers for bags", () => {
+    expect(
+      toProductDetail({ ...sampleDoc, category: "sac" }, "fr").variantPickers,
+    ).toBeNull();
   });
 });
 

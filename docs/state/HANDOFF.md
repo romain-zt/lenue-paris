@@ -23,12 +23,13 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Active work
 
-**Step:** `orch-product-detail--v0-pdp-variant-pickers` — **in progress** (layer 2 complete).
+**Step:** `orch-product-detail--v0-pdp-variant-pickers` — **in progress** (layer 4 complete).
 
 - User story: `docs/product/user-stories/product-detail--v0-pdp-variant-pickers--US-001--select-dress-variants.md` (`ready-for-spec`)
 - Spec: `docs/product/specs/product-detail--v0-pdp-variant-pickers--US-001--select-dress-variants.spec.md` (`ready-for-implementation`)
 - Layer 1 (data/schema): CMS `products` — `lengthVariants` + `sizes` select fields (dress-only)
-- Layer 2 (contracts/types): `@repo/product-detail` — `ProductLengthVariant`, `ProductSizeCode`, `ProductVariantPickers`, extended `ProductDetail` + `PayloadProductDetailDoc`; `toProductDetail` stubs `variantPickers: null` until layer 3
+- Layer 2 (contracts/types): `@repo/product-detail` — `ProductLengthVariant`, `ProductSizeCode`, `ProductVariantPickers`, extended `ProductDetail` + `PayloadProductDetailDoc`
+- Layer 3 (domain/business logic): `resolveVariantPickers`, `buildOrderHrefWithVariants`, `isVariantSelectionComplete`; wired into `toProductDetail`
 
 ## Layer progress (v0 PDP Variant Pickers)
 
@@ -36,9 +37,9 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 |-------|--------|-------|
 | 1. data/schema | ✅ complete | CMS `products.lengthVariants` + `sizes` select fields; schema unit tests |
 | 2. contracts/types | ✅ complete | `variants.ts` types + exports; `ProductDetail.variantPickers`; Payload doc fields |
-| 3. domain/business logic | ⏳ next | `resolveVariantPickers`, `buildOrderHrefWithVariants`, `isVariantSelectionComplete` |
-| 4. API/route handlers | pending | Extend `GET /api/products/[slug]` response |
-| 5. UI | pending | Dress pickers + disabled CTA states on PDP |
+| 3. domain/business logic | ✅ complete | `resolveVariantPickers`, `buildOrderHrefWithVariants`, `isVariantSelectionComplete`; `toProductDetail` resolves pickers |
+| 4. API/route handlers | ✅ complete | `GET /api/products/[slug]` exposes `variantPickers` via `fetchProductDetail`; dress + bag contract tests |
+| 5. UI | ⏳ next | Dress pickers + disabled CTA states on PDP |
 | 6. tests + state finalization | pending | Contract + UI tests; mark step `complete` |
 
 ## Known issues / decisions in effect
@@ -50,4 +51,4 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Next recommended step
 
-Continue `orch-product-detail--v0-pdp-variant-pickers` at **layer 3 (domain/business logic)** — implement variant resolution and order href builders in `@repo/product-detail`, wire into `toProductDetail`.
+Continue `orch-product-detail--v0-pdp-variant-pickers` at **layer 5 (UI)** — dress length + size pickers, disabled CTA until selection complete, `buildOrderHrefWithVariants` on order link.
