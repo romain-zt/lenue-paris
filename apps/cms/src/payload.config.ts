@@ -9,6 +9,7 @@ import { Users } from "./collections/Users";
 import { Media } from "./collections/Media";
 import { Pages } from "./collections/Pages";
 import { Products } from "./collections/Products";
+import { Orders } from "./collections/Orders";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -28,7 +29,7 @@ export default buildConfig({
     user: Users.slug,
   },
 
-  collections: [Users, Media, Pages, Products],
+  collections: [Users, Media, Pages, Products, Orders],
 
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || "",
