@@ -1,0 +1,115 @@
+# Feature Area: Product Catalog
+
+## Status
+
+`exploratory`
+
+> **NEED_HUMAN:** false
+> **NEED_UPDATE:** false
+
+---
+
+## PRD Source
+
+- `docs/prd/PRD.md` §v0 Feature set (Product catalogue listing row)
+- `docs/prd/PRD.md` §Global Product Picture
+- `docs/prd/PRD.md` §Core User Journeys (Buyer: discover and order)
+- `docs/prd/PRD.md` §Business Objects (Product)
+- Related open questions: Q-004 (launch catalogue), Q-012 (pairings CMS-only) — both answered
+- Related product decisions: none
+
+---
+
+## Product Intent
+
+A buyer can browse the full Lénue Paris collection in one calm, editorial grid and narrow it to
+the kind of piece they want — dresses, bags, or scarfs — so they can quickly find something to
+fall in love with and open its detail page.
+
+---
+
+## In Scope
+
+- A flat grid listing of all published products (the ~12-entity launch collection)
+- Filtering the grid by category (dresses, bags, scarfs)
+- Each grid item showing product image, title, and EUR price
+- Tapping a grid item to open its product detail page
+- Mobile-first presentation of the grid
+
+## Out of Scope
+
+- Product detail content, gallery, and variant selection (Feature Area: Product Detail)
+- Free-text search and advanced multi-facet filtering (deferred — not in PRD v0; see Feature Area: Search & Filter, deferred)
+- "Complete the look" pairing modules surfaced to the buyer (PRD deferred — pairings are CMS-only for v0)
+- Inventory / stock state on cards (PRD v0 exclusion — no inventory tracking)
+- Authoring or editing products (Feature Area: CMS Products)
+
+---
+
+## Business Objects Touched
+
+| Object | Relationship |
+|--------|-------------|
+| Product | Reads — lists published products with image, title, category, EUR price |
+| Media | Reads — product photography shown on each card |
+
+---
+
+## User Journeys Touched
+
+- Buyer: discover and order — step 2 (Browse catalogue, filter by category)
+
+---
+
+## Dependencies
+
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| Storefront Shell | pending | Grid renders within the shared chrome |
+| CMS Products | pending | Source of the published product catalogue |
+
+---
+
+## Risks
+
+- Category filtering must stay obvious and fast on mobile without cluttering the editorial layout
+- A small launch catalogue (~12 entities) means the grid must look intentional rather than sparse
+
+---
+
+## Open Blockers
+
+| Blocker | Blocks | NEED_HUMAN |
+|---------|--------|------------|
+| none | — | false |
+
+---
+
+## Candidate Scope Slices
+
+| Slice | Description | Status |
+|-------|-------------|--------|
+| product-catalog--category-grid | Flat product grid with filtering by category | exploratory |
+
+---
+
+## Readiness Verdict
+
+- [ ] PRD source sections read
+- [ ] Product intent stated without technical language
+- [ ] Business objects enumerated
+- [ ] User journeys identified
+- [ ] In-scope / out-of-scope explicitly separated
+- [ ] No unresolved PRD open questions affecting this area
+- [ ] Deferred behaviors explicitly named
+- [ ] Candidate Scope Slices are individually small enough
+
+**Verdict:** NOT READY
+
+---
+
+## Changelog
+
+| Date | Change | Author |
+|------|--------|--------|
+| 2026-06-14 | Scaffolded from approved Feature Area Map (`/feature-area scaffold`) | — |
