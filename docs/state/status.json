@@ -1,7 +1,17 @@
 {
   "orchestration": {
     "steps": {
-      "bootstrap": "complete"
+      "bootstrap": "complete",
+      "orch-product-catalog--v0-category-grid": "not-started",
+      "orch-product-detail--v0-pdp-gallery-and-copy": "not-started",
+      "orch-product-detail--v0-pdp-variant-pickers": "not-started",
+      "orch-whatsapp-checkout--v0-checkout-and-wa-handoff": "not-started",
+      "orch-cms-products--v0-product-crud": "not-started",
+      "orch-cms-products--v0-product-variants-and-pairings": "not-started",
+      "orch-whatsapp-checkout--v0-admin-order-list": "not-started",
+      "orch-editorial--v0-about-page": "not-started",
+      "orch-i18n-localization--v0-buyer-locale-routing": "not-started",
+      "orch-i18n-localization--v0-cms-localized-fields": "not-started"
     },
     "remediation_counts": {}
   }
