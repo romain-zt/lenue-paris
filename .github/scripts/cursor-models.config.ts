@@ -3,9 +3,11 @@
  *
  * Single source of truth. Aligned with .cursor/rules/20-model-routing.mdc:
  *
- *   Vision   → claude-opus-4-8     (strategy, irreversible/high-stakes decisions)
- *   Manager  → claude-4.6-sonnet   (routing, planning, routine review — most CI agents)
- *   Executor → composer-2.5-fast   (smallest concrete brick; sub-delegated from a Manager)
+ *   Vision   → claude-opus-4-8-thinking-high   (strategy, irreversible/high-stakes decisions)
+ *   Manager  → claude-4.6-sonnet-high-thinking  (routing, planning, routine review — most CI agents)
+ *   Executor → composer-2.5-fast                (smallest concrete brick; sub-delegated from a Manager)
+ *
+ * These are Cursor Cloud Agent API slugs (not IDE agent frontmatter short names).
  *
  * Why a constants file (not env vars / Actions Variables):
  *   - Grep-able and type-checked at build time.
@@ -20,7 +22,7 @@ export const CURSOR_MODELS = {
    * pr-automation.ts — reviews PR against .cursor/rules and squash-merges.
    * PRs in this repo are kept under ~20 files, so Manager is sufficient.
    */
-  prReview: "claude-4.6-sonnet",
+  prReview: "claude-4.6-sonnet-high-thinking",
 
   /**
    * conflict-resolver.ts — file-level merge judgment.
@@ -31,8 +33,8 @@ export const CURSOR_MODELS = {
    *     subtle, hard-to-reverse ways, so the resolver escalates to Vision.
    */
   conflictResolver: {
-    default: "claude-4.6-sonnet",
-    sensitive: "claude-opus-4-8",
+    default: "claude-4.6-sonnet-high-thinking",
+    sensitive: "claude-opus-4-8-thinking-high",
   },
 
   /**
@@ -41,7 +43,7 @@ export const CURSOR_MODELS = {
    * subagents via .cursor/rules/20-model-routing.mdc. The worker IS the
    * per-step router, so it runs at Manager tier.
    */
-  orchestratorWorker: "claude-4.6-sonnet",
+  orchestratorWorker: "claude-4.6-sonnet-high-thinking",
 
   /**
    * prd-decomposer.ts — drives the full PRD → Feature Area → Scope Slice
@@ -50,7 +52,7 @@ export const CURSOR_MODELS = {
    * that directly feed implementation, so per 20-model-routing.mdc ("irreversible
    * or strategic → Vision") it runs at Vision tier.
    */
-  prdDecomposer: "claude-opus-4-8",
+  prdDecomposer: "claude-opus-4-8-thinking-high",
 
   /**
    * ci-failure-autofix.ts — reads a failed CI/E2E run's logs and pushes the
@@ -61,8 +63,8 @@ export const CURSOR_MODELS = {
    *     a wrong fix there is hard to reverse, so it escalates to Vision.
    */
   ciAutofix: {
-    default: "claude-4.6-sonnet",
-    sensitive: "claude-opus-4-8",
+    default: "claude-4.6-sonnet-high-thinking",
+    sensitive: "claude-opus-4-8-thinking-high",
   },
 } as const;
 
