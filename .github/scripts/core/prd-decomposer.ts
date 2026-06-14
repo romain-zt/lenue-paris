@@ -346,6 +346,12 @@ Turn the ready PRD into runnable pipeline input by completing, **in priority-ban
 2. Scope Slices: \`slice\` → \`scaffold-slices\` → \`refine-slice\` → \`promote-slice\` (target \`ready-for-user-stories\`).
 3. Wire \`docs/state/orchestration.prd-flow-map.json\`: for each PRD "# Flow Inventory" row with \`v0 = Yes\`, add a normalized flow key mapping to its Scope Slice file path(s) under \`docs/product/scope-slices/\`. Use the existing JSON shape (\`flows: { "<normalized flow>": { "slices": ["docs/product/scope-slices/<fa>--<slice>.md"] } }\`). Keep \`attachAfterStepId\` unchanged.
 
+## Challenge round (mandatory — two models)
+Per \`.cursor/core/rules/63-two-model-challenge.mdc\`, a decomposition is never converged by one model alone. Before you **promote** Feature Areas / Scope Slices:
+1. Produce your proposed map/slice boundaries.
+2. Delegate them to the **\`plan-challenger\`** subagent (a different model) via the \`Task\` tool. It returns AGREE or CHALLENGE + concrete objections (missing parts, wrong boundaries, false convergence, over-scoping).
+3. Resolve every CHALLENGE objection (or record why it's rejected) and re-run if material. Only then promote.
+
 ## Governance you MUST honor
 - Run the **real** \`.cursor/core/checkers/scope-readiness-checker.md\` checks. A genuine \`CLEAR\` verdict is what authorizes each promotion — do not self-assert readiness.
 - Respect every \`NEED_HUMAN\`/\`NEED_UPDATE\` flag and open question in \`docs/prd/questions/open-questions.md\`. If a Feature Area or Scope Slice genuinely cannot be bounded without missing product truth, set that item \`blocked\` with a \`NEED_HUMAN:\` note and **continue with the others** — do not invent scope.

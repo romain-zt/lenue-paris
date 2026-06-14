@@ -128,6 +128,9 @@ Record the next layer in \`docs/state/HANDOFF.md\`, commit, push, and stop unles
 ## Workflow order per part
 spec → plan → tests (failing) → implement → re-test (validation) → review. Don't write implementation before its test; don't mark a part done with red/absent tests.
 
+## Challenge the plan (two models, mandatory for non-trivial slices)
+Per \`.cursor/core/rules/63-two-model-challenge.mdc\`, before implementing a non-trivial decomposition, delegate your plan to the **\`vision-reviewer\`** subagent (a different model) via \`Task\` to challenge the part split + test list. Resolve its objections before the executors start typing.
+
 ## Governance
 Follow the active \`.cursor/core/rules/\` — especially \`implementation-workflow.mdc\` (spec → test → implementation gates),
 \`30-test-strategy.mdc\` (test-first; contract/integration/unit over e2e), \`40-architecture-baseline.mdc\` (stack), and

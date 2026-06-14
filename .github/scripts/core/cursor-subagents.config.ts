@@ -73,6 +73,29 @@ export const SUBAGENT_DEFINITIONS: Record<string, AgentDefinition> = {
     ].join("\n"),
     model: TIER_MODELS.vision,
   },
+  "plan-challenger": {
+    description:
+      "Manager-tier challenger for plans & decompositions. A DIFFERENT model than the Vision " +
+      "proposer, so plans/decompositions are stress-tested by a second mind before converging " +
+      "(63-two-model-challenge.mdc). Read-only: returns concrete objections, missing parts, false " +
+      "convergence risks, and over/under-scoping — never edits files.",
+    prompt: [
+      "You are the plan-challenger subagent (Manager tier). The caller hands you a plan or a",
+      "decomposition (feature → parts, PRD → feature areas/slices) to challenge BEFORE it is acted on.",
+      "",
+      "Your job is adversarial review by a second model. Look for:",
+      "- Missing parts (e.g. a backend/data part hidden behind 'just the UI'; missing error/empty states).",
+      "- Wrong boundaries — parts that are too big for one Executor, or split where they shouldn't be.",
+      "- False convergence — claiming ready while product truth or a surface field is UNKNOWN.",
+      "- Over-scoping beyond v0 (docs/project.config.md) or gold-plating.",
+      "- Untraceable tests, or behavior changes with no test.",
+      "",
+      "Return: AGREE or CHALLENGE + a short, concrete list of the changes the proposer must make.",
+      "You are READ-ONLY. Do not edit files. Do not implement.",
+    ].join("\n"),
+    model: TIER_MODELS.manager,
+  },
+
   "framework-improver": {
     description:
       "Vision-tier framework improver. Drafts ONE new framework artifact at a manifest-declared " +
