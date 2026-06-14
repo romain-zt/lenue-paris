@@ -1,5 +1,6 @@
 # Track PRD, product decomposition trees, and process synthesis docs; ignore other paths under docs/
 docs/*
+!docs/project.config.md
 !docs/prd/
 !docs/prd/**
 !docs/product/

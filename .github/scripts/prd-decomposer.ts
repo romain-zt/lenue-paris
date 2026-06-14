@@ -64,11 +64,26 @@ if (!repo) {
 // ---------------------------------------------------------------------------
 
 /** Reads the "Autonomous decomposition enabled" flag from docs/project.config.md. */
-function autonomousDecompositionEnabled(): boolean {
-  if (!fs.existsSync(CONFIG_PATH)) return false;
+function autonomousDecompositionEnabled(): { enabled: boolean; reason: string } {
+  if (!fs.existsSync(CONFIG_PATH)) {
+    return {
+      enabled: false,
+      reason: `${CONFIG_PATH} is missing (create it from .cursor/templates/project/project.config.template.md and commit it — CI cannot read a gitignored file)`,
+    };
+  }
   const cfg = fs.readFileSync(CONFIG_PATH, "utf8");
   const m = cfg.match(/Autonomous decomposition enabled:\*\*\s*([a-zA-Z]+)/);
-  return /^yes$/i.test(m?.[1]?.trim() ?? "");
+  const value = m?.[1]?.trim() ?? "";
+  if (!value) {
+    return {
+      enabled: false,
+      reason: `could not parse "Autonomous decomposition enabled" in ${CONFIG_PATH}`,
+    };
+  }
+  if (!/^yes$/i.test(value)) {
+    return { enabled: false, reason: `Autonomous decomposition enabled: ${value}` };
+  }
+  return { enabled: true, reason: "yes" };
 }
 
 /** Normalized keys already mapped in orchestration.prd-flow-map.json. */
@@ -276,10 +291,9 @@ async function main(): Promise<void> {
     console.error("❌ No .cursor/ governance found — this template requires it.");
     process.exit(1);
   }
-  if (!autonomousDecompositionEnabled()) {
-    console.log(
-      "⏸️  Autonomous decomposition is disabled in docs/project.config.md (\"Autonomous decomposition enabled: no\"). Nothing to do.",
-    );
+  const decomposition = autonomousDecompositionEnabled();
+  if (!decomposition.enabled) {
+    console.log(`⏸️  Autonomous decomposition is off — ${decomposition.reason}. Nothing to do.`);
     process.exit(0);
   }
 
