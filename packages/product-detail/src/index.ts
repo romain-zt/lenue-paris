@@ -25,8 +25,11 @@ export type {
   ProductNotFoundResponse,
 } from "./types";
 export {
+  buildOrderHrefWithVariants,
+  isVariantSelectionComplete,
   PRODUCT_LENGTH_VARIANTS,
   PRODUCT_SIZE_CODES,
+  resolveVariantPickers,
 } from "./variants";
 export type {
   ProductLengthVariant,

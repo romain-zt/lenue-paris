@@ -2,6 +2,7 @@ import { buildDetailHref, normalizeLocale, type SupportedLocale } from "@repo/ca
 import { resolveGalleryImages } from "./gallery";
 import type { PayloadProductDetailDoc } from "./payload-doc";
 import { extractPlainTextFromRichText } from "./rich-text";
+import { resolveVariantPickers } from "./variants";
 import type {
   ProductDetail,
   ProductDetailQuery,
@@ -61,7 +62,7 @@ export function toProductDetail(
     currency: "EUR",
     category: doc.category,
     gallery: resolveGalleryImages(doc),
-    variantPickers: null,
+    variantPickers: resolveVariantPickers(doc),
     orderHref: buildOrderHref(locale, doc.slug),
     catalogueHref: buildCatalogueHref(locale),
   };
