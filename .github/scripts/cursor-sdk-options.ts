@@ -1,25 +1,34 @@
 /**
  * Shared Cursor cloud SDK options for the CI scripts in this directory.
  *
- * Model is overridable per-repo via the `CURSOR_AGENT_MODEL` Actions variable
- * (Settings → Secrets and variables → Actions → Variables). If unset, falls back
- * to a fast default. Keep this project-agnostic.
+ * The model is supplied per-call by each script from
+ * `.github/scripts/cursor-models.config.ts` — the single source of truth aligned
+ * with `.cursor/rules/20-model-routing.mdc`. No env-var fallback by design: the
+ * mapping must live next to the code it governs.
+ *
+ * Project-agnostic.
  */
-const DEFAULT_AGENT_MODEL_ID = "composer-2.5";
-
 export function buildCursorCloudOptions(
   apiKey: string,
   repoSlug: string,
+  modelId: string,
 ): {
   apiKey: string;
   model: { id: string };
   cloud: { repos: { url: string }[]; autoCreatePR: boolean; skipReviewerRequest: boolean };
 } {
-  const modelId = process.env.CURSOR_AGENT_MODEL?.trim() || DEFAULT_AGENT_MODEL_ID;
-  const cloud = {
-    repos: [{ url: `https://github.com/${repoSlug}` }],
-    autoCreatePR: false,
-    skipReviewerRequest: true,
+  if (!modelId?.trim()) {
+    throw new Error(
+      "buildCursorCloudOptions: modelId is required — import from .github/scripts/cursor-models.config.ts",
+    );
+  }
+  return {
+    apiKey,
+    model: { id: modelId.trim() },
+    cloud: {
+      repos: [{ url: `https://github.com/${repoSlug}` }],
+      autoCreatePR: false,
+      skipReviewerRequest: true,
+    },
   };
-  return { apiKey, model: { id: modelId }, cloud };
 }

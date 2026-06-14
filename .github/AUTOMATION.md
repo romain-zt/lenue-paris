@@ -31,16 +31,31 @@ with scheduled "re-catch" jobs so **nothing stays stuck for more than ~1h**.
 | Variable | Default | Purpose |
 |---|---|---|
 | `ORCHESTRATOR_ENABLED` | `true` | Kill switch — set `false` to pause all agent firing instantly |
-| `CURSOR_AGENT_MODEL` | `composer-2.5` | Cloud agent model for review + orchestration |
 | `REQUIRED_CHECKS` | `quality` | Comma-separated checks that gate merges. Add `playwright` once you have E2E |
 | `ORCHESTRATOR_TRACKING_BASE` | `main` | Integration branch for tracking PRs (e.g. `feature/my-epic`) |
 | `MAX_REMEDIATION_RUNS` | `5` | Circuit breaker — auto-block a step after this many stalled retries |
+
+> **Model selection is not an env var.** Each CI script picks its model from
+> `.github/scripts/cursor-models.config.ts` (see §1e). Change models there, not in
+> repo variables — the mapping is reviewed in PRs alongside the script.
 
 ### d. Branch protection (recommended) — `main`
 Settings → Branches → Add rule:
 - Require a pull request before merging ✅
 - Require status checks to pass: **`quality`** (add `playwright` when ready) ✅
 - Require branches up to date ✅
+
+### e. Model selection per script
+The mapping lives in [`.github/scripts/cursor-models.config.ts`](scripts/cursor-models.config.ts) and follows the tiers defined in [`.cursor/rules/20-model-routing.mdc`](../.cursor/rules/20-model-routing.mdc):
+
+| Script | Tier | Model | Why |
+|---|---|---|---|
+| `pr-automation.ts` | Manager | `claude-4.6-sonnet` | Routine PR review against governance; PRs stay < ~20 files |
+| `conflict-resolver.ts` (default) | Manager | `claude-4.6-sonnet` | File-level merge judgment on most PRs |
+| `conflict-resolver.ts` (sensitive) | Vision | `claude-opus-4-8` | Auto-escalates when ANY conflicted file touches `.cursor/**`, `docs/state/**`, `docs/product/**`, or `docs/product-decisions/**` |
+| `phase-orchestrator.ts` worker | Manager | `claude-4.6-sonnet` | The worker IS the per-step router — picks the smallest coherent layer, decides blocked vs proceed, then sub-delegates the actual typing to Executor subagents (`composer-2.5-fast`) via `Task` |
+
+Inside the run, the cloud agent itself respects `20-model-routing.mdc` and routes subagent calls accordingly. To change a model, edit the constants file and open a PR.
 
 ---
 

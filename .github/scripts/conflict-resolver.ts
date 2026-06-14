@@ -13,6 +13,7 @@
 
 import { Agent, CursorAgentError } from "@cursor/sdk";
 import { buildCursorCloudOptions } from "./cursor-sdk-options";
+import { pickConflictResolverModel } from "./cursor-models.config";
 import { execSync } from "node:child_process";
 
 // ---------------------------------------------------------------------------
@@ -68,6 +69,27 @@ function listConflictedPRs(): ConflictedPR[] {
     execSync("sleep 15");
   }
   return JSON.parse(raw || "[]");
+}
+
+/**
+ * List every file changed in a PR (vs its base) — used to decide whether the
+ * conflict resolver should run at Manager or Vision tier.
+ *
+ * Falls back to an empty list on failure: the caller treats that as "default
+ * tier" (Manager). The downside of a missed sensitive-path escalation is small
+ * — the agent still has full repo access and the same prompt rules.
+ */
+function listPrChangedFiles(prNumber: number): string[] {
+  try {
+    const raw = gh(`pr view ${prNumber} --repo ${repo} --json files --jq '.files[].path'`);
+    return raw
+      .split("\n")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  } catch (err) {
+    console.warn(`⚠️  Could not list files for PR #${prNumber} — defaulting to Manager tier.`, err);
+    return [];
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -172,10 +194,23 @@ let anyFailed = false;
 for (const pr of conflicted) {
   console.log(`\n━━━ Resolving PR #${pr.number}: ${pr.title} ━━━`);
 
+  const changedFiles = listPrChangedFiles(pr.number);
+  const { modelId, tier, matchedPaths } = pickConflictResolverModel(changedFiles);
+
+  if (tier === "sensitive") {
+    console.log(
+      `🛡  Escalating to Vision tier (${modelId}) — sensitive paths touched: ${matchedPaths
+        .slice(0, 5)
+        .join(", ")}${matchedPaths.length > 5 ? `, +${matchedPaths.length - 5} more` : ""}`,
+    );
+  } else {
+    console.log(`🔧 Manager tier (${modelId}) — no sensitive paths in this PR.`);
+  }
+
   const prompt = buildPrompt(pr);
 
   try {
-    const result = await Agent.prompt(prompt, buildCursorCloudOptions(apiKey!, repo!));
+    const result = await Agent.prompt(prompt, buildCursorCloudOptions(apiKey!, repo!, modelId));
 
     if (result.status === "error") {
       console.error(`❌ Agent failed for PR #${pr.number}.`);

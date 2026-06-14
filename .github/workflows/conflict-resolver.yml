@@ -30,7 +30,8 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
-      CURSOR_AGENT_MODEL: ${{ vars.CURSOR_AGENT_MODEL }}
+      # Model is selected per-PR in .github/scripts/cursor-models.config.ts
+      # (Manager by default, Vision when sensitive paths are touched).
       REPO: ${{ github.repository }}
       BASE_BRANCH: ${{ vars.ORCHESTRATOR_TRACKING_BASE || 'main' }}
     steps:

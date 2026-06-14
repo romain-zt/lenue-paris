@@ -60,7 +60,8 @@ jobs:
       - name: Run phase orchestrator
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
-          CURSOR_AGENT_MODEL: ${{ vars.CURSOR_AGENT_MODEL }}
+          # Model is fixed in .github/scripts/cursor-models.config.ts (Manager tier
+          # for the worker; the worker sub-delegates typing to Executor subagents).
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           MERGED_PR_NUMBER: ${{ github.event.pull_request.number || '' }}

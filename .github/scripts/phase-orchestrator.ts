@@ -21,6 +21,7 @@
 
 import { Agent, CursorAgentError, type RunResult } from "@cursor/sdk";
 import { buildCursorCloudOptions } from "./cursor-sdk-options";
+import { CURSOR_MODELS } from "./cursor-models.config";
 import fs from "node:fs";
 import path from "node:path";
 import { execSync, execFileSync } from "node:child_process";
@@ -541,7 +542,8 @@ function emitCursorCloudRunTelemetry(args: { label: string; agentId: string; run
 }
 
 async function runOneCloudPrompt(message: string, label: string): Promise<RunResult> {
-  const opts = buildCursorCloudOptions(apiKey!, repo!);
+  const opts = buildCursorCloudOptions(apiKey!, repo!, CURSOR_MODELS.orchestratorWorker);
+  console.log(`🤖 Cloud agent for "${label}" — model: ${CURSOR_MODELS.orchestratorWorker}`);
   const agent = await Agent.create(opts);
   try {
     const run = await agent.send(message);
