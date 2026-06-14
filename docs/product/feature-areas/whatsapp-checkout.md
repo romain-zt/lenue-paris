@@ -2,7 +2,7 @@
 
 ## Status
 
-`exploratory`
+`validated`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -99,16 +99,16 @@ variants, and price — turning the purchase into a personal, direct conversatio
 
 ## Readiness Verdict
 
-- [ ] PRD source sections read
-- [ ] Product intent stated without technical language
-- [ ] Business objects enumerated
-- [ ] User journeys identified
-- [ ] In-scope / out-of-scope explicitly separated
-- [ ] No unresolved PRD open questions affecting this area
-- [ ] Deferred behaviors explicitly named
-- [ ] Candidate Scope Slices are individually small enough
+- [x] PRD source sections read
+- [x] Product intent stated without technical language
+- [x] Business objects enumerated
+- [x] User journeys identified
+- [x] In-scope / out-of-scope explicitly separated
+- [x] No unresolved PRD open questions affecting this area
+- [x] Deferred behaviors explicitly named
+- [x] Candidate Scope Slices are individually small enough
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR SCOPE SLICES
 
 ---
 
@@ -117,3 +117,4 @@ variants, and price — turning the purchase into a personal, direct conversatio
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-06-14 | Scaffolded from approved Feature Area Map (`/feature-area scaffold`) | — |
+| 2026-06-14 | Promoted to validated after CLEAR readiness check (`/feature-area promote`) | — |

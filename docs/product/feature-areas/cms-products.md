@@ -2,7 +2,7 @@
 
 ## Status
 
-`exploratory`
+`validated`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -33,14 +33,14 @@ the orders buyers place — without needing a developer.
 - Owner creating, editing, and archiving products in the admin
 - Per-product localized title and description (fr / en / ru), EUR price, and images
 - Dress length variants (longer / shorter) and the fixed size set on products that need them
-- Recording optional product pairings (related dress ↔ bag/scarf) in the data model
+- Recording optional product pairings (related dress ↔ bag/scarf) as a stored relationship, not shown to buyers in v0
 - Owner viewing the orders saved at checkout (product, variants, price, buyer contact as captured)
 
 ## Out of Scope
 
 - The buyer-facing catalogue grid and product pages (Feature Areas: Product Catalog, Product Detail)
 - Capturing or placing orders (Feature Area: WhatsApp Checkout)
-- Surfacing pairings to buyers as "complete the look" (PRD deferred — CMS-only for v0)
+- Surfacing pairings to buyers as "complete the look" (PRD deferred — owner-only for v0)
 - Inventory / stock tracking (PRD v0 exclusion)
 - Editing or replying to orders inside the admin beyond viewing (fulfillment happens in WhatsApp)
 - Email notifications on new orders (PRD v0 exclusion)
@@ -75,7 +75,7 @@ the orders buyers place — without needing a developer.
 
 - The owner is non-technical; product and order management must be understandable without training
 - Localized copy across three locales (fr / en / ru) increases the chance of incomplete translations per product
-- Pairings live only in data for v0 — the owner must understand they are not yet shown to buyers
+- Pairings are recorded but not shown to buyers in v0 — the owner must understand they are owner-only for now
 
 ---
 
@@ -98,16 +98,16 @@ the orders buyers place — without needing a developer.
 
 ## Readiness Verdict
 
-- [ ] PRD source sections read
-- [ ] Product intent stated without technical language
-- [ ] Business objects enumerated
-- [ ] User journeys identified
-- [ ] In-scope / out-of-scope explicitly separated
-- [ ] No unresolved PRD open questions affecting this area
-- [ ] Deferred behaviors explicitly named
-- [ ] Candidate Scope Slices are individually small enough
+- [x] PRD source sections read
+- [x] Product intent stated without technical language
+- [x] Business objects enumerated
+- [x] User journeys identified
+- [x] In-scope / out-of-scope explicitly separated
+- [x] No unresolved PRD open questions affecting this area
+- [x] Deferred behaviors explicitly named
+- [x] Candidate Scope Slices are individually small enough
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR SCOPE SLICES
 
 ---
 
@@ -116,3 +116,4 @@ the orders buyers place — without needing a developer.
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-06-14 | Scaffolded from approved Feature Area Map (`/feature-area scaffold`) | — |
+| 2026-06-14 | Promoted to validated after CLEAR readiness check (`/feature-area promote`) | — |
