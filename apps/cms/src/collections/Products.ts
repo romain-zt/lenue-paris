@@ -69,5 +69,29 @@ export const Products: CollectionConfig = {
       relationTo: "media",
       required: true,
     },
+    {
+      name: "gallery",
+      type: "array",
+      label: "Galerie d'images",
+      admin: {
+        description: "Images supplémentaires du produit (après l'image principale).",
+      },
+      fields: [
+        {
+          name: "image",
+          type: "upload",
+          relationTo: "media",
+          required: true,
+        },
+      ],
+    },
+    {
+      name: "description",
+      type: "textarea",
+      localized: true,
+      admin: {
+        description: "Description du produit affichée sur la page détail.",
+      },
+    },
   ],
 };
