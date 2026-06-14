@@ -1,0 +1,51 @@
+name: PR Ready — Auto-merge Orchestrator Tracking PRs
+
+# Fires when a PR is marked ready for review. If it's an orchestrator tracking PR
+# (title starts with "chore(orchestrator): [tracking]"), wait for required checks,
+# merge it, then re-dispatch the Phase Orchestrator to advance the chain.
+
+on:
+  pull_request:
+    types: [ready_for_review]
+
+jobs:
+  auto-merge-tracking:
+    if: "startsWith(github.event.pull_request.title, 'chore(orchestrator): [tracking]')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      actions: write
+      contents: read
+      pull-requests: write
+      checks: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_TITLE: ${{ github.event.pull_request.title }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for required checks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+          REQUIRED_CHECKS: ${{ vars.REQUIRED_CHECKS || 'quality' }}
+        run: bash .github/scripts/core/wait-for-required-pr-checks.sh
+
+      - name: Merge tracking PR
+        run: |
+          echo "✅ Tracking PR #$PR_NUMBER is ready: $PR_TITLE"
+          gh pr merge "$PR_NUMBER" \
+            --repo "$REPO" \
+            --merge \
+            --subject "chore(orchestrator): complete phase tracking PR #$PR_NUMBER" \
+            --delete-branch
+
+      - name: Dispatch Phase Orchestrator
+        run: |
+          gh workflow run phase-orchestrator.yml \
+            --repo "$REPO" \
+            -f reason="tracking PR #$PR_NUMBER merged — auto-dispatch"

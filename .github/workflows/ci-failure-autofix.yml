@@ -1,0 +1,66 @@
+name: CI Failure Autofix — Cursor Agent
+
+# When CI or E2E fails on a pull request, a Cursor cloud agent reads the failing
+# logs, pushes the smallest fix to the PR branch, and lets the checks re-run.
+#
+# Loop safety:
+#   - Kill switch:  ORCHESTRATOR_ENABLED=false pauses it (shared with the pipeline).
+#   - Budget:       MAX_CI_AUTOFIX_ATTEMPTS (default 3) caps fixes per PR via the
+#                   `[ci-autofix]` commit marker; past that it posts NEED_HUMAN.
+#   - Scope:        PR failures only; orchestrator/* branches are skipped (they
+#                   run their own remediation).
+#
+# NOTE: workflow_run only triggers from the copy of this file on the default
+# branch, so it starts working once merged to main.
+
+on:
+  workflow_run:
+    workflows: ["CI", "E2E"]
+    types: [completed]
+
+concurrency:
+  group: ci-autofix-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  autofix:
+    name: ci-failure-autofix
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    if: >-
+      github.event.workflow_run.conclusion == 'failure'
+      && github.event.workflow_run.event == 'pull_request'
+      && github.event.workflow_run.head_repository.full_name == github.repository
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install script deps
+        run: npm install --prefix .github/scripts/core
+
+      - name: Run CI failure autofix
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          # Model tier is selected in .github/scripts/core/cursor-models.config.ts
+          # (Manager by default, Vision when the PR touches sensitive paths).
+          # Override per-tier ids via repo variables when bumping model versions.
+          CURSOR_MODEL_VISION_ID: ${{ vars.CURSOR_MODEL_VISION_ID }}
+          CURSOR_MODEL_MANAGER_ID: ${{ vars.CURSOR_MODEL_MANAGER_ID }}
+          CURSOR_MODEL_EXECUTOR_ID: ${{ vars.CURSOR_MODEL_EXECUTOR_ID }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          ORCHESTRATOR_ENABLED: ${{ vars.ORCHESTRATOR_ENABLED }}
+          MAX_CI_AUTOFIX_ATTEMPTS: ${{ vars.MAX_CI_AUTOFIX_ATTEMPTS || '3' }}
+          SKIP_BRANCH_PREFIXES: ${{ vars.CI_AUTOFIX_SKIP_BRANCH_PREFIXES || 'orchestrator/' }}
+        run: npx --prefix .github/scripts/core tsx .github/scripts/core/ci-failure-autofix.ts

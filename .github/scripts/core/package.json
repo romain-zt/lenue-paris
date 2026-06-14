@@ -1,0 +1,10 @@
+{
+  "name": "cursor-automation-scripts",
+  "private": true,
+  "type": "module",
+  "description": "Cloud-agent CI scripts for the Cursor governance template. Installed in CI with `npm install --prefix .github/scripts/core`.",
+  "dependencies": {
+    "@cursor/sdk": "1.0.12",
+    "tsx": "^4.21.0"
+  }
+}

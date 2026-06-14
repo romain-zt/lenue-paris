@@ -1,0 +1,71 @@
+name: Framework Audit
+
+# Validates .cursor/core/framework.manifest.json completeness.
+# - Nightly: detects drift, optionally fires framework-improver for core-broken gaps.
+# - PR push: fails the check if core-broken gaps or append-only violations are found.
+# - Manual: with OPEN_IMPROVER_PR=true to trigger improver agent.
+
+on:
+  schedule:
+    - cron: "0 2 * * *"  # nightly at 02:00 UTC
+  push:
+    paths:
+      - ".cursor/core/**"
+      - ".cursor/core/framework.manifest.json"
+      - ".cursor/core/framework.manifest.schema.json"
+  workflow_dispatch:
+    inputs:
+      open_improver_pr:
+        description: "Fire framework-improver for core-broken gaps? (true/false)"
+        required: false
+        default: "false"
+      dry_run:
+        description: "Dry run — no PRs or issues (true/false)"
+        required: false
+        default: "false"
+
+concurrency:
+  group: framework-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: framework-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # needed for git show main:... in append-only check
+
+      - name: Install framework script deps
+        run: npm install --prefix .github/scripts/core
+
+      - name: Validate manifest schema
+        run: |
+          node -e "
+            const fs = require('fs');
+            const m = JSON.parse(fs.readFileSync('.cursor/core/framework.manifest.json', 'utf-8'));
+            if (!m.version || !Array.isArray(m.entries)) { process.exit(1); }
+            console.log('Manifest valid: ' + m.entries.length + ' entries');
+          "
+
+      - name: Run framework audit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPEN_IMPROVER_PR: ${{ github.event.inputs.open_improver_pr || 'false' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          IMPROVER_PR_CAP: "3"
+          TIER_COMPLIANCE_THRESHOLD: "0.60"
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: npx --prefix .github/scripts/core tsx .github/scripts/core/framework-audit.ts
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: framework-audit-report
+          path: |
+            .cursor/core/framework.manifest.json
+          retention-days: 7

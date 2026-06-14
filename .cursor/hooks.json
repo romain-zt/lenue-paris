@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": ".cursor/core/hooks/tier-classifier.sh",
+        "matcher": "StrReplace|Write|EditNotebook",
+        "failClosed": false
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": ".cursor/core/hooks/tier-telemetry.sh",
+        "matcher": "StrReplace|Write|EditNotebook|Task",
+        "failClosed": false
+      }
+    ]
+  }
+}

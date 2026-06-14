@@ -1,0 +1,72 @@
+name: PRD Decomposition
+
+# Bridges "PRD is ready" → "pipeline has runnable slice steps", autonomously.
+# When docs/project.config.md has "Autonomous decomposition enabled: yes", a Cursor
+# cloud agent runs the .cursor/ decomposition chain (Feature Area + Scope Slice) and
+# wires orchestration.prd-flow-map.json, opening a PR that pr-automation.yml merges.
+# That merge feeds orchestration-automation.yml → the phase orchestrator.
+#
+# Governed by docs/product-decisions/PD-008-autonomous-decomposition.md.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/prd/PRD.md"
+      - "docs/prd/state.md"
+      - "docs/product/feature-areas/**"
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Run even if the needs-decomposition guard says nothing is pending"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: prd-decomposition-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  decompose:
+    # Skip the noisy commits the bots make (status syncs, tracking stamps).
+    if: >-
+      github.event_name != 'push'
+      || !contains(github.event.head_commit.message, '[skip ci]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ vars.ORCHESTRATOR_TRACKING_BASE || 'main' }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps
+        run: npm install --prefix .github/scripts/core
+
+      - name: Run PRD decomposer
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          # Model tier is Vision (.github/scripts/core/cursor-models.config.ts) — autonomous
+          # product-scope commitments that feed implementation. Override per-tier ids via
+          # repo variables when bumping model versions.
+          CURSOR_MODEL_VISION_ID: ${{ vars.CURSOR_MODEL_VISION_ID }}
+          CURSOR_MODEL_MANAGER_ID: ${{ vars.CURSOR_MODEL_MANAGER_ID }}
+          CURSOR_MODEL_EXECUTOR_ID: ${{ vars.CURSOR_MODEL_EXECUTOR_ID }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ORCHESTRATOR_ENABLED: ${{ vars.ORCHESTRATOR_ENABLED || 'true' }}
+          ORCHESTRATOR_TRACKING_BASE: ${{ vars.ORCHESTRATOR_TRACKING_BASE || 'main' }}
+          DECOMPOSER_FORCE: ${{ (github.event_name == 'workflow_dispatch' && inputs.force) && '1' || '' }}
+        run: npx --prefix .github/scripts/core tsx .github/scripts/core/prd-decomposer.ts

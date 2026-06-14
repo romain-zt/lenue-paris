@@ -1,0 +1,113 @@
+name: Orchestrator Cleanup
+
+# Frequent safety net ("re-catch"). Runs independently of any PR event so nothing
+# can stay stuck for more than ~15 minutes:
+#   1. Close duplicate tracking PRs for the same step (keep the best one).
+#   2. Auto-merge stuck "ready" tracking PRs that missed the pr-ready.yml trigger.
+#   3. Re-dispatch stale draft tracking PRs (stalled agents) for a fresh remediation.
+#   4. Reset in-progress steps with no live draft tracking PR back to not-started.
+#   5. Reconcile not-started steps that still have an open draft tracking PR
+#      (worker race) — restore them to in-progress so the next worker picks up.
+#   6. workflow_run trigger: when CI/E2E fails on an orchestrator/* tracking branch,
+#      immediately re-dispatch the corresponding worker (no need to wait for cron).
+
+on:
+  push:
+    # GitHub Actions cron is unreliable in practice (we've seen 2-hour skips on
+    # this repo). The push trigger is the primary path: every merge to main
+    # fires the cleanup sweep. The cron is a backup for quiet periods.
+    branches: [main]
+  schedule:
+    - cron: "*/15 * * * *"   # every 15 minutes (best-effort backup)
+  workflow_run:
+    workflows: ["CI", "E2E"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      stale_ready_minutes:
+        description: "Minutes a ready tracking PR must sit before force-merging"
+        required: false
+        default: "10"
+        type: string
+      stale_draft_minutes:
+        description: "Minutes a draft tracking PR must sit before re-dispatch"
+        required: false
+        default: "15"
+        type: string
+
+concurrency:
+  group: orchestrator-cleanup-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  # workflow_run path: a CI/E2E run failed on a branch. If it's an orchestrator/*
+  # tracking branch, re-dispatch its phase-orchestrator worker now instead of
+  # waiting up to 15 minutes for the next cron tick. We only react to failures on
+  # tracking branches so we never spam-redispatch on normal PR failures (those
+  # are handled by ci-failure-autofix.yml).
+  redispatch-on-tracking-ci-failure:
+    if: >-
+      github.event_name == 'workflow_run'
+      && github.event.workflow_run.conclusion == 'failure'
+      && github.event.workflow_run.event == 'pull_request'
+      && startsWith(github.event.workflow_run.head_branch, 'orchestrator/tracking-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
+      WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+    steps:
+      - name: Re-dispatch phase-orchestrator worker for failing tracking PR
+        run: |
+          set -euo pipefail
+          echo "🔁 Detected CI failure (${WORKFLOW_NAME}) on tracking branch ${HEAD_BRANCH}"
+          # tracking branch format: orchestrator/tracking-<step_id>-<timestamp>
+          STEP_ID=$(echo "$HEAD_BRANCH" \
+            | sed -E 's#^orchestrator/tracking-##' \
+            | sed -E 's#-[0-9]{10,}$##')
+          if [ -z "$STEP_ID" ] || [ "$STEP_ID" = "$HEAD_BRANCH" ]; then
+            echo "⚠️  Could not parse step id from branch '$HEAD_BRANCH' — skipping."
+            exit 0
+          fi
+          echo "🚀 Dispatching phase-orchestrator worker for step: $STEP_ID"
+          gh workflow run phase-orchestrator.yml \
+            --repo "$REPO" \
+            -f step_id="$STEP_ID" \
+            -f reason="auto: CI failure on tracking PR (${WORKFLOW_NAME} run $RUN_ID)"
+
+  cleanup:
+    if: github.event_name != 'workflow_run'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ vars.ORCHESTRATOR_TRACKING_BASE || 'main' }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps
+        run: npm install --prefix .github/scripts/core
+
+      - name: Run cleanup
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ORCHESTRATOR_TRACKING_BASE: ${{ vars.ORCHESTRATOR_TRACKING_BASE || 'main' }}
+          REQUIRED_CHECKS: ${{ vars.REQUIRED_CHECKS || 'quality' }}
+          STALE_READY_MINUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.stale_ready_minutes || '10' }}
+          STALE_DRAFT_MINUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.stale_draft_minutes || '15' }}
+        run: npx --prefix .github/scripts/core tsx .github/scripts/core/orchestrator-cleanup.ts

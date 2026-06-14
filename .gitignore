@@ -1,1 +1,69 @@
 .old
+
+# Track PRD, product decomposition trees, and process synthesis docs; ignore other paths under docs/
+docs/*
+!docs/prd/
+!docs/prd/**
+!docs/product/
+!docs/product/**
+!docs/product-decisions/
+!docs/product-decisions/**
+!docs/process/
+!docs/process/**
+!docs/framework-decisions/
+!docs/framework-decisions/**
+# Orchestration state (read + written by the GitHub automation — must be committed)
+!docs/state/
+!docs/state/**
+
+# Framework repo: project overlays are per-project content, not framework
+# Downstream projects commit their own .cursor/project/** and .github/scripts/project/**
+.cursor/project/**
+!.cursor/project/README.md
+!.cursor/project/*/.gitkeep
+.cursor/observability/
+.github/scripts/project/**
+!.github/scripts/project/.gitkeep
+.github/workflows/project--*.yml
+
+# Node / pnpm / npm
+node_modules/
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Test
+coverage/
+.vitest-cache/
+
+# Prisma
+prisma/migrations/dev.db*
+prisma/*.db
+prisma/*.db-journal
+
+# Environments
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
