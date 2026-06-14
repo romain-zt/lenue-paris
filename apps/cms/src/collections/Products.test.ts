@@ -54,4 +54,10 @@ describe("Products collection", () => {
     expect(sizes?.admin?.condition?.(null, { category: "robe" })).toBe(true);
     expect(sizes?.admin?.condition?.(null, { category: "foulard" })).toBe(false);
   });
+
+  it("requires at least one gallery image", () => {
+    const images = field("images") as { type?: string; minRows?: number };
+    expect(images?.type).toBe("array");
+    expect(images?.minRows).toBe(1);
+  });
 });

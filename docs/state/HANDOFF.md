@@ -23,35 +23,39 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Active work
 
-**Step:** `orch-whatsapp-checkout--v0-checkout-and-wa-handoff` — **in progress** (layer 5 complete).
+**Step:** `orch-cms-products--v0-product-crud` — **complete**.
 
-- User story: `docs/product/user-stories/whatsapp-checkout--v0-checkout-and-wa-handoff--US-001--submit-order-and-handoff.md` (`ready-for-spec`)
-- Spec: `docs/product/specs/whatsapp-checkout--v0-checkout-and-wa-handoff--US-001--submit-order-and-handoff.spec.md` (`ready-for-implementation`)
-- Layer 1 shipped: CMS `orders` schema extended with `length`, `priceEur`, `locale` + unit tests
-- Layer 2 shipped: `@repo/checkout` — `CreateOrderInput`/response types, `OrderSavePayload`, WhatsApp message contracts + contract tests
-- Layer 3 shipped: `@repo/checkout` — `validateOrderInput`, `buildWhatsAppMessage`, `buildWhatsAppHandoffUrl`, localized copy + unit tests
-- Layer 4 shipped: `POST /api/orders` — parse body, product lookup, Payload order create, 201 + `whatsappUrl` + contract tests
-- Layer 5 shipped: `/[locale]/order/[slug]` checkout page — product summary, form, POST then WhatsApp handoff + component tests
-- Tracking PR #24 — **not ready** (layer 6 remains)
+### What was implemented (layer 1 — data/schema)
 
-## Layer progress (v0 Checkout and WhatsApp Handoff)
+- User story authored: `docs/product/user-stories/cms-products--v0-product-crud--US-001--create-edit-archive-product.md`
+- Spec authored: `docs/product/specs/cms-products--v0-product-crud--US-001--create-edit-archive-product.spec.md`
+- `apps/cms/src/collections/Products.ts` — added `minRows: 1` to the `images` array field (enforces at least one gallery image, per AC-4).
+- `apps/cms/src/collections/Products.test.ts` — added test `"requires at least one gallery image"`.
+- All existing schema (localized name/description, EUR price, category, `available` archive flag) was already in place.
+- `pnpm --filter cms test` → 13/13 pass. `pnpm --filter cms typecheck` → clean.
+
+### Layer progress (v0 Product CRUD)
 
 | Layer | Status | Notes |
 |-------|--------|-------|
-| 1. data/schema | ✅ complete | CMS `orders.length`, `priceEur`, `locale`; `Orders.test.ts` |
-| 2. contracts/types | ✅ complete | `@repo/checkout` — API + WA message types, field keys, contract tests |
-| 3. domain/business logic | ✅ complete | `validateOrderInput`, `buildWhatsAppMessage`, `buildWhatsAppHandoffUrl`, `checkout-copy` |
-| 4. API/route handlers | ✅ complete | `POST /api/orders` + contract tests |
-| 5. UI | ✅ complete | `/[locale]/order/[slug]` checkout page + component tests |
-| 6. tests + state finalization | ⏳ next | Full check pass, step `complete` |
+| 1. data/schema | ✅ complete | `Products.ts` — all fields, `minRows: 1` on images, `available` for archive |
+| 2. contracts/types | ✅ n/a | No custom API route; Payload auto-generates REST + types |
+| 3. domain/business logic | ✅ n/a | Validation handled by Payload field constraints |
+| 4. API/route handlers | ✅ n/a | Payload admin REST auto-generated |
+| 5. UI | ✅ n/a | Payload admin panel auto-generated from collection config |
+| 6. tests + state finalization | ✅ complete | Unit tests pass; status.json → complete |
+
+## Previous completed steps
+
+- `orch-whatsapp-checkout--v0-checkout-and-wa-handoff` — complete (layers 1–6 shipped, PR #24).
 
 ## Known issues / decisions in effect
 
 - PD-001 and PD-006 files still absent from `docs/product-decisions/` (only PD-007, PD-008). User story + spec authored under orchestrator mandate.
-- Order CTA for dresses appends `?length=&size=` query params; checkout reads them on the order page (layer 5).
+- Order CTA for dresses appends `?length=&size=` query params; checkout reads them on the order page.
 - Payload `(payload)` app route group not yet generated — run `npx create-payload-app@latest --no-deps` from `apps/cms` first time.
 - `.env` not created yet — copy `.env.example` and fill in real values.
 
 ## Next recommended step
 
-Continue `orch-whatsapp-checkout--v0-checkout-and-wa-handoff` **layer 6**: run full repo checks, finalize orchestration state (`complete`), then `gh pr ready 24`.
+Next eligible orchestration step: `orch-cms-products--v0-product-variants-and-pairings` (dress length variants and related-product pairings in the CMS admin — data model only, no buyer-facing UI in v0).
