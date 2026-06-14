@@ -61,6 +61,54 @@ describe("GET /api/products/[slug]", () => {
     });
   });
 
+  it("includes variantPickers for dress fixture with CMS variant fields", async () => {
+    vi.mocked(findPayloadProductBySlug).mockResolvedValue({
+      ...sampleDoc,
+      lengthVariants: ["longer", "shorter"],
+      sizes: ["S", "M", "L"],
+    });
+
+    const request = new NextRequest(
+      "http://localhost:3001/api/products/robe-lin?locale=fr",
+    );
+    const response = await GET(request, {
+      params: Promise.resolve({ slug: "robe-lin" }),
+    });
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    expect(body.product.variantPickers).toEqual({
+      lengthOptions: ["longer", "shorter"],
+      sizeOptions: ["S", "M", "L"],
+    });
+    expect(body.product.orderHref).toBe("/fr/order/robe-lin");
+  });
+
+  it("returns variantPickers null for bag fixture", async () => {
+    vi.mocked(findPayloadProductBySlug).mockResolvedValue({
+      ...sampleDoc,
+      slug: "sac-cuir",
+      name: "Sac cuir",
+      category: "sac",
+      lengthVariants: ["longer"],
+      sizes: ["M"],
+    });
+
+    const request = new NextRequest(
+      "http://localhost:3001/api/products/sac-cuir?locale=fr",
+    );
+    const response = await GET(request, {
+      params: Promise.resolve({ slug: "sac-cuir" }),
+    });
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    expect(body.product.variantPickers).toBeNull();
+    expect(body.product.orderHref).toBe("/fr/order/sac-cuir");
+  });
+
   it("returns 404 contract for missing slug", async () => {
     vi.mocked(findPayloadProductBySlug).mockResolvedValue(null);
 
