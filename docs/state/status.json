@@ -1,7 +1,8 @@
 {
   "orchestration": {
     "steps": {
-      "bootstrap": "complete"
+      "bootstrap": "complete",
+      "setup": "in-progress"
     },
     "remediation_counts": {}
   }

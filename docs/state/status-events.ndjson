@@ -21,3 +21,4 @@
 {"ts":"2026-06-14T19:49:09.862Z","step":"orch-product-detail--gallery-and-variants","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-14T20:29:28.467Z","reset":true,"actor":"reset","note":"fresh restart after framework upgrade; supersedes resurrected pre-reset events"}
 {"ts":"2026-06-14T20:29:28.467Z","step":"bootstrap","status":"complete","note":"bootstrap anchor (post-reset)","actor":"reset"}
+{"ts":"2026-06-14T20:34:06.629Z","step":"setup","status":"in-progress","actor":"orchestrator"}
