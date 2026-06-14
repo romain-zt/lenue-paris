@@ -38,12 +38,21 @@
 import type { ModelSelection } from "@cursor/sdk";
 
 /** Canonical params for each tier. Kept in code so the routing doctrine is
- *  reviewable; only the model `id` is overridable via env var. */
+ *  reviewable; only the model `id` is overridable via env var.
+ *
+ *  IMPORTANT: the Cloud API rejects param sets that don't EXACTLY match a
+ *  registered variant ("invalid_model: does not match a known variant"). When
+ *  a model exposes more knobs than we care about (e.g. opus's `cyber` and
+ *  `fast` toggles) we must still pass values for them. Run the
+ *  Discover Cursor Models workflow whenever you change a tier id; it prints
+ *  the default variant params so you can sync this map. */
 const TIER_PARAMS = {
   vision: [
+    { id: "cyber", value: "false" },
     { id: "thinking", value: "true" },
     { id: "context", value: "1m" },
     { id: "effort", value: "high" },
+    { id: "fast", value: "false" },
   ],
   manager: [
     { id: "thinking", value: "true" },
