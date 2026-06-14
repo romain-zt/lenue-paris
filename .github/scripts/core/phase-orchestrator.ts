@@ -119,10 +119,17 @@ This run must produce exactly one concrete outcome:
 
 Hard limits: max 1 broad exploration pass; **after reading 5 files without writing code you MUST stop reading** and either write code or commit a blocked state; max 2 attempts to patch the same file.
 
-## Work package limit
-Implement the smallest coherent layer for this step, in this order, doing only the first incomplete one:
-1. data/schema (migrations) → 2. contracts/types → 3. domain/business logic → 4. API/route handlers → 5. UI → 6. tests + state finalization.
+## Decompose on pickup, then delegate per part (mandatory)
+Per \`.cursor/core/rules/62-feature-decomposition.mdc\`: this slice was intentionally **not** pre-split into tasks. As the Manager that just picked it up, FIRST decompose it into per-part tasks, THEN delegate each part to the matching specialist subagent — do not build the whole slice yourself as one blob.
+Layer order (do the first incomplete one this run): 1. data/schema (migrations) → 2. contracts/types → 3. domain/business logic → 4. API/route handlers → 5. UI/design → 6. copy → 7. tests + state finalization.
+Map each part to a specialist (via \`Task\`): \`backend-specialist\` (data/domain), \`http-specialist\` (contracts/API), \`frontend-specialist\` + \`design-specialist\` (UI), \`copywriter-specialist\` (copy). Design and backend are first-class parts, never an afterthought.
 Record the next layer in \`docs/state/HANDOFF.md\`, commit, push, and stop unless this is the finalization layer.
+
+## Workflow order per part
+spec → plan → tests (failing) → implement → re-test (validation) → review. Don't write implementation before its test; don't mark a part done with red/absent tests.
+
+## Challenge the plan (two models, mandatory for non-trivial slices)
+Per \`.cursor/core/rules/63-two-model-challenge.mdc\`, before implementing a non-trivial decomposition, delegate your plan to the **\`vision-reviewer\`** subagent (a different model) via \`Task\` to challenge the part split + test list. Resolve its objections before the executors start typing.
 
 ## Governance
 Follow the active \`.cursor/core/rules/\` — especially \`implementation-workflow.mdc\` (spec → test → implementation gates),
@@ -130,11 +137,15 @@ Follow the active \`.cursor/core/rules/\` — especially \`implementation-workfl
 the v0 boundary in \`docs/project.config.md\`. Do not change architecture, dependencies, or package boundaries unless the step requires it.
 
 ## Tier delegation (mandatory)
-You are running at **Manager** tier. Per \`.cursor/core/rules/20-model-routing.mdc\`, manager plans/splits, executor builds.
-Two named subagents are pre-wired into this run via the \`Task\` tool:
-- **\`executor\`** (composer-2.5) — for the actual code-typing brick (one Task / one commit). Use it for mechanical edits, scaffolding from an approved spec, and test-first writes once the layer to implement is unambiguous.
-- **\`vision-reviewer\`** (claude-opus-4-8) — read-only escalation for high-risk decisions (irreversible, security, architecture, contract). Use it before committing changes that touch \`auth\`, \`money\`, \`data migrations\`, public contracts, or anything you can't undo.
-Default DOWN: do as much as you can yourself at Manager; delegate to \`executor\` for the implementation brick; escalate to \`vision-reviewer\` only when the call is genuinely high-stakes.
+You are running at **Manager** tier. Per \`.cursor/core/rules/20-model-routing.mdc\`, manager plans/splits, **executor (composer-2.5) builds**. The default for ALL code-typing is composer — delegate it; do not type the bulk of the implementation yourself.
+Named subagents pre-wired into this run via the \`Task\` tool:
+- **Per-part specialists** (all composer-2.5): \`backend-specialist\`, \`http-specialist\`, \`frontend-specialist\`, \`design-specialist\`, \`copywriter-specialist\` — delegate each feature part to its specialist (see §Decompose on pickup).
+- **\`executor\`** (composer-2.5) — generic brick for parts that don't fit a specialist (one Task / one commit).
+- **\`vision-reviewer\`** (claude-opus-4-8) — read-only escalation for high-risk decisions (irreversible, security, architecture, contract). Use before committing changes touching \`auth\`, \`money\`, \`data migrations\`, public contracts, or anything you can't undo.
+Default DOWN: plan/split at Manager, push the typing to composer specialists/executor, escalate to \`vision-reviewer\` only when genuinely high-stakes.
+
+## Review includes setup self-improvement (mandatory)
+At the review step, also check whether the setup itself should improve: did this work reveal a missing or weak rule / skill / agent / command / hook? If yes, surface it (run \`/framework-audit\` for framework gaps; \`/btw\` it with a priority for product gaps) — do not silently work around a recurring gap.
 
 ## Checks
 Run the repo's check commands (typically \`pnpm typecheck\`, \`pnpm build\`, \`pnpm test\`; prefer the narrowest relevant command first).
@@ -739,7 +750,7 @@ Read \`docs/state/HANDOFF.md\` and \`docs/project.config.md\`, then anchor on:
 - Scope Slice: \`${w.scopeSliceFile}\`
 ${us}${plan}${notes}
 ### Done criteria
-1. Decompose this Slice into per-part tasks and delegate each part to the matching specialist (see \`.cursor/core/rules/user-story-workflow.mdc\`) — do not build the whole slice as one undifferentiated blob.
+1. Decompose this Slice into per-part tasks and delegate each part to the matching specialist (see \`.cursor/core/rules/62-feature-decomposition.mdc\`) — do not build the whole slice as one undifferentiated blob.
 2. Workflow order per part: spec → plan → tests (failing) → implement → re-test (validation) → review.
 3. Repo check commands pass on every head you push.
 4. Append \`status-log.ts set "${stepRow.id}" in-review\` when built + tested, \`validated\` after re-test/review pass, then \`complete\` on \`{TRACKING_PR_BRANCH}\`, then \`gh pr ready {TRACKING_PR_NUMBER} --repo {REPO}\`.

@@ -32,6 +32,10 @@ Every project ships a **`docker-compose.yml`** that brings up:
 Do not just tell the user to "use this stack." A clonable skeleton lives at
 `.cursor/core/templates/starter-monorepo/` — fork it to start. It wires the workspace, Payload (i18n + S3), and the docker-compose (Postgres + MinIO).
 
+**Setup is the first phase** (`05-project-setup.mdc`): pin the catalog to the latest stable, keep it minimal (v0 only), and ship a visible first page early.
+
+**Apps are pickable.** The starter is a monorepo with multiple apps (`web`, `cms`, …) but you scaffold **only** the apps listed in `docs/project.config.md` → `## Apps` (catalogued in `starter-monorepo/apps/CATALOG.md`). Keep the monorepo; default to the fewest apps; add more when a slice needs them. Don't ship 3 apps for a 1-surface product.
+
 ## Where architecture lives
 
 - **Project baseline** (this rule + the starter template) sets the defaults every Spec inherits.
@@ -44,6 +48,7 @@ Do not just tell the user to "use this stack." A clonable skeleton lives at
 |---------|---------|
 | Async/long-running | Stream (SSE) or background job — never a blocking sync POST > 2s (per Spec SP-15) |
 | Media upload | Presigned/server upload to S3 (MinIO local) |
+| Seed + base assets (Payload) | Always ship a seed script **and** commit original/basic assets (logo, favicon, placeholders) in the Next `public/` dir — the app renders real content with an empty DB + empty bucket (see `05-project-setup.mdc` §2.5). Uploaded media still goes to S3. |
 | Localization | Payload locales + Next i18n routing, default + at least one secondary locale wired |
 | Config/secrets | `.env` (never committed); `.env.example` documents every key |
 | Types | Generated Payload types shared across the monorepo |

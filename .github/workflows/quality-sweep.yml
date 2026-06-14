@@ -1,0 +1,48 @@
+name: Quality Sweep
+
+# Scheduled product-code health pass: run quality checks, propose a small safe
+# batch of refactors/cleanup/missing tests, and open a DRAFT PR (never merges).
+# Complements Framework Audit (which governs .cursor/core/ itself).
+
+on:
+  schedule:
+    - cron: "0 4 * * 1"  # weekly, Monday 04:00 UTC
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "Base branch to sweep + target the PR at"
+        required: false
+        default: "main"
+
+concurrency:
+  group: quality-sweep-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: quality-sweep
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install framework script deps
+        run: npm install --prefix .github/scripts/core
+
+      - name: Run quality sweep
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SWEEP_BASE: ${{ github.event.inputs.base || 'main' }}
+          ORCHESTRATOR_ENABLED: ${{ vars.ORCHESTRATOR_ENABLED || 'true' }}
+        run: npx --prefix .github/scripts/core tsx .github/scripts/core/quality-sweep.ts

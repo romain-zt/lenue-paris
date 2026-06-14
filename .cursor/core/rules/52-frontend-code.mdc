@@ -43,6 +43,43 @@ function Orders() {
 
 Rendering a collection maps to one item component — `items.map(i => <Item key={i.id} item={i} />)` — not flat per-item markup + logic inside the loop (mirrors the single-handler rule in `50-code-quality.mdc`).
 
+## Markup quality — semantic, shallow, no div soup
+
+Markup is code. "It renders" is not the bar. Concretely:
+
+- **Use semantic elements, not `<div>` for everything.** Reach for `<main> <header> <nav> <section> <article> <aside> <footer> <ul>/<li> <button> <a>` before a `<div>`. A `<div>` (or `<span>`) is only for genuinely non-semantic grouping/styling.
+- **Exactly one `<main>` per page**, and use landmarks once each (`<header>`, `<nav>`, `<footer>`). Never nest `<main>` inside `<main>`, and never wrap the whole tree in a chain of bare `<div>`s.
+- **No wrapper-div chains ("div soup in flames").** If you have `<div><div><div>…</div></div></div>` with no semantic or layout reason, collapse it. A single element should not be wrapped more than necessary.
+- **Cap nesting depth.** If JSX nests more than ~4 levels deep, extract a child component. Deep trees are a smell, not a layout requirement.
+- **Buttons vs links:** `<button>` performs an action; `<a href>` navigates. Never a `<div onClick>` for either (it loses keyboard + a11y for free).
+- **Lists are `<ul>/<ol>` + `<li>`**, not stacks of `<div>`s.
+
+```tsx
+// ❌ BAD — div soup, no semantics, action on a div
+<div className="page">
+  <div className="wrap">
+    <div className="inner">
+      <div className="title">Products</div>
+      <div className="list">
+        {items.map((i) => <div key={i.id} onClick={() => open(i)}>{i.name}</div>)}
+      </div>
+    </div>
+  </div>
+</div>
+
+// ✅ GOOD — semantic, shallow, accessible
+<main className="page">
+  <h1>Products</h1>
+  <ul className="list">
+    {items.map((i) => (
+      <li key={i.id}>
+        <button type="button" onClick={() => open(i)}>{i.name}</button>
+      </li>
+    ))}
+  </ul>
+</main>
+```
+
 ## Styling — tokens, mobile-first, accessible
 
 - Use **design tokens** (Tailwind theme scale: spacing, color, type) — no magic px/hex. Extend the theme rather than sprinkling arbitrary values (`p-[13px]`, `text-[#3a3a3a]`).
@@ -61,3 +98,4 @@ Rendering a collection maps to one item component — `items.map(i => <Item key=
 - `"use client"` at the top of the tree by default; secrets in client code.
 - Arbitrary Tailwind values instead of theme tokens; desktop-first then "make it responsive."
 - Hardcoded strings; missing loading/error/empty states; sub-44px touch targets.
+- **Div soup**: nested bare `<div>`s where semantic elements belong; `<div onClick>` instead of `<button>`/`<a>`; multiple/duplicated `<main>` landmarks; JSX nested deeper than ~4 levels without extracting a component.

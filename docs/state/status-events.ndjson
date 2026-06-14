@@ -1,4 +1,5 @@
 {"ts":"2026-01-01T00:00:00.000Z","step":"bootstrap","status":"complete","actor":"seed","note":"pipeline anchor"}
+{"ts":"2026-01-01T00:00:00.000Z","step":"setup","status":"complete","actor":"seed","note":"project already past setup (first home page exists)"}
 {"ts":"2026-01-01T00:00:00.000Z","step":"orch-product-catalog--category-grid","status":"in-progress","actor":"seed"}
 {"ts":"2026-01-01T00:00:00.000Z","step":"orch-product-detail--gallery-and-variants","status":"in-progress","actor":"seed"}
 {"ts":"2026-01-01T00:00:00.000Z","step":"orch-whatsapp-checkout--order-save-and-handoff","status":"todo","actor":"seed"}
@@ -20,3 +21,4 @@
 {"ts":"2026-06-14T19:50:34.438Z","step":"orch-product-detail--gallery-and-variants","status":"in-review","note":"Implementation already on main: gallery, variants, size picker, OrderCTA, 22 tests green, typecheck clean","actor":"agent"}
 {"ts":"2026-06-14T19:50:39.036Z","step":"orch-product-detail--gallery-and-variants","status":"validated","note":"Re-test pass: 22/22 tests green, typecheck clean; all slice acceptance criteria met","actor":"agent"}
 {"ts":"2026-06-14T19:50:43.711Z","step":"orch-product-detail--gallery-and-variants","status":"complete","note":"ProductGallery, VariantSelector, SizePicker, OrderCTA on /produits/[slug]; 22 tests; typecheck; CMS gallery+description schema","actor":"agent"}
+{"ts":"2026-06-14T19:49:09.862Z","step":"orch-product-detail--gallery-and-variants","status":"in-progress","actor":"orchestrator"}

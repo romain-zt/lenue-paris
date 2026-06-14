@@ -2,8 +2,9 @@
   "orchestration": {
     "steps": {
       "bootstrap": "complete",
+      "setup": "complete",
       "orch-product-catalog--category-grid": "complete",
-      "orch-product-detail--gallery-and-variants": "not-started",
+      "orch-product-detail--gallery-and-variants": "in-progress",
       "orch-whatsapp-checkout--order-save-and-handoff": "todo",
       "orch-cms-products--product-management": "todo",
       "orch-cms-products--order-viewing": "todo",
@@ -11,7 +12,8 @@
       "orch-i18n--localized-storefront": "todo"
     },
     "remediation_counts": {
-      "orch-product-catalog--category-grid": 3
+      "orch-product-catalog--category-grid": 3,
+      "orch-product-detail--gallery-and-variants": 1
     }
   }
 }

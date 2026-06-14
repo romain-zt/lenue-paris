@@ -10,9 +10,13 @@ A clonable skeleton that encodes the architecture baseline
   - **Postgres** adapter (`@payloadcms/db-postgres`)
   - **S3 media** (`@payloadcms/storage-s3`) → MinIO locally, real S3 in prod
   - **i18n always on** — Payload localization (`en` default + `fr`) + admin i18n
-- **`apps/web`** — Next.js front-end placeholder that reads from the CMS.
+- **`apps/web`** — Next.js front-end placeholder that reads from the CMS. Base/static
+  assets (logo, favicon, placeholders) are committed in **`apps/web/public/`** so the app
+  renders real assets with an empty media bucket (see `05-project-setup.mdc` §2.5).
 - **`packages/typescript-config`** — shared tsconfig.
 - **`docker-compose.yml`** — Postgres + MinIO + a one-shot bucket creator.
+- **Seed** — add a seed script (`pnpm --filter cms seed`) that populates Payload with
+  starter content so the first page renders meaningfully with an empty DB.
 
 ## Quick start
 
