@@ -2,13 +2,25 @@ name: Conflict Resolver — Smart merge via Cursor Agent
 
 # When main advances, every open non-draft PR that becomes conflicting gets a Cursor
 # agent that merges origin/main into the branch and resolves conflicts before pushing.
-# The 30-min cron is a safety net for conflicts missed by the push trigger.
+#
+# Triggers:
+#   - push to main: primary signal that base advanced — fires immediately.
+#   - workflow_run on CI/E2E completion against main: catches the case where
+#     the push handler ran while GitHub was still computing mergeability.
+#     A second sweep ~1 min later, by which time the calc is usually done.
+#   - 15-min cron: safety net for missed events. (GitHub Actions cron is
+#     unreliable in practice — recent runs have skipped multi-hour windows
+#     — so we don't rely on it as the primary path.)
+#   - workflow_dispatch: manual sweep.
 
 on:
   push:
     branches: [main]
+  workflow_run:
+    workflows: ["CI", "E2E"]
+    types: [completed]
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "*/15 * * * *"
   workflow_dispatch:
     inputs:
       reason:
@@ -22,6 +34,12 @@ concurrency:
 
 jobs:
   resolve-conflicts:
+    # workflow_run only matters when the upstream run was on main — that's when
+    # other PRs' mergeability gets recomputed. Anything else is noise.
+    if: >-
+      github.event_name != 'workflow_run'
+      || (github.event.workflow_run.head_branch == 'main'
+          && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
