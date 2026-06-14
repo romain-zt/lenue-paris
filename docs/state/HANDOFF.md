@@ -23,16 +23,12 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Active work
 
-**Step:** `orch-whatsapp-checkout--v0-checkout-and-wa-handoff` — **in progress** (layer 5 complete).
+**Step:** `orch-whatsapp-checkout--v0-checkout-and-wa-handoff` — **complete** (all 6 layers shipped).
 
-- User story: `docs/product/user-stories/whatsapp-checkout--v0-checkout-and-wa-handoff--US-001--submit-order-and-handoff.md` (`ready-for-spec`)
-- Spec: `docs/product/specs/whatsapp-checkout--v0-checkout-and-wa-handoff--US-001--submit-order-and-handoff.spec.md` (`ready-for-implementation`)
-- Layer 1 shipped: CMS `orders` schema extended with `length`, `priceEur`, `locale` + unit tests
-- Layer 2 shipped: `@repo/checkout` — `CreateOrderInput`/response types, `OrderSavePayload`, WhatsApp message contracts + contract tests
-- Layer 3 shipped: `@repo/checkout` — `validateOrderInput`, `buildWhatsAppMessage`, `buildWhatsAppHandoffUrl`, localized copy + unit tests
-- Layer 4 shipped: `POST /api/orders` — parse body, product lookup, Payload order create, 201 + `whatsappUrl` + contract tests
-- Layer 5 shipped: `/[locale]/order/[slug]` checkout page — product summary, form, POST then WhatsApp handoff + component tests
-- Tracking PR #24 — **not ready** (layer 6 remains)
+- User story: `docs/product/user-stories/whatsapp-checkout--v0-checkout-and-wa-handoff--US-001--submit-order-and-handoff.md`
+- Spec: `docs/product/specs/whatsapp-checkout--v0-checkout-and-wa-handoff--US-001--submit-order-and-handoff.spec.md`
+- All layers complete — full `pnpm typecheck` + `pnpm test` pass (32/32 tests, 5/5 packages)
+- Tracking PR #27 marked ready
 
 ## Layer progress (v0 Checkout and WhatsApp Handoff)
 
@@ -43,7 +39,7 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 | 3. domain/business logic | ✅ complete | `validateOrderInput`, `buildWhatsAppMessage`, `buildWhatsAppHandoffUrl`, `checkout-copy` |
 | 4. API/route handlers | ✅ complete | `POST /api/orders` + contract tests |
 | 5. UI | ✅ complete | `/[locale]/order/[slug]` checkout page + component tests |
-| 6. tests + state finalization | ⏳ next | Full check pass, step `complete` |
+| 6. tests + state finalization | ✅ complete | Full check pass, step `complete`, PR #27 ready |
 
 ## Known issues / decisions in effect
 
@@ -54,4 +50,4 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Next recommended step
 
-Continue `orch-whatsapp-checkout--v0-checkout-and-wa-handoff` **layer 6**: run full repo checks, finalize orchestration state (`complete`), then `gh pr ready 24`.
+Step `orch-whatsapp-checkout--v0-checkout-and-wa-handoff` is **complete**. Next available steps per `status.json`: `orch-cms-products--v0-product-crud` or `orch-whatsapp-checkout--v0-admin-order-list`.
