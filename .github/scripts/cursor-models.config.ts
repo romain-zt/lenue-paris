@@ -51,6 +51,19 @@ export const CURSOR_MODELS = {
    * or strategic → Vision") it runs at Vision tier.
    */
   prdDecomposer: "claude-opus-4-8",
+
+  /**
+   * ci-failure-autofix.ts — reads a failed CI/E2E run's logs and pushes the
+   * smallest fix to the PR branch.
+   *   - `default`   for ordinary build/lint/test/config failures (most cases).
+   *   - `sensitive` when the PR diff touches governance (.cursor/**), pipeline
+   *     state (docs/state/**), or product decomposition (docs/product/**) —
+   *     a wrong fix there is hard to reverse, so it escalates to Vision.
+   */
+  ciAutofix: {
+    default: "claude-4.6-sonnet",
+    sensitive: "claude-opus-4-8",
+  },
 } as const;
 
 /**
@@ -65,24 +78,35 @@ export const SENSITIVE_CONFLICT_GLOBS = [
   "docs/product-decisions/",
 ] as const;
 
+function pickBySensitivity(
+  filePaths: readonly string[],
+  models: { default: string; sensitive: string },
+): { modelId: string; tier: "default" | "sensitive"; matchedPaths: string[] } {
+  const matchedPaths = filePaths.filter((f) =>
+    SENSITIVE_CONFLICT_GLOBS.some((g) => f.startsWith(g)),
+  );
+  if (matchedPaths.length > 0) {
+    return { modelId: models.sensitive, tier: "sensitive", matchedPaths };
+  }
+  return { modelId: models.default, tier: "default", matchedPaths: [] };
+}
+
 export function pickConflictResolverModel(filePaths: readonly string[]): {
   modelId: string;
   tier: "default" | "sensitive";
   matchedPaths: string[];
 } {
-  const matchedPaths = filePaths.filter((f) =>
-    SENSITIVE_CONFLICT_GLOBS.some((g) => f.startsWith(g)),
-  );
-  if (matchedPaths.length > 0) {
-    return {
-      modelId: CURSOR_MODELS.conflictResolver.sensitive,
-      tier: "sensitive",
-      matchedPaths,
-    };
-  }
-  return {
-    modelId: CURSOR_MODELS.conflictResolver.default,
-    tier: "default",
-    matchedPaths: [],
-  };
+  return pickBySensitivity(filePaths, CURSOR_MODELS.conflictResolver);
+}
+
+/**
+ * Same sensitivity logic as the conflict resolver: a CI fix that has to touch
+ * governance / pipeline-state / product files is high-stakes → Vision.
+ */
+export function pickCiAutofixModel(filePaths: readonly string[]): {
+  modelId: string;
+  tier: "default" | "sensitive";
+  matchedPaths: string[];
+} {
+  return pickBySensitivity(filePaths, CURSOR_MODELS.ciAutofix);
 }
