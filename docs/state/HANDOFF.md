@@ -23,11 +23,11 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Active work
 
-**Step:** `orch-product-catalog--v0-category-grid` — contracts/types layer complete; next is domain/business logic.
+**Step:** `orch-product-catalog--v0-category-grid` — domain/business logic layer complete; next is API/route handlers.
 
 - User story: `docs/product/user-stories/product-catalog--v0-category-grid--US-001--browse-and-filter-grid.md` (`ready-for-spec`)
 - Spec: `docs/product/specs/product-catalog--v0-category-grid--US-001--browse-and-filter-grid.spec.md` (`ready-for-implementation`)
-- Package: `@repo/catalog` — shared types, category filter mapping, `ProductCard` contract + unit tests
+- Package: `@repo/catalog` — types, category mapping, `ProductCard`, catalogue fetch helper + unit tests
 
 ## Layer progress (v0 Category Grid)
 
@@ -35,8 +35,8 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 |-------|--------|-------|
 | 1. data/schema | ✅ complete | CMS `products` collection already has category, price, localized name, images |
 | 2. contracts/types | ✅ complete | `packages/catalog` — `ProductCard`, `CatalogListQuery/Response`, filter↔CMS mapping |
-| 3. domain/business logic | ⏳ next | Catalogue fetch + filter logic against Payload |
-| 4. API/route handlers | pending | `GET /api/catalog` per spec |
+| 3. domain/business logic | ✅ complete | `fetchCatalogList`, `buildPayloadProductsWhere`, locale/query normalization |
+| 4. API/route handlers | ⏳ next | `GET /api/catalog` per spec |
 | 5. UI | pending | `/[locale]/catalogue` grid + filter chips + empty states |
 | 6. tests + state finalization | pending | Integration tests + step `complete` |
 
@@ -48,7 +48,6 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 
 ## Next recommended step
 
-1. Implement domain layer: catalogue fetch helper in `packages/catalog` or `apps/web` that queries Payload and applies category filter.
-2. Add `GET /api/catalog` route handler (contracts layer 4).
-3. Build catalogue UI page with mobile-first grid (layer 5).
-4. Run full checks; set `orchestration.steps["orch-product-catalog--v0-category-grid"] = "complete"` and `gh pr ready 9`.
+1. Add `GET /api/catalog` route handler in `apps/web` wiring `fetchCatalogList` to Payload.
+2. Build catalogue UI page with mobile-first grid (layer 5).
+3. Run full checks; set `orchestration.steps["orch-product-catalog--v0-category-grid"] = "complete"` and `gh pr ready 10`.
