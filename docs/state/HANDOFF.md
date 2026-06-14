@@ -16,38 +16,38 @@ editorial, high-quality photography — inspired by Rouje, Loro Piana, The Row, 
 - Monorepo: `apps/web` (Next.js storefront), `apps/cms` (Payload 3 CMS + admin), `packages/*` (pnpm + turbo).
 - Database: Neon (Vercel-native serverless Postgres) in prod; local Postgres via docker-compose for dev.
 - Media: AWS S3 in prod; MinIO (docker-compose) locally.
-- i18n: `fr` primary, `en` secondary — both Payload localization and Next.js i18n routing.
+- i18n: `fr` primary, `en` secondary, `ru` tertiary — Payload localization and Next.js i18n routing.
 - Deployment: Vercel (monorepo — `apps/web` + `apps/cms` in the same project, different build commands).
 - CMS collections: `users`, `media`, `products`, `orders`.
 - Checkout: web form → WhatsApp deep-link (pre-filled message) + POST to `/api/orders` (Payload).
 
 ## Active work
 
-**Step:** `orch-product-detail--v0-pdp-variant-pickers` — **complete**.
+**Step:** `orch-whatsapp-checkout--v0-checkout-and-wa-handoff` — **in progress** (layer 1 complete).
 
-- User story: `docs/product/user-stories/product-detail--v0-pdp-variant-pickers--US-001--select-dress-variants.md` (`ready-for-spec`)
-- Spec: `docs/product/specs/product-detail--v0-pdp-variant-pickers--US-001--select-dress-variants.spec.md` (`ready-for-implementation`)
-- All layers shipped: CMS schema → `@repo/product-detail` contracts/domain → API → dress PDP pickers UI → tests + state finalization
-- Tracking PR #19 marked ready for merge
+- User story: `docs/product/user-stories/whatsapp-checkout--v0-checkout-and-wa-handoff--US-001--submit-order-and-handoff.md` (`ready-for-spec`)
+- Spec: `docs/product/specs/whatsapp-checkout--v0-checkout-and-wa-handoff--US-001--submit-order-and-handoff.spec.md` (`ready-for-implementation`)
+- Layer 1 shipped: CMS `orders` schema extended with `length`, `priceEur`, `locale` + unit tests
+- Tracking PR #20 — **not ready** (layers 2–6 remain)
 
-## Layer progress (v0 PDP Variant Pickers)
+## Layer progress (v0 Checkout and WhatsApp Handoff)
 
 | Layer | Status | Notes |
 |-------|--------|-------|
-| 1. data/schema | ✅ complete | CMS `products.lengthVariants` + `sizes` select fields; schema unit tests |
-| 2. contracts/types | ✅ complete | `variants.ts` types + exports; `ProductDetail.variantPickers`; Payload doc fields |
-| 3. domain/business logic | ✅ complete | `resolveVariantPickers`, `buildOrderHrefWithVariants`, `isVariantSelectionComplete`; `toProductDetail` resolves pickers |
-| 4. API/route handlers | ✅ complete | `GET /api/products/[slug]` exposes `variantPickers` via `fetchProductDetail`; dress + bag contract tests |
-| 5. UI | ✅ complete | `ProductOrderSection` + localized `pdp-copy`; dress pickers, disabled CTA, variant query params on order link |
-| 6. tests + state finalization | ✅ complete | All spec ACs covered; `pnpm typecheck`, `pnpm build`, `pnpm test` green; step marked `complete` |
+| 1. data/schema | ✅ complete | CMS `orders.length`, `priceEur`, `locale`; `Orders.test.ts` |
+| 2. contracts/types | ⏳ next | `@repo/checkout` package — order input/output, WA message types |
+| 3. domain/business logic | ⏳ pending | Validation, `buildWhatsAppMessage`, handoff URL builder |
+| 4. API/route handlers | ⏳ pending | `POST /api/orders` |
+| 5. UI | ⏳ pending | `/[locale]/order/[slug]` checkout page |
+| 6. tests + state finalization | ⏳ pending | Contract tests, component tests, step `complete` |
 
 ## Known issues / decisions in effect
 
 - PD-001 and PD-006 files still absent from `docs/product-decisions/` (only PD-007, PD-008). User story + spec authored under orchestrator mandate.
-- Order CTA for dresses appends `?length=&size=` query params; checkout slice (`orch-whatsapp-checkout--v0-checkout-and-wa-handoff`) reads them.
+- Order CTA for dresses appends `?length=&size=` query params; checkout reads them on the order page (layer 5).
 - Payload `(payload)` app route group not yet generated — run `npx create-payload-app@latest --no-deps` from `apps/cms` first time.
 - `.env` not created yet — copy `.env.example` and fill in real values.
 
 ## Next recommended step
 
-Pick the next orchestration step from `docs/state/orchestration.prd-flow-map.json` — likely `orch-whatsapp-checkout--v0-checkout-and-wa-handoff` (consumes dress variant query params) or another P0/P1 slice per flow map priority.
+Continue `orch-whatsapp-checkout--v0-checkout-and-wa-handoff` **layer 2**: scaffold `@repo/checkout` with order create types and WhatsApp message contracts traced to the spec.
