@@ -15,7 +15,7 @@
     },
     "remediation_counts": {
       "orch-product-catalog--v0-category-grid": 5,
-      "orch-product-detail--v0-pdp-variant-pickers": 1
+      "orch-product-detail--v0-pdp-variant-pickers": 2
     },
     "blocker": null
   }
