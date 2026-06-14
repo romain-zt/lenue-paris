@@ -1,32 +1,66 @@
 import type { SupportedLocale } from "@repo/catalog";
-import type { ProductLengthVariant, ProductSizeCode } from "@repo/product-detail";
+import { formatWhatsAppOrderMessage } from "./checkout-copy";
+import type {
+  WhatsAppHandoffUrl,
+  WhatsAppOrderMessage,
+  WhatsAppOrderMessageInput,
+} from "./whatsapp.types";
+import { DEFAULT_WHATSAPP_ORDER_NUMBER } from "./whatsapp.types";
 
-/** Default wa.me path segment — override via WHATSAPP_ORDER_NUMBER env (spec Implementation notes). */
-export const DEFAULT_WHATSAPP_ORDER_NUMBER = "79117126262";
+export {
+  DEFAULT_WHATSAPP_ORDER_NUMBER,
+  type WhatsAppHandoffUrl,
+  type WhatsAppOrderMessage,
+  type WhatsAppOrderMessageInput,
+} from "./whatsapp.types";
 
-/** Input contract for localized WhatsApp prefill message builders (layer 3). */
-export interface WhatsAppOrderMessageInput {
-  locale: SupportedLocale;
-  customerName: string;
-  customerPhone: string;
-  customerEmail?: string;
-  productName: string;
-  productSlug: string;
-  priceEur: number;
-  length?: ProductLengthVariant;
-  size?: ProductSizeCode | string;
+/** Strips non-digits; falls back to spec default when env is empty. */
+export function resolveWhatsAppOrderNumber(envValue?: string): string {
+  const digits = envValue?.replace(/\D/g, "") ?? "";
+  return digits.length > 0 ? digits : DEFAULT_WHATSAPP_ORDER_NUMBER;
 }
 
-/** Output of message builder — plain text before URL encoding. */
-export interface WhatsAppOrderMessage {
-  locale: SupportedLocale;
-  text: string;
+/** Builds localized prefill text — traced to spec AC-3 / AC-8. */
+export function buildWhatsAppMessage(input: WhatsAppOrderMessageInput): WhatsAppOrderMessage {
+  const text = formatWhatsAppOrderMessage({
+    locale: input.locale,
+    productName: input.productName,
+    productSlug: input.productSlug,
+    priceEur: input.priceEur,
+    length: input.length,
+    size: input.size,
+    customerName: input.customerName,
+    customerPhone: input.customerPhone,
+    customerEmail: input.customerEmail,
+  });
+
+  return { locale: input.locale, text };
 }
 
-/** Parsed handoff URL parts — `buildWhatsAppHandoffUrl` output shape (layer 3). */
-export interface WhatsAppHandoffUrl {
-  phoneNumber: string;
-  messageText: string;
-  /** Full https://wa.me/…?text=… URL returned to the client on 201. */
-  url: string;
+/** Encodes message for wa.me handoff — traced to spec AC-3. */
+export function buildWhatsAppHandoffUrl(
+  messageText: string,
+  phoneNumber: string = DEFAULT_WHATSAPP_ORDER_NUMBER,
+): WhatsAppHandoffUrl {
+  const normalizedPhone = resolveWhatsAppOrderNumber(phoneNumber);
+  const url = `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(messageText)}`;
+
+  return {
+    phoneNumber: normalizedPhone,
+    messageText,
+    url,
+  };
+}
+
+/** Convenience: message + handoff URL from order context. */
+export function buildWhatsAppHandoff(
+  input: WhatsAppOrderMessageInput,
+  phoneNumber?: string,
+): WhatsAppHandoffUrl {
+  const { text } = buildWhatsAppMessage(input);
+  return buildWhatsAppHandoffUrl(text, phoneNumber);
+}
+
+export function isSupportedCheckoutLocale(value: string): value is SupportedLocale {
+  return value === "fr" || value === "en" || value === "ru";
 }
