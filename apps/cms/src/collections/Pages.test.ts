@@ -16,4 +16,12 @@ describe("Pages collection", () => {
     expect(Pages.access?.create?.({ req: { user: null } } as never)).toBeFalsy();
     expect(Pages.access?.read?.({ req: { user: null } } as never)).toBe(true);
   });
+
+  it("uses textarea (not richText) for body to avoid a Lexical serializer on the web", () => {
+    expect((field("body") as { type: string }).type).toBe("textarea");
+  });
+
+  it("has a cover image upload field", () => {
+    expect((field("cover") as { type: string }).type).toBe("upload");
+  });
 });

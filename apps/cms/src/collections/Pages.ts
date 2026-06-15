@@ -11,6 +11,8 @@ export const Pages: CollectionConfig = {
   },
   admin: {
     useAsTitle: "title",
+    group: "Boutique",
+    description: "Pages éditoriales (ex : À propos). Le corps est du texte libre.",
   },
   fields: [
     {
@@ -28,7 +30,7 @@ export const Pages: CollectionConfig = {
     },
     {
       name: "body",
-      type: "richText",
+      type: "textarea",
       localized: true,
     },
     {

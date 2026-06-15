@@ -291,10 +291,9 @@ async function seed() {
       data.availableSizes = [...p.availableSizes];
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const created = await payload.create({
       collection: "products",
-      data: data as any,
+      data: data as any, // seed script: runtime types exceed static generics
       locale: "en",
       draft: false,
     });

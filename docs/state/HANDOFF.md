@@ -133,6 +133,27 @@ Tracking PR #62 (`orchestrator/tracking-orch-cms-products--order-viewing-1781501
 
 **UX states covered by Payload admin automatically:** empty, list, detail, loading, error — no custom UI needed.
 
+**`orch-editorial--brand-page` — IN-REVIEW (2026-06-15)**
+
+Tracking PR #64 (`orchestrator/tracking-orch-editorial--brand-page-1781507732913`).
+
+**What was built:**
+
+- **CMS schema (`apps/cms/src/collections/Pages.ts`)**: Changed `body` from `richText` to `textarea` (plain string, no Lexical serializer needed on web). Added `admin.group: "Boutique"` and `admin.description`. 4 Pages tests pass.
+- **Types (`apps/web/src/types/page.ts`)**: `Page`, `PageCover`, `PagesResponse` interfaces.
+- **Data layer (`apps/web/src/lib/getPage.ts`, `getBrandPageData.ts`)**: `getPage(slug)` fetches from Payload `locale=fr`, revalidate 3600, returns null on error. `getBrandPageData()` resolves CMS page or falls back to fr hardcoded copy.
+- **Fallback copy (`apps/web/src/lib/brandPageCopy.ts`)**: `BRAND_PAGE_COPY` with brand story in fr (primary), en, ru.
+- **UI (`apps/web/src/app/(storefront)/a-propos/`)**: RSC page with `generateMetadata`, `BrandPageContent` client component (full-bleed cover image, prose title/body), `loading.tsx` skeleton, `not-found.tsx` with back link.
+- **Navigation (`apps/web/src/app/layout.tsx`)**: Minimal footer with Boutique / Catalogue / À propos links (nav entry for the editorial page).
+- **Tests**: 7 new web tests covering all UX states (CMS path, fallback, image-unavailable, skeleton, not-found, nav link). All 46 web tests pass, all 21 CMS tests pass. Typecheck clean on both apps.
+
+**Challenge resolutions (vision-reviewer):**
+- ru is confirmed in CMS config (added in prior step orch-cms-products--product-management)
+- Pages has no `_status` — no draft filter used in fetch
+- richText→textarea: no Lexical serializer needed in web
+- subtitle dropped (gold-plating)
+- Hardcoded fallback copy is the v0 brand story; CMS is for owner customization
+
 ## Next recommended step
 
 1. **`orch-storefront-shell--global-chrome`** (P0) — shared layout/chrome (header, navigation) so both pages have proper context; unblocks visual QA.
