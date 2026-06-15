@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-jost), "Helvetica Neue", Arial, sans-serif;
+  --font-serif: var(--font-cormorant), Georgia, "Times New Roman", serif;
+}

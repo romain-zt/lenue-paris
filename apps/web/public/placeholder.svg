@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f7f3ef"/>
+      <stop offset="100%" stop-color="#ece4da"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="800" fill="url(#bg)"/>
+  <text
+    x="300"
+    y="385"
+    text-anchor="middle"
+    dominant-baseline="middle"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="120"
+    font-weight="300"
+    fill="#d4c4b4"
+    letter-spacing="4"
+  >L</text>
+  <text
+    x="300"
+    y="454"
+    text-anchor="middle"
+    dominant-baseline="middle"
+    font-family="'Helvetica Neue', Arial, sans-serif"
+    font-size="11"
+    font-weight="400"
+    fill="#b8a898"
+    letter-spacing="10"
+  >LÉNUE PARIS</text>
+</svg>
