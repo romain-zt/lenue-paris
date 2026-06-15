@@ -16,6 +16,20 @@ async function getProducts(locale: Locale): Promise<{ products: Product[]; error
       locale,
       limit: 100,
     });
+
+    // Payload 3 tracks published status per locale context. If products were
+    // published from the French admin, the ru/en locale query may return empty.
+    // Fall back to French to ensure products always show across all locales.
+    if (docs.length === 0 && locale !== "fr") {
+      const { docs: frDocs } = await payload.find({
+        collection: "products",
+        where: { _status: { equals: "published" } },
+        locale: "fr",
+        limit: 100,
+      });
+      return { products: frDocs as unknown as Product[], error: null };
+    }
+
     return { products: docs as unknown as Product[], error: null };
   } catch {
     return { products: [], error: "fetch_failed" };
