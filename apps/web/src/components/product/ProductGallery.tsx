@@ -62,12 +62,12 @@ export function ProductGallery({ slug, mainImage, gallery, title }: ProductGalle
       </div>
 
       {allUrls.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {allUrls.map((url, i) => (
             <button
               key={url}
               onClick={() => setActiveIndex(i)}
-              className={`relative h-16 w-12 shrink-0 overflow-hidden bg-stone-100 ring-1 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 ${
+              className={`relative h-16 w-12 shrink-0 snap-start overflow-hidden bg-stone-100 ring-1 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 ${
                 i === activeIndex
                   ? "ring-stone-900"
                   : "opacity-60 ring-transparent hover:opacity-100"

@@ -6,17 +6,18 @@ import { Link } from "@/i18n/navigation";
 import type { Product } from "@/types/product";
 import { formatPrice } from "@/lib/formatPrice";
 import { getProductMainImageUrl } from "@/lib/productImages";
+import { FeaturedProductItem, FeaturedProductsScroll } from "@/components/home/FeaturedProductsScroll";
 
 type Locale = "fr" | "en" | "ru";
 
-/** Home featured grid — 6 pieces including the sold-out showcase look. */
+/** Home featured carousel — sold-out look first, then varied pieces (bag before dresses). */
 const FEATURED_SLUGS = [
   "look-elise-edition-limitee",
-  "robe-camille",
+  "sac-celeste",
   "robe-louise",
   "robe-margot",
   "robe-heloise",
-  "sac-celeste",
+  "robe-camille",
 ] as const;
 
 export const dynamic = "force-dynamic";
@@ -175,11 +176,11 @@ function ProductCard({
           </div>
         )}
       </div>
-      <div className="mt-3 px-0.5">
+      <div className="mt-5 px-0.5">
         <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-stone-700">
           {product.title}
         </p>
-        <p className="mt-0.5 text-[11px] tracking-wide text-stone-400">{formattedPrice}</p>
+        <p className="mt-1.5 text-[11px] tracking-wide text-stone-400">{formattedPrice}</p>
       </div>
     </Link>
   );
@@ -277,10 +278,10 @@ export default async function Home({ params }: HomePageProps) {
       {/* ── 3. Featured products ── */}
       <section
         aria-labelledby="featured-heading"
-        className="bg-white px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24"
+        className="bg-white px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28"
       >
         <div className="mx-auto max-w-screen-xl">
-          <div className="mb-10 flex items-end justify-between border-b border-stone-100 pb-5">
+          <div className="mb-14 flex items-end justify-between border-b border-stone-100 pb-6 sm:mb-16">
             <div>
               <p className="mb-1.5 text-[9px] font-medium uppercase tracking-[0.35em] text-stone-400">
                 {t("season")}
@@ -299,17 +300,20 @@ export default async function Home({ params }: HomePageProps) {
               {t("viewCollection")}
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 md:grid-cols-3 lg:gap-x-8">
-            {featured.map((product) => (
+        </div>
+        <FeaturedProductsScroll ariaLabel={t("featuredTitle")}>
+          {featured.map((product) => (
+            <FeaturedProductItem key={product.slug}>
               <ProductCard
-                key={product.slug}
                 product={product}
                 formattedPrice={priceFormatter(product.price)}
                 outOfStockBadge={tProduct("outOfStockBadge")}
               />
-            ))}
-          </div>
-          <div className="mt-12 text-center sm:hidden">
+            </FeaturedProductItem>
+          ))}
+        </FeaturedProductsScroll>
+        <div className="mx-auto max-w-screen-xl">
+          <div className="mt-14 text-center sm:hidden">
             <Link
               href="/catalogue"
               className="text-[10px] font-medium uppercase tracking-[0.25em] text-stone-500 underline-offset-4 hover:text-stone-900 hover:underline"
