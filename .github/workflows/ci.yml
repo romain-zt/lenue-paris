@@ -38,6 +38,7 @@ jobs:
       CI: "true"
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
       TEST_DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      PAYLOAD_SECRET: ci-placeholder-secret-for-migrations
 
     steps:
       - uses: actions/checkout@v4
