@@ -224,15 +224,14 @@ export default async function Home({ params }: HomePageProps) {
         aria-labelledby="hero-heading"
         className="relative -mt-16 h-[100svh] min-h-[100dvh] overflow-hidden bg-stone-800 md:-mt-[72px]"
       >
-        {/* Taller frame so the face sits below the header with headroom above */}
-        <div className="absolute inset-x-0 -top-16 bottom-0 md:-top-[72px]">
+        <div className="absolute inset-0">
           <Image
             src="/images/hero.jpg"
             alt={t("heroImageAlt")}
             fill
             priority
             sizes="100vw"
-            className="object-cover object-[50%_38%] sm:object-[50%_36%] lg:object-[50%_34%]"
+            className="object-cover object-[50%_62%] sm:object-[50%_54%] lg:object-[50%_48%]"
           />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" aria-hidden="true" />
