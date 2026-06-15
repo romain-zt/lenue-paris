@@ -3,8 +3,8 @@ import type { CollectionConfig } from "payload";
 export const Orders: CollectionConfig = {
   slug: "orders",
   labels: {
-    singular: "Commande",
-    plural: "Commandes",
+    singular: "Order",
+    plural: "Orders",
   },
   admin: {
     useAsTitle: "productTitle",
@@ -17,8 +17,8 @@ export const Orders: CollectionConfig = {
       "createdAt",
     ],
     description:
-      "Commandes passées par les acheteurs. Lecture seule — la prise en charge se fait sur WhatsApp.",
-    group: "Boutique",
+      "Orders placed by buyers. Read-only — fulfilment happens on WhatsApp.",
+    group: "Shop",
   },
   defaultSort: "-createdAt",
   access: {
@@ -39,7 +39,7 @@ export const Orders: CollectionConfig = {
       type: "text",
       required: false,
       admin: {
-        description: "Snapshot du titre produit au moment de la commande (renseigné côté serveur).",
+        description: "Product title snapshot at order time (set server-side).",
       },
     },
     {
@@ -47,12 +47,12 @@ export const Orders: CollectionConfig = {
       type: "select",
       required: false,
       options: [
-        { label: "Robes", value: "dresses" },
-        { label: "Sacs", value: "bags" },
-        { label: "Foulards", value: "scarfs" },
+        { label: "Dresses", value: "dresses" },
+        { label: "Bags", value: "bags" },
+        { label: "Scarves", value: "scarfs" },
       ],
       admin: {
-        description: "Snapshot de la catégorie au moment de la commande (renseigné côté serveur).",
+        description: "Category snapshot at order time (set server-side).",
       },
     },
     {
@@ -60,8 +60,8 @@ export const Orders: CollectionConfig = {
       type: "select",
       required: false,
       options: [
-        { label: "Version longue", value: "longer" },
-        { label: "Version courte", value: "shorter" },
+        { label: "Long version", value: "longer" },
+        { label: "Short version", value: "shorter" },
       ],
     },
     {
@@ -82,7 +82,7 @@ export const Orders: CollectionConfig = {
       required: false,
       min: 0,
       admin: {
-        description: "Snapshot du prix au moment de la commande (renseigné côté serveur).",
+        description: "Price snapshot at order time (set server-side).",
       },
     },
     {
@@ -95,7 +95,7 @@ export const Orders: CollectionConfig = {
       type: "text",
       required: true,
       admin: {
-        description: "Numéro de téléphone de l'acheteur.",
+        description: "Buyer phone number.",
       },
     },
   ],

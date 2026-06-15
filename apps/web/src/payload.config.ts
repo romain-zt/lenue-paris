@@ -22,13 +22,17 @@ const hasS3Config =
   !!process.env.S3_SECRET_ACCESS_KEY;
 
 export default buildConfig({
+  i18n: {
+    // Admin UI language (separate from content localization below).
+    // Browser defaults to fr if supported; user can override in Account → Language.
+    fallbackLanguage: "en",
+    supportedLanguages: { en, fr },
+  },
+
   localization: {
     locales: ["en", "fr", "ru"],
     defaultLocale: "en",
     fallback: true,
-  },
-  i18n: {
-    supportedLanguages: { en, fr },
   },
 
   admin: {

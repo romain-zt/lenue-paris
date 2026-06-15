@@ -19,6 +19,7 @@ import { Client } from "pg";
 import { getPayload } from "payload";
 import config from "./payload.config";
 import { getPostgresPoolConfig } from "./lib/database";
+import { PRODUCT_IMAGES } from "./lib/productImages";
 
 /**
  * Drop columns whose Drizzle/Payload-desired type can no longer be
@@ -86,25 +87,9 @@ function readImage(filename: string) {
 }
 
 // Map photo filenames to short aliases — must match files in apps/web/public/images/
-const PHOTOS = {
-  p01: "PHOTO-2026-06-12-17-30-33.jpg",
-  p02: "PHOTO-2026-06-12-17-30-46.jpg",
-  p03: "PHOTO-2026-06-12-17-30-47.jpg",
-  p04: "PHOTO-2026-06-12-17-30-56.jpg",
-  p05: "PHOTO-2026-06-12-17-32-34.jpg",
-  p06: "PHOTO-2026-06-12-17-34-11.jpg",
-  p07: "PHOTO-2026-06-12-18-02-45.jpg",
-  p08: "PHOTO-2026-06-12-18-02-57.jpg",
-  p09: "PHOTO-2026-06-12-18-07-47.jpg",
-  p10: "PHOTO-2026-06-12-22-37-24.jpg",
-  p11: "PHOTO-2026-06-12-23-17-32.jpg",
-  p12: "PHOTO-2026-06-12-23-17-33.jpg",
-  p13: "PHOTO-2026-06-12-23-29-2.jpg",
-  p14: "PHOTO-2026-06-13-08-45-41.jpg",
-} as const;
+// Product image filenames live in lib/productImages.ts (single source of truth).
 
 // ---------- Product catalogue ----------
-
 const PRODUCTS = [
   // ────── Robes ──────
   {
@@ -118,8 +103,6 @@ const PRODUCTS = [
     },
     availableLengths: ["longer", "shorter"] as const,
     availableSizes: ["XS", "S", "M", "L"] as const,
-    mainImage: PHOTOS.p02,
-    gallery: [PHOTOS.p03, PHOTOS.p01],
   },
   {
     title: { en: "Louise Dress", fr: "Robe Louise" },
@@ -132,8 +115,6 @@ const PRODUCTS = [
     },
     availableLengths: ["longer", "shorter"] as const,
     availableSizes: ["XS", "S", "M", "L", "XL"] as const,
-    mainImage: PHOTOS.p04,
-    gallery: [PHOTOS.p05],
   },
   {
     title: { en: "Margot Dress", fr: "Robe Margot" },
@@ -146,8 +127,6 @@ const PRODUCTS = [
     },
     availableLengths: ["longer"] as const,
     availableSizes: ["XS", "S", "M", "L"] as const,
-    mainImage: PHOTOS.p06,
-    gallery: [PHOTOS.p01],
   },
   {
     title: { en: "Héloïse Dress", fr: "Robe Héloïse" },
@@ -160,8 +139,6 @@ const PRODUCTS = [
     },
     availableLengths: ["longer", "shorter"] as const,
     availableSizes: ["XS", "S", "M", "L"] as const,
-    mainImage: PHOTOS.p07,
-    gallery: [PHOTOS.p08],
   },
 
   // ────── Sacs ──────
@@ -174,8 +151,6 @@ const PRODUCTS = [
       en: "Structured tote in full-grain natural leather. Open top, single interior slip pocket. Fits an A4 notebook with room to spare.",
       fr: "Tote structuré en cuir pleine fleur naturel. Ouverture large, une poche intérieure. Format A4 et plus.",
     },
-    mainImage: PHOTOS.p09,
-    gallery: [PHOTOS.p10],
   },
   {
     title: { en: "Amélie Bag", fr: "Sac Amélie" },
@@ -186,8 +161,6 @@ const PRODUCTS = [
       en: "Soft bucket silhouette in pebbled tan leather. Drawstring closure, detachable leather strap. One interior zip pocket.",
       fr: "Seau souple en cuir grainé camel. Fermeture cordon, bandoulière amovible. Une poche zippée à l'intérieur.",
     },
-    mainImage: PHOTOS.p11,
-    gallery: [PHOTOS.p12],
   },
   {
     title: { en: "Céleste Bag", fr: "Sac Céleste" },
@@ -198,8 +171,6 @@ const PRODUCTS = [
       en: "Slim crossbody in chalk vegetable-tanned leather. Adjustable strap, magnetic snap closure. Holds a phone, cards and keys.",
       fr: "Bandoulière fine en cuir tanné végétal craie. Sangle réglable, fermoir magnétique. Téléphone, cartes et clés.",
     },
-    mainImage: PHOTOS.p13,
-    gallery: [],
   },
   {
     title: { en: "Victoire Bag", fr: "Sac Victoire" },
@@ -210,8 +181,6 @@ const PRODUCTS = [
       en: "Compact half-moon clutch in cognac leather. Zip-top, wrist loop. Goes from office to dinner without changing bags.",
       fr: "Pochette demi-lune compacte en cuir cognac. Zip supérieur, anneau de poignet. Du bureau au dîner sans changer de sac.",
     },
-    mainImage: PHOTOS.p14,
-    gallery: [],
   },
 
   // ────── Foulards ──────
@@ -224,8 +193,6 @@ const PRODUCTS = [
       en: "90×90 cm twill silk. Hand-rolled hem. Printed with a subtle floral motif in dusty rose and terracotta.",
       fr: "Carré en twill de soie 90×90 cm. Ourlet roulotté à la main. Motif floral discret en rose poudré et terracotta.",
     },
-    mainImage: PHOTOS.p03,
-    gallery: [],
   },
   {
     title: { en: "Aurore Scarf", fr: "Foulard Aurore" },
@@ -236,8 +203,6 @@ const PRODUCTS = [
       en: "70×70 cm silk crêpe de chine. Hand-rolled hem. Dip-dyed gradient from ivory to warm sand.",
       fr: "Carré en crêpe de chine 70×70 cm. Ourlet roulotté main. Dégradé tie-dye ivoire à sable chaud.",
     },
-    mainImage: PHOTOS.p05,
-    gallery: [],
   },
   {
     title: { en: "Claire Scarf", fr: "Foulard Claire" },
@@ -248,8 +213,6 @@ const PRODUCTS = [
       en: "Long 200×70 cm in lightweight wool-silk blend. Fringed ends. Wear as a scarf, wrap or shawl.",
       fr: "Écharpe longue 200×70 cm en laine-soie légère. Extrémités effilochées. Portée en écharpe, châle ou wrap.",
     },
-    mainImage: PHOTOS.p08,
-    gallery: [],
   },
   {
     title: { en: "Iris Scarf", fr: "Foulard Iris" },
@@ -260,12 +223,50 @@ const PRODUCTS = [
       en: "90×90 cm cotton muslin. Geometric print in black and écru. Light enough to wear knotted in the hair.",
       fr: "Carré en mousseline de coton 90×90 cm. Impression géométrique noir et écru. Assez léger pour un nœud dans les cheveux.",
     },
-    mainImage: PHOTOS.p10,
-    gallery: [],
   },
 ];
 
+const PRODUCT_LOCALES = ["en", "fr", "ru"] as const;
+
 // ---------- Seed runner ----------
+
+async function publishProductLocales(
+  payload: Awaited<ReturnType<typeof getPayload>>,
+  productId: number | string,
+  product: (typeof PRODUCTS)[number],
+  data: Record<string, unknown>,
+) {
+  await payload.update({
+    collection: "products",
+    id: productId,
+    data: data as any,
+    locale: "en",
+    draft: false,
+  });
+
+  await payload.update({
+    collection: "products",
+    id: productId,
+    data: {
+      title: product.title.fr,
+      description: product.description.fr,
+    },
+    locale: "fr",
+    draft: false,
+  });
+
+  // v0: RU falls back to FR copy until dedicated translations exist.
+  await payload.update({
+    collection: "products",
+    id: productId,
+    data: {
+      title: product.title.fr,
+      description: product.description.fr,
+    },
+    locale: "ru",
+    draft: false,
+  });
+}
 
 export async function seed() {
   await preInitSchemaCleanup();
@@ -293,7 +294,7 @@ export async function seed() {
   // 2. Upsert media and products (idempotent — no duplicates on re-run)
   const mediaCache: Record<string, number | string> = {};
 
-  const findOrUploadImage = async (filename: string): Promise<number | string> => {
+  const findOrUploadImage = async (filename: string, alt: string): Promise<number | string> => {
     if (mediaCache[filename]) return mediaCache[filename];
 
     const existing = await payload.find({
@@ -303,6 +304,12 @@ export async function seed() {
     });
     if (existing.docs[0]) {
       mediaCache[filename] = existing.docs[0].id;
+      await payload.update({
+        collection: "media",
+        id: existing.docs[0].id,
+        data: { alt },
+        locale: "fr",
+      });
       console.log(`  ♻️  Reusing ${filename} → id ${existing.docs[0].id}`);
       return existing.docs[0].id;
     }
@@ -310,9 +317,9 @@ export async function seed() {
     const file = readImage(filename);
     const media = await payload.create({
       collection: "media",
-      data: { alt: filename.replace(/\.[^.]+$/, "").replace(/[_-]/g, " ") },
+      data: { alt },
       file,
-      locale: "en",
+      locale: "fr",
     });
     mediaCache[filename] = media.id;
     console.log(`  📷 Uploaded ${filename} → id ${media.id}`);
@@ -325,11 +332,17 @@ export async function seed() {
   for (const product of PRODUCTS) {
     console.log(`\n📦 Syncing: ${product.title.fr}`);
 
-    const mainImageId = await findOrUploadImage(product.mainImage);
+    const images = PRODUCT_IMAGES[product.slug];
+    if (!images) {
+      throw new Error(`Missing image mapping for slug: ${product.slug}`);
+    }
+
+    const alt = `${product.title.fr} — Lénue Paris`;
+    const mainImageId = await findOrUploadImage(images.main, alt);
 
     const galleryItems: { image: number | string }[] = [];
-    for (const imgFile of product.gallery) {
-      const id = await findOrUploadImage(imgFile);
+    for (const imgFile of images.gallery ?? []) {
+      const id = await findOrUploadImage(imgFile, alt);
       galleryItems.push({ image: id });
     }
 
@@ -359,24 +372,9 @@ export async function seed() {
     });
 
     if (existing.docs[0]) {
-      await payload.update({
-        collection: "products",
-        id: existing.docs[0].id,
-        data: data as any,
-        locale: "en",
-        draft: false,
-      });
-      await payload.update({
-        collection: "products",
-        id: existing.docs[0].id,
-        data: {
-          title: product.title.fr,
-          description: product.description.fr,
-        },
-        locale: "fr",
-      });
+      await publishProductLocales(payload, existing.docs[0].id, product, data);
       updated++;
-      console.log(`  ✅ Updated ${product.title.fr} — id ${existing.docs[0].id}`);
+      console.log(`  ✅ Published ${product.title.fr} — id ${existing.docs[0].id}`);
     } else {
       const doc = await payload.create({
         collection: "products",
@@ -384,21 +382,13 @@ export async function seed() {
         locale: "en",
         draft: false,
       });
-      await payload.update({
-        collection: "products",
-        id: doc.id,
-        data: {
-          title: product.title.fr,
-          description: product.description.fr,
-        },
-        locale: "fr",
-      });
+      await publishProductLocales(payload, doc.id, product, data);
       created++;
-      console.log(`  ✅ Created ${product.title.fr} — id ${doc.id}`);
+      console.log(`  ✅ Created & published ${product.title.fr} — id ${doc.id}`);
     }
   }
 
-  console.log(`\n🎉 Seed complete — ${created} created, ${updated} updated`);
+  console.log(`\n🎉 Seed complete — ${created} created, ${updated} updated (${PRODUCT_LOCALES.join(", ")} locales)`);
 }
 
 const isSeedCliEntry =

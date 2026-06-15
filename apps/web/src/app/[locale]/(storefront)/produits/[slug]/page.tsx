@@ -87,7 +87,12 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       </nav>
 
       <div className="grid gap-8 md:grid-cols-2 md:gap-12 lg:gap-16">
-        <ProductGallery mainImage={product.mainImage} gallery={product.gallery} title={product.title} />
+        <ProductGallery
+          slug={product.slug}
+          mainImage={product.mainImage}
+          gallery={product.gallery}
+          title={product.title}
+        />
 
         <div className="flex flex-col gap-6">
           <div>

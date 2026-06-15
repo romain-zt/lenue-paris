@@ -3,6 +3,10 @@ import type { CollectionConfig } from "payload";
 // Example content collection showing localized fields + media relation.
 export const Pages: CollectionConfig = {
   slug: "pages",
+  labels: {
+    singular: "Page",
+    plural: "Pages",
+  },
   access: {
     read: () => true,
     create: ({ req }) => Boolean(req.user),
@@ -11,6 +15,7 @@ export const Pages: CollectionConfig = {
   },
   admin: {
     useAsTitle: "title",
+    group: "Shop",
   },
   fields: [
     {

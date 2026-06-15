@@ -3,6 +3,13 @@ import type { CollectionConfig } from "payload";
 // Upload collection. Storage is handled by the S3 plugin (MinIO local).
 export const Media: CollectionConfig = {
   slug: "media",
+  labels: {
+    singular: "Media",
+    plural: "Media",
+  },
+  admin: {
+    group: "Shop",
+  },
   access: {
     read: () => true, // public read; tighten if media is private
     create: ({ req }) => Boolean(req.user),

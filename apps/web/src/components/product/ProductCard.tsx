@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
+import { getProductMainImageUrl } from "@/lib/productImages";
 import type { Product } from "@/types/product";
 
 interface ProductCardProps {
@@ -7,7 +8,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const imageUrl = product.mainImage?.url ?? null;
+  const imageUrl = getProductMainImageUrl(product.slug, product.mainImage?.url);
 
   const formattedPrice = new Intl.NumberFormat("fr-FR", {
     style: "currency",
@@ -24,7 +25,7 @@ export function ProductCard({ product }: ProductCardProps) {
         {imageUrl ? (
           <Image
             src={imageUrl}
-            alt={product.mainImage?.alt ?? product.title}
+            alt={product.title}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className="object-cover transition-transform duration-700 group-hover:scale-105"

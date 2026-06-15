@@ -3,8 +3,13 @@ import type { CollectionConfig } from "payload";
 export const Products: CollectionConfig = {
   slug: "products",
   labels: {
-    singular: "Produit",
-    plural: "Produits",
+    singular: "Product",
+    plural: "Products",
+  },
+  admin: {
+    group: "Shop",
+    useAsTitle: "title",
+    defaultColumns: ["title", "category", "price", "_status", "updatedAt"],
   },
   access: {
     read: () => true,
@@ -49,9 +54,9 @@ export const Products: CollectionConfig = {
       type: "select",
       required: true,
       options: [
-        { label: "Robes", value: "dresses" },
-        { label: "Sacs", value: "bags" },
-        { label: "Foulards", value: "scarfs" },
+        { label: "Dresses", value: "dresses" },
+        { label: "Bags", value: "bags" },
+        { label: "Scarves", value: "scarfs" },
       ],
     },
     {
@@ -60,7 +65,7 @@ export const Products: CollectionConfig = {
       required: true,
       min: 0,
       admin: {
-        description: "Prix en EUR (ex: 290.00)",
+        description: "Price in EUR (e.g. 290.00)",
       },
     },
     {
@@ -72,9 +77,9 @@ export const Products: CollectionConfig = {
     {
       name: "gallery",
       type: "array",
-      label: "Galerie d'images",
+      label: "Image gallery",
       admin: {
-        description: "Images supplémentaires du produit (après l'image principale).",
+        description: "Additional product photos (shown after the main image).",
       },
       fields: [
         {
@@ -90,7 +95,7 @@ export const Products: CollectionConfig = {
       type: "textarea",
       localized: true,
       admin: {
-        description: "Description du produit affichée sur la page détail.",
+        description: "Product description shown on the detail page.",
       },
     },
     {
@@ -98,11 +103,11 @@ export const Products: CollectionConfig = {
       type: "select",
       hasMany: true,
       options: [
-        { label: "Version longue", value: "longer" },
-        { label: "Version courte", value: "shorter" },
+        { label: "Long version", value: "longer" },
+        { label: "Short version", value: "shorter" },
       ],
       admin: {
-        description: "Variantes de longueur disponibles pour cette robe.",
+        description: "Available length variants for this dress.",
         condition: (data) => data?.category === "dresses",
       },
     },
@@ -118,7 +123,7 @@ export const Products: CollectionConfig = {
         { label: "XL", value: "XL" },
       ],
       admin: {
-        description: "Tailles disponibles pour cette robe.",
+        description: "Available sizes for this dress.",
         condition: (data) => data?.category === "dresses",
       },
     },
@@ -131,7 +136,7 @@ export const Products: CollectionConfig = {
         read: ({ req }) => Boolean(req.user),
       },
       admin: {
-        description: "Associations propriétaire uniquement (robe ↔ sac/foulard). Non visible sur le site en v0.",
+        description: "Owner-only pairings (dress ↔ bag/scarf). Not shown on the site in v0.",
       },
     },
   ],
