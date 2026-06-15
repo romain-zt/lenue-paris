@@ -169,8 +169,6 @@ export interface Media {
   focalY?: number | null;
 }
 /**
- * Pages éditoriales (ex : À propos). Le corps est du texte libre.
- *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages".
  */
@@ -178,7 +176,21 @@ export interface Page {
   id: number;
   title: string;
   slug: string;
-  body?: string | null;
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
   cover?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
