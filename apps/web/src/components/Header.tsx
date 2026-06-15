@@ -61,6 +61,7 @@ export function Header() {
 
   const softEase = "ease-[cubic-bezier(0.25,0.8,0.25,1)]";
   const cardDuration = "duration-[650ms]";
+  const cardRowHeight = "3.75rem";
 
   return (
     <>
@@ -68,7 +69,7 @@ export function Header() {
         className={[
           `sticky top-0 z-50 transition-[background-color,border-color,box-shadow] duration-[400ms] ${softEase}`,
           overlayMode
-            ? "border-b border-transparent bg-transparent"
+            ? "border-b border-white/15 bg-transparent"
             : "border-b border-stone-200 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.03)]",
         ].join(" ")}
       >
@@ -178,34 +179,37 @@ export function Header() {
         }`}
       >
         {allNav.map((link, index) => (
-          <div key={link.href} className="overflow-hidden bg-white">
+          <div
+            key={link.href}
+            className={`overflow-hidden bg-white transition-[max-height] ${cardDuration} ${softEase}`}
+            style={{
+              maxHeight: open ? cardRowHeight : "0px",
+              transitionDelay: open
+                ? `${index * 70}ms`
+                : `${(allNav.length - 1 - index) * 40}ms`,
+            }}
+          >
             <Link
               href={link.href}
               onClick={() => setOpen(false)}
               tabIndex={open ? 0 : -1}
-              style={{
-                transitionDelay: open
-                  ? `${index * 70}ms`
-                  : `${(allNav.length - 1 - index) * 40}ms`,
-              }}
-              className={`block border-b border-stone-100 px-6 py-4 text-xs font-medium uppercase tracking-[0.2em] text-stone-700 transition-transform ${cardDuration} ${softEase} hover:bg-stone-50/60 hover:text-stone-900 ${
-                open ? "translate-y-0" : "-translate-y-full"
-              }`}
+              className="block border-b border-stone-100 px-6 py-4 text-xs font-medium uppercase tracking-[0.2em] text-stone-700 hover:bg-stone-50/60 hover:text-stone-900"
             >
               {link.label}
             </Link>
           </div>
         ))}
 
-        <div className="overflow-hidden bg-white shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
-          <div
-            style={{
-              transitionDelay: open ? `${allNav.length * 70}ms` : "0ms",
-            }}
-            className={`flex items-center gap-3 px-6 py-4 transition-transform ${cardDuration} ${softEase} ${
-              open ? "translate-y-0" : "-translate-y-full"
-            }`}
-          >
+        <div
+          className={`overflow-hidden bg-white transition-[max-height] ${cardDuration} ${softEase} ${
+            open ? "shadow-[0_8px_24px_rgba(0,0,0,0.04)]" : ""
+          }`}
+          style={{
+            maxHeight: open ? cardRowHeight : "0px",
+            transitionDelay: open ? `${allNav.length * 70}ms` : "0ms",
+          }}
+        >
+          <div className="flex items-center gap-3 px-6 py-4">
             <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-stone-400">
               {tLocale("switchLabel")}
             </span>

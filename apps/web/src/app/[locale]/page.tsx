@@ -231,7 +231,7 @@ export default async function Home({ params }: HomePageProps) {
             fill
             priority
             sizes="100vw"
-            className="object-cover object-[50%_62%] sm:object-[50%_54%] lg:object-[50%_48%]"
+            className="object-cover object-[50%_40%] sm:object-[50%_32%] lg:object-[50%_24%]"
           />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" aria-hidden="true" />
