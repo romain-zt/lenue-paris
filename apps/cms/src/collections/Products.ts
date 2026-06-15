@@ -32,14 +32,14 @@ export const Products: CollectionConfig = {
       },
       hooks: {
         beforeValidate: [
-          ({ data, siblingData }) => {
-            if (!data && siblingData?.title) {
+          ({ value, siblingData }) => {
+            if (!value && siblingData?.title) {
               return (siblingData.title as string)
                 .toLowerCase()
                 .replace(/[^a-z0-9]+/g, "-")
                 .replace(/(^-|-$)/g, "");
             }
-            return data;
+            return value;
           },
         ],
       },

@@ -4,6 +4,8 @@ import { buildConfig } from "payload";
 import { postgresAdapter } from "@payloadcms/db-postgres";
 import { lexicalEditor } from "@payloadcms/richtext-lexical";
 import { s3Storage } from "@payloadcms/storage-s3";
+import { en } from "@payloadcms/translations/languages/en";
+import { fr } from "@payloadcms/translations/languages/fr";
 
 import { Users } from "./collections/Users";
 import { Media } from "./collections/Media";
@@ -22,7 +24,7 @@ export default buildConfig({
   },
   // Admin panel i18n.
   i18n: {
-    supportedLanguages: {},
+    supportedLanguages: { en, fr },
   },
 
   admin: {
