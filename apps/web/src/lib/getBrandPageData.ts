@@ -4,9 +4,7 @@ import { getPage } from "@/lib/getPage";
 
 export type { BrandPageContentProps };
 
-type Locale = "fr" | "en" | "ru";
-
-export async function getBrandPageData(locale: Locale = "fr"): Promise<BrandPageContentProps> {
+export async function getBrandPageData(locale: string = "fr"): Promise<BrandPageContentProps> {
   const page = await getPage("a-propos", locale);
   if (page) {
     return {
@@ -15,9 +13,10 @@ export async function getBrandPageData(locale: Locale = "fr"): Promise<BrandPage
       cover: page.cover ?? null,
     };
   }
+  const fallback = BRAND_PAGE_COPY[locale as keyof typeof BRAND_PAGE_COPY] ?? BRAND_PAGE_COPY.fr;
   return {
-    title: BRAND_PAGE_COPY[locale].title,
-    body: BRAND_PAGE_COPY[locale].body,
+    title: fallback.title,
+    body: fallback.body,
     cover: null,
   };
 }

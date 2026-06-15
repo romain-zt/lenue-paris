@@ -1,6 +1,6 @@
 import type { Page, PagesResponse } from "@/types/page";
 
-export async function getPage(slug: string, locale = "fr"): Promise<Page | null> {
+export async function getPage(slug: string, locale: string = "fr"): Promise<Page | null> {
   const cmsUrl = process.env.CMS_URL ?? "http://localhost:3000";
   try {
     const res = await fetch(
