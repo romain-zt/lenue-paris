@@ -21,7 +21,7 @@ Mind to always start with the latest up-to-date release of each dependencies/fra
 | CMS/data   | Payload (Postgres)   | same — Payload 3, deployed alongside web on Vercel  |
 | Database   | Postgres             | Neon (Vercel-native serverless Postgres)            |
 | Media      | S3 (MinIO local)     | AWS S3 (prod) · MinIO (local dev)                   |
-| i18n       | on                   | fr (primary) + en                                   |
+| i18n       | on                   | fr (primary) + en + ru                              |
 | Deployment | —                    | Vercel (monorepo: apps/web + apps/cms same project) |
 
 

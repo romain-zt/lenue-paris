@@ -75,6 +75,11 @@
     "whatsappName": "Mon nom : {name}",
     "whatsappContact": "Mon contact : {contact}"
   },
+  "about": {
+    "title": "À propos",
+    "metaTitle": "À propos — Lénue Paris",
+    "metaDescription": "L'histoire de Lénue Paris, une boutique de mode née à Paris."
+  },
   "footer": {
     "boutique": "Boutique",
     "catalogue": "Catalogue",
