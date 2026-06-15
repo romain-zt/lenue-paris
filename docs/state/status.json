@@ -9,7 +9,7 @@
       "orch-cms-products--product-management": "complete",
       "orch-cms-products--order-viewing": "complete",
       "orch-editorial--brand-page": "complete",
-      "orch-i18n--localized-storefront": "in-progress"
+      "orch-i18n--localized-storefront": "not-started"
     },
     "remediation_counts": {
       "orch-product-detail--gallery-and-variants": 2,
