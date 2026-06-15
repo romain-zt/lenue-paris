@@ -32,6 +32,9 @@ export interface Product {
   gallery?: ProductGalleryItem[] | null;
   description?: string | null;
   _status?: "draft" | "published";
+  availableLengths?: DressLength[] | null;
+  availableSizes?: DressSize[] | null;
+  pairings?: Array<{ id: string; title: string }> | null;
 }
 
 export interface ProductsResponse {
