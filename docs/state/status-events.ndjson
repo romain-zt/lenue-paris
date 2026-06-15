@@ -85,3 +85,4 @@
 {"ts":"2026-06-15T07:54:14.009Z","step":"orch-editorial--brand-page","status":"complete","note":"Remediation run 5: all checks confirmed green (46 web + 21 CMS tests, typecheck clean). Ready to merge.","actor":"agent"}
 {"ts":"2026-06-15T08:36:31.729Z","step":"orch-i18n--localized-storefront","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-15T08:36:48.090Z","step":"orch-i18n--localized-storefront","status":"not-started","note":"orphan reset (agent failed)","actor":"orchestrator"}
+{"ts":"2026-06-15T08:36:51.598Z","step":"orch-i18n--localized-storefront","status":"in-progress","actor":"orchestrator"}
