@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter, usePathname } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
@@ -12,6 +12,24 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  const isHome = pathname === "/";
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 60);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Close mobile menu on navigation
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  // Header is transparent only when at the top of the home page and menu is closed
+  const transparent = isHome && !scrolled && !open;
 
   const navLeft = [
     { href: "/catalogue?categorie=robes" as const, label: t("dresses") },
@@ -29,19 +47,28 @@ export function Header() {
     router.replace(pathname, { locale: next });
   }
 
+  const linkClass = `text-[10px] font-medium uppercase tracking-[0.22em] transition-colors duration-300 ${
+    transparent
+      ? "text-white/60 hover:text-white"
+      : "text-stone-400 hover:text-stone-800"
+  }`;
+
   return (
-    <header className="sticky top-0 z-50 border-b border-stone-200/80 bg-white/96 backdrop-blur-sm">
+    <header
+      className={[
+        "sticky top-0 z-50 will-change-[background-color,border-color] transition-[background-color,border-color,box-shadow] duration-500 ease-out",
+        transparent
+          ? "border-b border-white/10 bg-transparent"
+          : "border-b border-stone-200/70 bg-white/97 shadow-[0_1px_0_0_rgba(0,0,0,0.04)]",
+      ].join(" ")}
+    >
       <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between md:h-[72px]">
 
           {/* Left nav — desktop only */}
           <nav className="hidden flex-1 items-center gap-7 md:flex" aria-label={t("leftNav")}>
             {navLeft.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-[10px] font-medium uppercase tracking-[0.22em] text-stone-400 transition-colors hover:text-stone-800"
-              >
+              <Link key={link.href} href={link.href} className={linkClass}>
                 {link.label}
               </Link>
             ))}
@@ -53,10 +80,18 @@ export function Header() {
             className="flex flex-col items-center leading-none"
             aria-label={t("home")}
           >
-            <span className="font-serif text-xl tracking-[0.42em] text-stone-900 sm:text-2xl">
+            <span
+              className={`font-serif text-xl tracking-[0.42em] transition-colors duration-500 sm:text-2xl ${
+                transparent ? "text-white" : "text-stone-900"
+              }`}
+            >
               LÉNUE
             </span>
-            <span className="mt-0.5 font-serif text-[9px] tracking-[0.62em] text-stone-400 sm:text-[10px]">
+            <span
+              className={`mt-0.5 font-serif text-[9px] tracking-[0.62em] transition-colors duration-500 sm:text-[10px] ${
+                transparent ? "text-white/50" : "text-stone-400"
+              }`}
+            >
               PARIS
             </span>
           </Link>
@@ -64,26 +99,29 @@ export function Header() {
           {/* Right nav — desktop only */}
           <nav className="hidden flex-1 items-center justify-end gap-7 md:flex" aria-label={t("rightNav")}>
             {navRight.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-[10px] font-medium uppercase tracking-[0.22em] text-stone-400 transition-colors hover:text-stone-800"
-              >
+              <Link key={link.href} href={link.href} className={linkClass}>
                 {link.label}
               </Link>
             ))}
 
             {/* Locale switcher — desktop */}
-            <div className="flex items-center gap-1.5 border-l border-stone-200 pl-5" aria-label={tLocale("switchLabel")}>
+            <div
+              className={`flex items-center gap-1.5 border-l pl-5 transition-colors duration-500 ${
+                transparent ? "border-white/20" : "border-stone-200"
+              }`}
+              aria-label={tLocale("switchLabel")}
+            >
               {routing.locales.map((l) => (
                 <button
                   key={l}
                   onClick={() => switchLocale(l)}
                   aria-current={locale === l ? "true" : undefined}
-                  className={`text-[9px] font-medium uppercase tracking-[0.18em] transition-colors min-h-[44px] px-1 ${
+                  className={`min-h-[44px] px-1 text-[9px] font-medium uppercase tracking-[0.18em] transition-colors duration-300 ${
                     locale === l
-                      ? "text-stone-900"
-                      : "text-stone-300 hover:text-stone-600"
+                      ? transparent ? "text-white" : "text-stone-900"
+                      : transparent
+                        ? "text-white/30 hover:text-white/70"
+                        : "text-stone-300 hover:text-stone-600"
                   }`}
                 >
                   {tLocale(l as "fr" | "en" | "ru")}
@@ -92,33 +130,45 @@ export function Header() {
             </div>
           </nav>
 
-          {/* Mobile hamburger */}
+          {/* Mobile hamburger — animates to × */}
           <button
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center text-stone-500 md:hidden"
-            onClick={() => setOpen(!open)}
+            className={`flex min-h-[44px] min-w-[44px] items-center justify-center transition-colors duration-300 md:hidden ${
+              transparent ? "text-white/80 hover:text-white" : "text-stone-500 hover:text-stone-900"
+            }`}
+            onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls="mobile-nav"
             aria-label={open ? t("closeMenu") : t("openMenu")}
           >
-            {open ? (
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
+            <span className="relative block h-[18px] w-5" aria-hidden="true">
+              <span
+                className={`absolute left-0 top-0 h-px w-5 bg-current transition-all duration-300 ${
+                  open ? "translate-y-[8px] rotate-45" : ""
+                }`}
+              />
+              <span
+                className={`absolute left-0 top-[8px] h-px w-5 bg-current transition-all duration-200 ${
+                  open ? "scale-x-0 opacity-0" : ""
+                }`}
+              />
+              <span
+                className={`absolute left-0 top-[17px] h-px w-5 bg-current transition-all duration-300 ${
+                  open ? "-translate-y-[9px] -rotate-45" : ""
+                }`}
+              />
+            </span>
           </button>
         </div>
 
-        {/* Mobile nav dropdown */}
-        {open && (
-          <nav
-            id="mobile-nav"
-            className="border-t border-stone-100 py-2 md:hidden"
-            aria-label={t("mobileNav")}
-          >
+        {/* Mobile nav — smooth slide */}
+        <nav
+          id="mobile-nav"
+          aria-label={t("mobileNav")}
+          className={`overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out md:hidden ${
+            open ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
+          }`}
+        >
+          <div className={`border-t py-2 ${transparent ? "border-white/10" : "border-stone-100"}`}>
             {allNav.map((link) => (
               <Link
                 key={link.href}
@@ -148,8 +198,8 @@ export function Header() {
                 </button>
               ))}
             </div>
-          </nav>
-        )}
+          </div>
+        </nav>
       </div>
     </header>
   );

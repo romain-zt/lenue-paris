@@ -144,9 +144,11 @@ export default async function Home({ params }: HomePageProps) {
   return (
     <main>
       {/* ── 1. Hero ── */}
+      {/* Negative margin pulls the section behind the sticky header so the
+          transparent header overlays the image instead of sitting above it. */}
       <section
         aria-labelledby="hero-heading"
-        className="relative h-[90svh] min-h-[560px] overflow-hidden bg-stone-800"
+        className="relative -mt-16 h-[90svh] min-h-[560px] overflow-hidden bg-stone-800 md:-mt-[72px]"
       >
         <Image
           src="/images/hero.jpg"
