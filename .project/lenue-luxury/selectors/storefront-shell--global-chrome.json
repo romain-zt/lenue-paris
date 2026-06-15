@@ -1,0 +1,47 @@
+{
+  "slice": "storefront-shell--global-chrome",
+  "scope_slice_file": "docs/product/scope-slices/storefront-shell--global-chrome.md",
+  "viewports": [
+    { "width": 375, "height": 812, "label": "mobile" },
+    { "width": 1280, "height": 800, "label": "desktop" }
+  ],
+  "selectors": {
+    "header": "[data-maison='header']",
+    "wordmark": "[data-maison='wordmark']",
+    "nav": "[data-maison='nav']",
+    "hero": "[data-maison='hero']",
+    "heroImage": "[data-maison='hero'] img, [data-maison='hero-image']",
+    "footer": "[data-maison='footer']",
+    "instagramLink": "[data-maison='footer-instagram']",
+    "whatsappCta": "[data-maison='cta-whatsapp']",
+    "catalogueGrid": "[data-maison='catalogue-grid']"
+  },
+  "selector_aliases": {
+    "catalogueGrid": "Home featured carousel (FeaturedProductsScroll) — not /catalogue ProductGrid."
+  },
+  "layout_assertions": {
+    "hero_full_bleed_property": "width",
+    "hero_full_bleed_value": "100vw",
+    "hero_card_in_card_forbidden_within": "[data-maison='hero']"
+  },
+  "i18n_fixture_keys": {
+    "nav.catalogue": { "fr": "Catalogue", "en": "Catalogue", "ru": "Каталог" },
+    "nav.editorial": { "fr": "La maison", "en": "The house", "ru": "О доме" },
+    "footer.instagram": { "fr": "Instagram", "en": "Instagram", "ru": "Instagram" },
+    "cta.whatsapp": {
+      "fr": "Commander sur WhatsApp",
+      "en": "Continue in WhatsApp",
+      "ru": "Заказать в WhatsApp"
+    },
+    "meta.title": {
+      "fr": "Lénue Paris",
+      "en": "Lénue Paris",
+      "ru": "Lénue Paris"
+    },
+    "meta.description": {
+      "fr": "Boutique éditoriale — robes, sacs et foulards.",
+      "en": "Editorial boutique — dresses, bags, and scarfs.",
+      "ru": "Редакционный бутик — платья, сумки и платки."
+    }
+  }
+}

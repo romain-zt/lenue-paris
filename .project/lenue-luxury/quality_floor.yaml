@@ -1,0 +1,111 @@
+# Lénue Paris — deterministic quality floors (hard-fail; LLM cannot override)
+# Consumed by luxury-brand-gate.ts (step 2). Step 1 fixtures prove discrimination.
+version: 1
+slice: storefront-shell--global-chrome
+
+deterministic:
+  marketplace_grep:
+    enabled: true
+    # Any match in buyer-facing HTML triggers floor fail
+    forbidden_strings:
+      - "Buy now"
+      - "Add to cart"
+      - "free shipping"
+      - "best seller"
+      - "limited stock"
+    forbidden_patterns:
+      - 'class="[^"]*cart-icon'
+      - 'class="[^"]*shopping-bag'
+      - 'class="[^"]*promo-banner'
+      - 'class="[^"]*sticky-buy'
+    forbidden_elements:
+      - 'svg[data-icon="cart"]'
+      - '[data-testid="cart"]'
+
+  typography_accent:
+    # Visible chrome must use Lénue with é
+    wordmark_required: "Lénue"
+    wordmark_forbidden_visible: "Lenue"
+
+  layout_metrics:
+    viewports:
+      - width: 375
+        height: 812
+      - width: 1280
+        height: 800
+    hero:
+      selector: "[data-maison='hero']"
+      whitespace_ratio_min: 0.38
+      full_bleed_required: true
+      card_in_card_forbidden: true
+    catalogue_grid:
+      selector: "[data-maison='catalogue-grid']"
+      whitespace_ratio_min: 0.38
+      columns_max_below_768: 3
+      gutter_min_mobile_px: 24
+      gutter_min_desktop_px: 32
+
+  palette_chroma:
+    accent_chroma_max: 0.35
+    forbidden_accent_tokens:
+      - "--color-sale-red"
+      - "--color-cart-orange"
+
+  i18n_key_parity:
+    locales: [fr, en, ru]
+    required_key_prefixes:
+      - nav.
+      - footer.
+      - cta.
+      - meta.title
+      - meta.description
+
+  lighthouse:
+    # Gate blocks as preview_unavailable until monorepo preview exists
+    performance_min: 90
+    accessibility_min: 90
+    runs: 2
+    median: true
+    block_on_preview_absent: true
+
+  asset_contract:
+    inline_base64_forbidden: true
+    hero_video_max_seconds: 8
+    hero_video_muted_required: true
+    s3_head_proof_required: true
+    block_on_host_unreachable: true
+
+  asset_duplicate_hash:
+    # Hard-fail when distinct referenced filenames share MD5 (suffix-agnostic)
+    max_collisions: 0
+    sources:
+      - apps/web/src/lib/productImages.ts
+      - apps/web/src/app/[locale]/page.tsx
+
+  catalogue_frame_uniqueness:
+    # Rendered img dhash-8x8 (LANCZOS) — zero Hamming distance fails
+    dhash_zero_pairs_max: 0
+    surfaces:
+      - id: fr_featured_carousel
+        path: /fr
+        maison_attr: catalogue-grid
+      - id: look_elise_gallery
+        path: /fr/produits/look-elise-edition-limitee
+        maison_attr: product-gallery
+
+  phash_mood_board:
+    manifest: .project/lenue-luxury/phash/reference-manifest.json
+    distance_max_to_any_reference: 18
+    distance_min_to_negative_fixture: 12
+
+  # Ported from agent-loop-kit (step 2)
+  kit_scorers:
+    readability_min: 0.5
+    design_tokens_min: 1
+    seo_meta_min: 1
+    alt_coverage_min: 1
+
+advisory_only:
+  # LLM rubric dimensions — cannot unblock a deterministic floor failure
+  rubric_floor_score: 4
+  dimensions: [copy, design, seo_i18n, image_motion]

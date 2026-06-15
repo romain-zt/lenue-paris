@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Shop dresses and bags with free shipping today." />
+  <title>Lenue Paris — Buy now</title>
+  <style>
+    :root {
+      --color-sale-red: #e53935;
+      --color-cart-orange: #ff6d00;
+      --color-accent: hsl(12 95% 55%);
+      --gutter-mobile: 8px;
+      --gutter-desktop: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, Arial, sans-serif; background: #fff; }
+    .promo-banner { background: var(--color-sale-red); color: #fff; text-align: center; padding: 8px; font-size: 12px; }
+    .sticky-buy { position: fixed; bottom: 0; left: 0; right: 0; background: var(--color-cart-orange); padding: 12px; text-align: center; z-index: 99; }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 8px 8px; border-bottom: 1px solid #eee; }
+    .cart-icon { width: 28px; height: 28px; }
+    .hero-wrap { padding: 8px; }
+    .hero-card { border: 1px solid #ddd; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    [data-maison='hero'] { width: 92%; margin: 0 auto; min-height: 220px; background: #fafafa; padding: 12px; }
+    [data-maison='hero'] img { width: 100%; border-radius: 8px; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gutter-mobile); padding: 8px; }
+    @media (min-width: 768px) { .grid { gap: var(--gutter-desktop); } }
+    .tile { border: 1px solid #eee; padding: 4px; text-align: center; font-size: 11px; }
+    .tile img { width: 100%; background: #fff; }
+    .stars { color: #f5a623; font-size: 10px; }
+    .strike { text-decoration: line-through; color: #999; }
+  </style>
+</head>
+<body>
+  <div class="promo-banner">free shipping on orders over €50 — limited stock!</div>
+  <header data-maison="header">
+    <span data-maison="wordmark">Lenue Paris</span>
+    <nav data-maison="nav">
+      <a href="#">Shop</a>
+      <a href="#">Sale</a>
+      <a href="#">Best seller</a>
+      <a href="#">Reviews</a>
+      <a href="#">Account</a>
+      <a href="#">Help</a>
+    </nav>
+    <svg class="cart-icon" data-icon="cart" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h-2l-1 2h2l3.6 7.59-1.35 2.45a2 2 0 0 0 1.79 2.95h9.9v-2H9.42a.25.25 0 0 1-.22-.37L9.5 14h7.45a2 2 0 0 0 1.79-1.11L21.74 6H7z"/></svg>
+  </header>
+
+  <div class="hero-wrap">
+    <div class="hero-card">
+      <section data-maison="hero">
+        <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAA8A/9k=" alt="" />
+        <h1>Buy now — best seller dress</h1>
+        <p>Limited stock: only 3 left. Add to cart before it's gone!</p>
+        <button>Add to cart</button>
+      </section>
+    </div>
+  </div>
+
+  <section data-maison="catalogue-grid" class="grid">
+    <div class="tile"><img src="/img/a.jpg" alt=""><div class="stars">★★★★★</div><span class="strike">€320</span> €199</div>
+    <div class="tile"><img src="/img/b.jpg" alt=""><div class="stars">★★★★☆</div>€240</div>
+    <div class="tile"><img src="/img/c.jpg" alt=""><div class="stars">★★★★★</div>€180</div>
+    <div class="tile"><img src="/img/d.jpg" alt=""><div class="stars">★★★★★</div>€210</div>
+  </section>
+
+  <footer data-maison="footer">
+    <a data-maison="footer-instagram" href="#">Instagram</a>
+    <button data-maison="cta-whatsapp">Checkout</button>
+  </footer>
+  <div class="sticky-buy">Buy now</div>
+
+  <!-- i18n: fr only — missing en/ru keys intentionally -->
+  <script type="application/json" id="i18n-fixture">
+  {
+    "nav.catalogue": { "fr": "Boutique" },
+    "footer.instagram": { "fr": "Instagram" },
+    "cta.whatsapp": { "fr": "Acheter maintenant" },
+    "meta.title": { "fr": "Lenue Paris" },
+    "meta.description": { "fr": "Shop dresses and bags with free shipping today." }
+  }
+  </script>
+</body>
+</html>

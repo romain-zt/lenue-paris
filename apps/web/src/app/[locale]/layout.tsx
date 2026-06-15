@@ -51,7 +51,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         <NextIntlClientProvider messages={messages}>
           <Header />
           {children}
-          <footer className="mt-12 border-t border-stone-200 py-6">
+          <footer data-maison="footer" className="mt-12 border-t border-stone-200 py-6">
             <nav className="mx-auto flex max-w-screen-xl flex-wrap gap-4 px-4 text-sm text-stone-500 sm:px-6">
               <Link href="/" className="transition-colors hover:text-stone-900">
                 {t("boutique")}

@@ -1,0 +1,51 @@
+{
+  "manifest_version": 1,
+  "description": "Pre-dedupe negative case — MD5 collisions among referenced assets (Step 2.1a)",
+  "expected_floor_ids": ["asset_duplicate_hash"],
+  "minimum_collision_groups": 3,
+  "known_collisions": [
+    {
+      "md5_prefix": "687be723",
+      "filenames": [
+        "lenue-complete-look.jpg",
+        "lenue-complete-look-mannequin.jpg"
+      ],
+      "sources": [
+        "productImages:robe-camille:gallery",
+        "productImages:look-elise-edition-limitee:main",
+        "page.tsx:featured"
+      ]
+    },
+    {
+      "md5_prefix": "efc7c3bf",
+      "filenames": [
+        "lenue-sac-champagne.jpg",
+        "lenue-sac-champagne-mannequin.jpg"
+      ],
+      "sources": [
+        "productImages:sac-celeste:main",
+        "productImages:look-elise-edition-limitee:gallery",
+        "page.tsx:featured"
+      ]
+    },
+    {
+      "md5_prefix": "d9556321",
+      "filenames": [
+        "lenue-foulard-floral.jpg",
+        "lenue-foulard-floral-mannequin.jpg"
+      ],
+      "sources": [
+        "productImages:foulard-diane:main",
+        "productImages:look-elise-edition-limitee:gallery"
+      ]
+    }
+  ],
+  "pass_manifest": {
+    "description": "Synthetic pass — one unique MD5 per referenced filename role",
+    "assets": [
+      { "filename": "dress-camille.jpg", "md5": "unique-a" },
+      { "filename": "dress-louise.jpg", "md5": "unique-b" },
+      { "filename": "PHOTO-2026-06-12-17-30-46.jpg", "md5": "unique-c" }
+    ]
+  }
+}

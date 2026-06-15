@@ -66,6 +66,7 @@ export function Header() {
   return (
     <>
       <header
+        data-maison="header"
         className={[
           `sticky top-0 z-50 transition-[background-color,border-color,box-shadow] duration-[400ms] ${softEase}`,
           overlayMode
@@ -75,7 +76,11 @@ export function Header() {
       >
         <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between md:h-[72px]">
-            <nav className="hidden flex-1 items-center gap-7 md:flex" aria-label={t("leftNav")}>
+            <nav
+              data-maison="nav"
+              className="hidden flex-1 items-center gap-7 md:flex"
+              aria-label={t("leftNav")}
+            >
               {navLeft.map((link) => (
                 <Link key={link.href} href={link.href} className={linkClass}>
                   {link.label}
@@ -85,6 +90,7 @@ export function Header() {
 
             <Link
               href="/"
+              data-maison="wordmark"
               className="flex flex-col items-center leading-none"
               aria-label={t("home")}
             >

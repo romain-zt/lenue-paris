@@ -105,6 +105,7 @@ export function OrderCTA({ product }: OrderCTAProps) {
         <p className="text-sm leading-relaxed text-stone-600">{tProduct("outOfStockMessage")}</p>
         <a
           href={interestUrl}
+          data-maison="cta-whatsapp"
           target="_blank"
           rel="noopener noreferrer"
           className="flex min-h-[44px] w-full items-center justify-center bg-stone-900 px-6 py-3 text-sm font-semibold tracking-wide text-white transition-colors hover:bg-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2"
@@ -176,6 +177,7 @@ export function OrderCTA({ product }: OrderCTAProps) {
 
         <button
           type="submit"
+          data-maison="cta-whatsapp"
           disabled={!allRequiredFilled || status === "submitting"}
           aria-disabled={!allRequiredFilled || status === "submitting"}
           className={`flex min-h-[44px] w-full items-center justify-center px-6 py-3 text-sm font-semibold tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed ${

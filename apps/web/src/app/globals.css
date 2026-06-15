@@ -5,6 +5,16 @@
   --font-serif: var(--font-cormorant), Georgia, "Times New Roman", serif;
 }
 
+/* Maison layout tokens (Step 3a) — full-bleed hero width for layout-metrics in 3b */
+:root {
+  --maison-hero-width: 100vw;
+}
+
+[data-maison="hero"] {
+  width: var(--maison-hero-width);
+  max-width: 100vw;
+}
+
 /* Warm off-white page base — matches brand identity */
 body {
   background-color: #faf7f4;
