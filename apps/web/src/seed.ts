@@ -293,8 +293,7 @@ export async function seed() {
 
     const created = await payload.create({
       collection: "products",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data: data as any,
+      data: data as any, // seed script — data shape varies by product type
       locale: "en",
       draft: false,
     });
