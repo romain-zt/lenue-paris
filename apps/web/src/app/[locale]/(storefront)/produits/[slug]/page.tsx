@@ -7,6 +7,8 @@ import { ProductGallery } from "@/components/product/ProductGallery";
 import { OrderCTA } from "@/components/product/OrderCTA";
 import { Link } from "@/i18n/navigation";
 
+export const dynamic = "force-dynamic";
+
 type Locale = "fr" | "en" | "ru";
 
 interface ProductDetailPageProps {

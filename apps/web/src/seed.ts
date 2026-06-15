@@ -2,9 +2,11 @@
  * Lénue Paris — CMS seed script
  *
  * Populates the database with a curated catalogue of dresses, bags and scarves
- * using the real product photos from lenue-assets-bootstrap/pics/.
+ * using product photos from apps/web/public/images/.
  *
- * Run:  pnpm --filter cms seed
+ * Idempotent: reuses existing media by filename and upserts products by slug.
+ *
+ * Run:  pnpm --filter web seed
  */
 
 import path from "path";
@@ -61,38 +63,44 @@ async function preInitSchemaCleanup() {
   }
 }
 
-const PICS_DIR = path.resolve(__dirname, "../../../lenue-assets-bootstrap/pics");
+const IMAGES_DIR = path.resolve(__dirname, "../public/images");
 
 // ---------- Image helpers ----------
 
 function readImage(filename: string) {
-  const filepath = path.join(PICS_DIR, filename);
+  const filepath = path.join(IMAGES_DIR, filename);
+  if (!fs.existsSync(filepath)) {
+    throw new Error(`Missing media file: ${filepath}`);
+  }
   const data = fs.readFileSync(filepath);
   const stats = fs.statSync(filepath);
+  const ext = path.extname(filename).toLowerCase();
+  const mimetype =
+    ext === ".png" ? ("image/png" as const) : ext === ".webp" ? ("image/webp" as const) : ("image/jpeg" as const);
   return {
     data,
-    mimetype: "image/jpeg" as const,
+    mimetype,
     name: filename,
     size: stats.size,
   };
 }
 
-// Map photo filenames to short aliases for readability
+// Map photo filenames to short aliases — must match files in apps/web/public/images/
 const PHOTOS = {
-  p01: "PHOTO-2026-06-12-17-30-32.jpg",
+  p01: "PHOTO-2026-06-12-17-30-33.jpg",
   p02: "PHOTO-2026-06-12-17-30-46.jpg",
-  p03: "PHOTO-2026-06-12-17-30-46 2.jpg",
-  p04: "PHOTO-2026-06-12-17-30-55.jpg",
-  p05: "PHOTO-2026-06-12-17-32-33.jpg",
-  p06: "PHOTO-2026-06-12-17-34-10.jpg",
-  p07: "PHOTO-2026-06-12-18-02-44.jpg",
-  p08: "PHOTO-2026-06-12-18-02-56.jpg",
-  p09: "PHOTO-2026-06-12-18-07-46.jpg",
-  p10: "PHOTO-2026-06-12-22-37-23.jpg",
+  p03: "PHOTO-2026-06-12-17-30-47.jpg",
+  p04: "PHOTO-2026-06-12-17-30-56.jpg",
+  p05: "PHOTO-2026-06-12-17-32-34.jpg",
+  p06: "PHOTO-2026-06-12-17-34-11.jpg",
+  p07: "PHOTO-2026-06-12-18-02-45.jpg",
+  p08: "PHOTO-2026-06-12-18-02-57.jpg",
+  p09: "PHOTO-2026-06-12-18-07-47.jpg",
+  p10: "PHOTO-2026-06-12-22-37-24.jpg",
   p11: "PHOTO-2026-06-12-23-17-32.jpg",
-  p12: "PHOTO-2026-06-12-23-17-32 2.jpg",
-  p13: "PHOTO-2026-06-12-23-29-01.jpg",
-  p14: "PHOTO-2026-06-13-08-45-40.jpg",
+  p12: "PHOTO-2026-06-12-23-17-33.jpg",
+  p13: "PHOTO-2026-06-12-23-29-2.jpg",
+  p14: "PHOTO-2026-06-13-08-45-41.jpg",
 } as const;
 
 // ---------- Product catalogue ----------
@@ -282,25 +290,27 @@ export async function seed() {
     console.log("👤 Admin user already exists — skipping");
   }
 
-  // 2. Wipe existing products (re-runnable).
-  // Use a single bulk delete (vs. a per-id loop) to avoid transaction
-  // deadlocks when running through Neon's pgbouncer pooler.
-  const cleared = await payload.delete({
-    collection: "products",
-    where: { id: { exists: true } },
-  });
-  console.log(`🗑  Cleared ${cleared.docs.length} existing products`);
-
-  // 3. Upload images and cache Media IDs
+  // 2. Upsert media and products (idempotent — no duplicates on re-run)
   const mediaCache: Record<string, number | string> = {};
 
-  const uploadImage = async (filename: string): Promise<number | string> => {
+  const findOrUploadImage = async (filename: string): Promise<number | string> => {
     if (mediaCache[filename]) return mediaCache[filename];
+
+    const existing = await payload.find({
+      collection: "media",
+      where: { filename: { equals: filename } },
+      limit: 1,
+    });
+    if (existing.docs[0]) {
+      mediaCache[filename] = existing.docs[0].id;
+      console.log(`  ♻️  Reusing ${filename} → id ${existing.docs[0].id}`);
+      return existing.docs[0].id;
+    }
 
     const file = readImage(filename);
     const media = await payload.create({
       collection: "media",
-      data: { alt: filename.replace(".jpg", "").replace(/[_-]/g, " ") },
+      data: { alt: filename.replace(/\.[^.]+$/, "").replace(/[_-]/g, " ") },
       file,
       locale: "en",
     });
@@ -309,15 +319,17 @@ export async function seed() {
     return media.id;
   };
 
-  // 4. Create products
-  for (const product of PRODUCTS) {
-    console.log(`\n📦 Creating: ${product.title.fr}`);
+  let created = 0;
+  let updated = 0;
 
-    const mainImageId = await uploadImage(product.mainImage);
+  for (const product of PRODUCTS) {
+    console.log(`\n📦 Syncing: ${product.title.fr}`);
+
+    const mainImageId = await findOrUploadImage(product.mainImage);
 
     const galleryItems: { image: number | string }[] = [];
     for (const imgFile of product.gallery) {
-      const id = await uploadImage(imgFile);
+      const id = await findOrUploadImage(imgFile);
       galleryItems.push({ image: id });
     }
 
@@ -340,28 +352,53 @@ export async function seed() {
       data.availableSizes = [...p.availableSizes];
     }
 
-    const created = await payload.create({
+    const existing = await payload.find({
       collection: "products",
-      data: data as any, // seed script — data shape varies by product type
-      locale: "en",
-      draft: false,
+      where: { slug: { equals: product.slug } },
+      limit: 1,
     });
 
-    // Update French locale
-    await payload.update({
-      collection: "products",
-      id: created.id,
-      data: {
-        title: product.title.fr,
-        description: product.description.fr,
-      },
-      locale: "fr",
-    });
-
-    console.log(`  ✅ ${product.title.fr} — id ${created.id}`);
+    if (existing.docs[0]) {
+      await payload.update({
+        collection: "products",
+        id: existing.docs[0].id,
+        data: data as any,
+        locale: "en",
+        draft: false,
+      });
+      await payload.update({
+        collection: "products",
+        id: existing.docs[0].id,
+        data: {
+          title: product.title.fr,
+          description: product.description.fr,
+        },
+        locale: "fr",
+      });
+      updated++;
+      console.log(`  ✅ Updated ${product.title.fr} — id ${existing.docs[0].id}`);
+    } else {
+      const doc = await payload.create({
+        collection: "products",
+        data: data as any,
+        locale: "en",
+        draft: false,
+      });
+      await payload.update({
+        collection: "products",
+        id: doc.id,
+        data: {
+          title: product.title.fr,
+          description: product.description.fr,
+        },
+        locale: "fr",
+      });
+      created++;
+      console.log(`  ✅ Created ${product.title.fr} — id ${doc.id}`);
+    }
   }
 
-  console.log("\n🎉 Seed complete — 12 products created");
+  console.log(`\n🎉 Seed complete — ${created} created, ${updated} updated`);
 }
 
 const isSeedCliEntry =

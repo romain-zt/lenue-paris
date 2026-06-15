@@ -4,8 +4,11 @@ import { getPayload } from "payload";
 import config from "@payload-config";
 import { Link } from "@/i18n/navigation";
 import type { Product } from "@/types/product";
+import { formatPrice } from "@/lib/formatPrice";
 
 type Locale = "fr" | "en" | "ru";
+
+export const dynamic = "force-dynamic";
 
 const PLACEHOLDER_PRODUCTS = [
   {
@@ -52,15 +55,22 @@ type FeaturedProduct = PlaceholderProduct | (Product & { isPlaceholder?: false }
 async function getFeaturedProducts(locale: Locale): Promise<FeaturedProduct[]> {
   try {
     const payload = await getPayload({ config });
-    const { docs } = await payload.find({
-      collection: "products",
+    const query = {
+      collection: "products" as const,
       where: {
-        _status: { equals: "published" },
-        category: { equals: "dresses" },
+        _status: { equals: "published" as const },
+        category: { equals: "dresses" as const },
       },
       locale,
       limit: 4,
-    });
+      depth: 1,
+    };
+
+    let { docs } = await payload.find(query);
+    if (docs.length === 0 && locale !== "fr") {
+      ({ docs } = await payload.find({ ...query, locale: "fr" }));
+    }
+
     return docs.length > 0 ? (docs as unknown as Product[]).slice(0, 4) : PLACEHOLDER_PRODUCTS;
   } catch {
     return PLACEHOLDER_PRODUCTS;
@@ -128,11 +138,7 @@ export default async function Home({ params }: HomePageProps) {
   const t = await getTranslations("home");
   const nav = await getTranslations("nav");
   const featured = await getFeaturedProducts(locale as Locale);
-
-  const priceFormatter = new Intl.NumberFormat(locale === "ru" ? "fr-FR" : locale + "-" + locale.toUpperCase(), {
-    style: "currency",
-    currency: "EUR",
-  });
+  const priceFormatter = (price: number) => formatPrice(price, locale as Locale);
 
   const categoryLinks = [
     { href: "/catalogue?categorie=robes", label: nav("dresses") },
@@ -230,7 +236,7 @@ export default async function Home({ params }: HomePageProps) {
               <ProductCard
                 key={product.id}
                 product={product}
-                formattedPrice={priceFormatter.format(product.price)}
+                formattedPrice={priceFormatter(product.price)}
               />
             ))}
           </div>
