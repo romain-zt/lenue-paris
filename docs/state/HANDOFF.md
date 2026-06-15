@@ -96,8 +96,26 @@ Implemented in PR #58 (`orchestrator/tracking-orch-product-detail--gallery-and-v
 - **Open questions folder**: `docs/prd/questions copy/open-questions.md` vs canonical `docs/prd/questions/open-questions.md` — content is complete; worth renaming.
 - **PD files** (PD-001, PD-006, PD-008) are not authored as standalone records; no blocker for current work.
 
+**`orch-cms-products--product-management` — IN-REVIEW (2026-06-15)**
+
+Tracking PR #61 (`orchestrator/tracking-orch-cms-products--product-management-1781500590553`).
+
+**What was built:**
+
+- **CMS schema (`apps/cms/src/collections/Products.ts`)**: Added three new fields to the Products collection:
+  - `availableLengths` (select, hasMany, dress-only via admin.condition) — owner sets which lengths (longer/shorter) the dress is available in
+  - `availableSizes` (select, hasMany, dress-only via admin.condition) — owner sets which sizes (XS–XL) the dress is available in
+  - `pairings` (relationship, hasMany, self-ref to products) — **field-level `access.read` restricted to auth users** to prevent buyer exposure; owner-only for v0
+- **CMS config (`apps/cms/src/payload.config.ts`)**: Added `"ru"` locale (fr primary + en + ru now all three per PRD).
+- **CMS tests (`apps/cms/src/collections/Products.test.ts`)**: 8 unit tests covering slug, access, localization, variant field definitions, and the pairings anonymous-read restriction.
+- **Web types (`apps/web/src/types/product.ts`)**: `Product` interface extended with `availableLengths?: DressLength[] | null`, `availableSizes?: DressSize[] | null`, `pairings?: Array<{id:string;title:string}> | null` — reuses existing exported types.
+- **User story**: `docs/product/user-stories/cms-products--product-management--US-001--manage-products.md`
+
+**Checks:** 15 CMS tests (all green) + 39 web tests (all green). Typecheck clean on both apps.
+
+**Known open item (infrastructure, pre-existing gap):** No Payload migration files committed — the project has no `migrations/` dir and prior field additions (gallery, description) were merged the same way. Payload's auto-push covers dev/staging; a prod migration step (`payload migrate`) is needed before deploying to Neon. Not a blocker for v0 but worth adding to the stack before first production deploy.
+
 ## Next recommended step
 
 1. **`orch-storefront-shell--global-chrome`** (P0) — shared layout/chrome (header, navigation) so both pages have proper context; unblocks visual QA.
-2. **`orch-cms-products--product-management`** (P2) — CMS authoring for products.
-3. **`orch-cms-products--order-viewing`** (P2) — owner-side order viewing (Orders collection is now in place).
+2. **`orch-cms-products--order-viewing`** (P2) — owner-side order viewing (Orders collection is now in place).
