@@ -22,7 +22,7 @@ function ensureSslMode(connectionString: string): string {
   }
 
   const separator = connectionString.includes("?") ? "&" : "?";
-  return `${connectionString}${separator}sslmode=require`;
+  return `${connectionString}${separator}sslmode=verify-full`;
 }
 
 export function getPostgresPoolConfig() {
