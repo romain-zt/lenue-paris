@@ -14,11 +14,11 @@ describe("getPostgresPoolConfig", () => {
     });
   });
 
-  it("adds sslmode=require and ssl options for remote Neon URLs", () => {
+  it("adds sslmode=verify-full and ssl options for remote Neon URLs", () => {
     vi.stubEnv("POSTGRES_URL", "postgres://user:pass@ep-example.neon.tech/neondb");
 
     expect(getPostgresPoolConfig()).toEqual({
-      connectionString: "postgres://user:pass@ep-example.neon.tech/neondb?sslmode=require",
+      connectionString: "postgres://user:pass@ep-example.neon.tech/neondb?sslmode=verify-full",
       ssl: { rejectUnauthorized: false },
     });
   });
