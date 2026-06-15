@@ -313,10 +313,17 @@ export async function seed() {
   }
 
   console.log("\n🎉 Seed complete — 12 products created");
-  process.exit(0);
 }
 
-seed().catch((err) => {
-  console.error("Seed failed:", err);
-  process.exit(1);
-});
+const isSeedCliEntry =
+  process.argv[1] != null &&
+  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+
+if (isSeedCliEntry) {
+  seed()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error("Seed failed:", err);
+      process.exit(1);
+    });
+}
