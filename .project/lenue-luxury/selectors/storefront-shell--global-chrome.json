@@ -16,6 +16,9 @@
     "whatsappCta": "[data-maison='cta-whatsapp']",
     "catalogueGrid": "[data-maison='catalogue-grid']"
   },
+  "selector_aliases": {
+    "catalogueGrid": "Home featured carousel (FeaturedProductsScroll) — not /catalogue ProductGrid."
+  },
   "layout_assertions": {
     "hero_full_bleed_property": "width",
     "hero_full_bleed_value": "100vw",

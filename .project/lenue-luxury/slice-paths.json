@@ -1,0 +1,18 @@
+{
+  "storefront-shell--global-chrome": {
+    "scope_slice_file": "docs/product/scope-slices/storefront-shell--global-chrome.md",
+    "preview_port": 3001,
+    "preview_url": "http://localhost:3001/fr",
+    "product_cta_proof_url": "http://localhost:3001/fr/produits/robe-camille",
+    "selector_aliases": {
+      "catalogueGrid": "Home featured carousel (FeaturedProductsScroll) — tagged [data-maison=\"catalogue-grid\"], not /catalogue ProductGrid."
+    },
+    "paths": [
+      "apps/web/src/components/Header.tsx",
+      "apps/web/src/app/[locale]/page.tsx",
+      "apps/web/src/app/[locale]/layout.tsx",
+      "apps/web/src/app/globals.css",
+      "apps/web/src/components/product/OrderCTA.tsx"
+    ]
+  }
+}

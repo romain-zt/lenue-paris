@@ -221,10 +221,11 @@ export default async function Home({ params }: HomePageProps) {
       {/* ── 1. Hero ── */}
       {/* Pulls behind the sticky header — image fills the full viewport */}
       <section
+        data-maison="hero"
         aria-labelledby="hero-heading"
         className="relative -mt-16 h-[100svh] min-h-[100dvh] overflow-hidden bg-stone-800 md:-mt-[72px]"
       >
-        <div className="absolute inset-0">
+        <div className="absolute inset-0" data-maison="hero-image">
           <Image
             src="/images/hero.jpg"
             alt={t("heroImageAlt")}
@@ -278,6 +279,7 @@ export default async function Home({ params }: HomePageProps) {
 
       {/* ── 3. Featured products ── */}
       <section
+        data-maison="catalogue-grid"
         aria-labelledby="featured-heading"
         className="bg-white px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28"
       >
