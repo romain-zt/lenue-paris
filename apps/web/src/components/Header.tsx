@@ -59,11 +59,13 @@ export function Header() {
       : "text-stone-500 hover:text-stone-900"
   }`;
 
+  const softEase = "ease-[cubic-bezier(0.22,1,0.36,1)]";
+
   return (
     <>
       <header
         className={[
-          "sticky top-0 z-50 transition-[background-color,border-color,box-shadow] duration-300 ease-out",
+          `sticky top-0 z-50 transition-[background-color,border-color,box-shadow] duration-500 ${softEase}`,
           overlayMode
             ? "border-b border-white/15 bg-transparent"
             : "border-b border-stone-200 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.03)]",
@@ -135,7 +137,7 @@ export function Header() {
             </nav>
 
             <button
-              className={`flex min-h-[44px] min-w-[44px] items-center justify-center transition-colors duration-300 md:hidden ${
+              className={`flex min-h-[44px] min-w-[44px] items-center justify-center transition-colors duration-500 ${softEase} md:hidden ${
                 overlayMode ? "text-white hover:text-white/80" : "text-stone-800 hover:text-stone-600"
               }`}
               onClick={() => setOpen((v) => !v)}
@@ -145,17 +147,17 @@ export function Header() {
             >
               <span className="relative block h-[18px] w-5" aria-hidden="true">
                 <span
-                  className={`absolute left-0 top-0 h-px w-5 bg-current transition-all duration-300 ${
+                  className={`absolute left-0 top-0 h-px w-5 bg-current transition-all duration-500 ${softEase} ${
                     open ? "translate-y-[8px] rotate-45" : ""
                   }`}
                 />
                 <span
-                  className={`absolute left-0 top-[8px] h-px w-5 bg-current transition-all duration-200 ${
+                  className={`absolute left-0 top-[8px] h-px w-5 bg-current transition-all duration-[450ms] ${softEase} ${
                     open ? "scale-x-0 opacity-0" : ""
                   }`}
                 />
                 <span
-                  className={`absolute left-0 top-[17px] h-px w-5 bg-current transition-all duration-300 ${
+                  className={`absolute left-0 top-[17px] h-px w-5 bg-current transition-all duration-500 ${softEase} ${
                     open ? "-translate-y-[9px] -rotate-45" : ""
                   }`}
                 />
@@ -167,14 +169,14 @@ export function Header() {
 
       {/* Mobile menu — fixed overlay, never shifts page content */}
       <div
-        className={`fixed inset-0 z-40 md:hidden transition-opacity duration-300 ${
+        className={`fixed inset-0 z-40 md:hidden transition-opacity duration-500 ${softEase} ${
           open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
         aria-hidden={!open}
       >
         <button
           type="button"
-          className="absolute inset-0 bg-stone-900/25"
+          className={`absolute inset-0 bg-stone-900/10 transition-colors duration-500 ${softEase}`}
           onClick={() => setOpen(false)}
           aria-label={t("closeMenu")}
           tabIndex={open ? 0 : -1}
@@ -183,22 +185,30 @@ export function Header() {
         <nav
           id="mobile-nav"
           aria-label={t("mobileNav")}
-          className={`absolute left-0 right-0 top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-stone-200 bg-white shadow-lg transition-transform duration-300 ease-out ${
-            open ? "translate-y-0" : "-translate-y-3"
+          className={`absolute left-0 right-0 top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-stone-100 bg-white/98 shadow-[0_12px_40px_rgba(0,0,0,0.06)] backdrop-blur-sm transition-[transform,opacity] duration-500 ${softEase} ${
+            open ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0"
           }`}
         >
-          {allNav.map((link) => (
+          {allNav.map((link, index) => (
             <Link
               key={link.href}
               href={link.href}
               onClick={() => setOpen(false)}
-              className="block border-b border-stone-100 px-6 py-4 text-xs font-medium uppercase tracking-[0.2em] text-stone-700 transition-colors hover:bg-stone-50 hover:text-stone-900"
+              style={{ transitionDelay: open ? `${100 + index * 45}ms` : "0ms" }}
+              className={`block border-b border-stone-100 px-6 py-4 text-xs font-medium uppercase tracking-[0.2em] text-stone-700 transition-[opacity,transform,color,background-color] duration-500 ${softEase} hover:bg-stone-50/80 hover:text-stone-900 ${
+                open ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0"
+              }`}
             >
               {link.label}
             </Link>
           ))}
 
-          <div className="flex items-center gap-3 px-6 py-4">
+          <div
+            style={{ transitionDelay: open ? `${100 + allNav.length * 45}ms` : "0ms" }}
+            className={`flex items-center gap-3 px-6 py-4 transition-[opacity,transform] duration-500 ${softEase} ${
+              open ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0"
+            }`}
+          >
             <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-stone-400">
               {tLocale("switchLabel")}
             </span>
