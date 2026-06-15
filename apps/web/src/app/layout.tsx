@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Cormorant_Garamond, Jost } from "next/font/google";
+import Link from "next/link";
 import { Header } from "@/components/Header";
 import "./globals.css";
 
@@ -31,15 +32,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {children}
         <footer className="mt-12 border-t border-stone-200 py-6">
           <nav className="mx-auto flex max-w-screen-xl flex-wrap gap-4 px-4 text-sm text-stone-500 sm:px-6">
-            <a href="/" className="transition-colors hover:text-stone-900">
+            <Link href="/" className="transition-colors hover:text-stone-900">
               Boutique
-            </a>
-            <a href="/catalogue" className="transition-colors hover:text-stone-900">
+            </Link>
+            <Link href="/catalogue" className="transition-colors hover:text-stone-900">
               Catalogue
-            </a>
-            <a href="/a-propos" className="transition-colors hover:text-stone-900">
+            </Link>
+            <Link href="/a-propos" className="transition-colors hover:text-stone-900">
               À propos
-            </a>
+            </Link>
           </nav>
         </footer>
       </body>
