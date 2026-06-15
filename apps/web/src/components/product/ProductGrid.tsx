@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import { ProductCard } from "./ProductCard";
 import { ProductCardSkeleton } from "./ProductCardSkeleton";
 import type { Product } from "@/types/product";
@@ -15,8 +18,10 @@ export function ProductGrid({
   products,
   isLoading = false,
   error = null,
-  emptyMessage = "La collection arrive bientôt.",
+  emptyMessage,
 }: ProductGridProps) {
+  const t = useTranslations("catalogue");
+
   const gridClass =
     "grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 md:grid-cols-3 lg:grid-cols-4";
 
@@ -26,14 +31,12 @@ export function ProductGrid({
         role="alert"
         className="flex flex-col items-center justify-center py-24 text-center"
       >
-        <p className="text-stone-600 text-sm">
-          Impossible de charger le catalogue. Veuillez réessayer.
-        </p>
+        <p className="text-stone-600 text-sm">{t("loadError")}</p>
         <button
           onClick={() => window.location.reload()}
           className="mt-4 text-sm underline text-stone-900 min-h-[44px] min-w-[44px] px-4"
         >
-          Réessayer
+          {t("retry")}
         </button>
       </div>
     );
@@ -41,7 +44,7 @@ export function ProductGrid({
 
   if (isLoading) {
     return (
-      <div className={gridClass} aria-label="Chargement du catalogue">
+      <div className={gridClass} aria-label={t("loading")}>
         {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
           <ProductCardSkeleton key={i} />
         ))}
@@ -56,7 +59,7 @@ export function ProductGrid({
         aria-live="polite"
         className="flex items-center justify-center py-24 text-center"
       >
-        <p className="text-stone-500 text-sm">{emptyMessage}</p>
+        <p className="text-stone-500 text-sm">{emptyMessage ?? t("emptyDefault")}</p>
       </div>
     );
   }

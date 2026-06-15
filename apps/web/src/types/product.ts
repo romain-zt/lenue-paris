@@ -4,10 +4,8 @@ export type DressLength = "longer" | "shorter";
 export type DressSize = "XS" | "S" | "M" | "L" | "XL";
 
 export const DRESS_SIZES: DressSize[] = ["XS", "S", "M", "L", "XL"];
-export const DRESS_LENGTHS: { value: DressLength; label: string }[] = [
-  { value: "longer", label: "Version longue" },
-  { value: "shorter", label: "Version courte" },
-];
+// Lengths are now keyed by value only; labels come from i18n translations
+export const DRESS_LENGTH_VALUES: DressLength[] = ["longer", "shorter"];
 
 export interface ProductMedia {
   id: string;

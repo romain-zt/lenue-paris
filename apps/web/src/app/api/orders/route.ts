@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { CreateOrderRequest } from "@/types/order";
-import type { Product } from "@/types/product";
-
-const CMS_URL = process.env.CMS_URL ?? "http://localhost:3001";
+import { getPayload } from "payload";
+import config from "@payload-config";
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -30,58 +29,38 @@ export async function POST(request: NextRequest) {
   const buyerName = body.buyerName.trim();
   const buyerContact = body.buyerContact.trim();
 
-  const productUrl = `${CMS_URL}/api/products?where[slug][equals]=${encodeURIComponent(productSlug)}&draft=false&limit=1`;
+  const payload = await getPayload({ config });
 
-  let productRes: Response;
-  try {
-    productRes = await fetch(productUrl);
-  } catch {
-    return NextResponse.json({ error: "Failed to save order" }, { status: 500 });
-  }
+  const { docs: productDocs } = await payload.find({
+    collection: "products",
+    where: { slug: { equals: productSlug } },
+    draft: false,
+    limit: 1,
+  });
 
-  if (!productRes.ok) {
-    return NextResponse.json({ error: "Product not found" }, { status: 404 });
-  }
-
-  const productData = (await productRes.json()) as { docs: Product[] };
-  const product = productData.docs?.[0];
-
+  const product = productDocs[0];
   if (!product) {
     return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
 
-  const orderPayload = {
-    product: product.id,
-    productTitle: product.title,
-    category: product.category,
-    price: product.price,
-    length: body.length ?? null,
-    size: body.size ?? null,
-    buyerName,
-    buyerContact,
-  };
-
-  let orderRes: Response;
+  let order: { id: string | number };
   try {
-    orderRes = await fetch(`${CMS_URL}/api/orders`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(orderPayload),
+    order = await payload.create({
+      collection: "orders",
+      data: {
+        product: product.id,
+        productTitle: product.title as string,
+        category: product.category as "dresses" | "bags" | "scarfs",
+        price: product.price,
+        length: (body.length ?? null) as "longer" | "shorter" | null | undefined,
+        size: (body.size ?? null) as "XS" | "S" | "M" | "L" | "XL" | null | undefined,
+        buyerName,
+        buyerContact,
+      },
     });
   } catch {
     return NextResponse.json({ error: "Failed to save order" }, { status: 500 });
   }
 
-  if (!orderRes.ok) {
-    return NextResponse.json({ error: "Failed to save order" }, { status: 500 });
-  }
-
-  const orderData = (await orderRes.json()) as { doc: { id: string } };
-  const orderId = orderData.doc?.id;
-
-  if (!orderId) {
-    return NextResponse.json({ error: "Failed to save order" }, { status: 500 });
-  }
-
-  return NextResponse.json({ id: orderId }, { status: 201 });
+  return NextResponse.json({ id: order.id }, { status: 201 });
 }

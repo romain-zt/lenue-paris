@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "dresses": "Robes",
+    "bags": "Sacs",
+    "scarfs": "Foulards",
+    "collection": "Collection",
+    "home": "Lénue Paris — Accueil",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu",
+    "filterByCategory": "Filtrer par catégorie",
+    "leftNav": "Navigation gauche",
+    "rightNav": "Navigation droite",
+    "mobileNav": "Menu mobile"
+  },
+  "locale": {
+    "switchLabel": "Langue",
+    "fr": "FR",
+    "en": "EN",
+    "ru": "РУ"
+  },
+  "home": {
+    "season": "Printemps · Été 2026",
+    "heroTagline": "Pour les moments que vous voulez garder.",
+    "heroCta": "Découvrir la collection",
+    "quote": "« Certains jours, vous n'avez pas besoin de raison. Vous avez juste besoin de la bonne robe. »",
+    "featuredTitle": "Nos robes",
+    "viewCollection": "Voir la collection →",
+    "viewFullCollection": "Voir toute la collection →",
+    "editorialLabel": "L'esprit Lénue",
+    "editorialHeadline": "Lénue, ce n'est pas s'habiller.",
+    "editorialSubline": "C'est se sentir soi-même.",
+    "editorialBody": "Chaque pièce est sélectionnée pour sa matière, sa coupe, et ce qu'elle dit de vous. Commandez en toute simplicité, via WhatsApp.",
+    "editorialCta": "Explorer la boutique",
+    "exploreLabel": "Explorer",
+    "allCollection": "Toute la collection",
+    "heroImageAlt": "Lénue Paris — collection Printemps Été 2026",
+    "editorialImageAlt": "Femme en robe Lénue Paris au Café de Flore"
+  },
+  "catalogue": {
+    "title": "Collection",
+    "metaTitle": "Catalogue — Lénue Paris",
+    "metaDescription": "Parcourez notre collection de robes, sacs et foulards de luxe.",
+    "all": "Tout",
+    "emptyDresses": "Aucune robe disponible pour l'instant.",
+    "emptyBags": "Aucun sac disponible pour l'instant.",
+    "emptyScarfs": "Aucun foulard disponible pour l'instant.",
+    "emptyDefault": "La collection arrive bientôt.",
+    "loadError": "Impossible de charger le catalogue. Veuillez réessayer.",
+    "retry": "Réessayer",
+    "loading": "Chargement du catalogue"
+  },
+  "product": {
+    "backToCollection": "← Collection",
+    "notFoundTitle": "Produit introuvable — Lénue Paris",
+    "metaDescriptionFallback": "Découvrez {title} sur Lénue Paris.",
+    "lengthLabel": "Longueur",
+    "lengthLong": "Version longue",
+    "lengthShort": "Version courte",
+    "sizeLabel": "Taille"
+  },
+  "order": {
+    "namePlaceholder": "Votre prénom et nom",
+    "contactPlaceholder": "Votre numéro WhatsApp",
+    "selectionRequired": "Veuillez choisir une longueur et une taille pour continuer.",
+    "submitError": "Impossible d'enregistrer la commande. Veuillez réessayer.",
+    "successMessage": "Votre commande a été enregistrée. WhatsApp va s'ouvrir…",
+    "successFallback": "Si WhatsApp ne s'est pas ouvert,",
+    "successFallbackLink": "cliquez ici pour l'ouvrir manuellement",
+    "submitButton": "Commander via WhatsApp",
+    "submitting": "Envoi en cours…",
+    "whatsappHello": "Bonjour, je souhaite commander : {title}",
+    "whatsappLength": "Longueur : {length}",
+    "whatsappSize": "Taille : {size}",
+    "whatsappPrice": "Prix : {price} €",
+    "whatsappName": "Mon nom : {name}",
+    "whatsappContact": "Mon contact : {contact}"
+  }
+}

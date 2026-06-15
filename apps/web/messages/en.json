@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "dresses": "Dresses",
+    "bags": "Bags",
+    "scarfs": "Scarves",
+    "collection": "Collection",
+    "home": "Lénue Paris — Home",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "filterByCategory": "Filter by category",
+    "leftNav": "Left navigation",
+    "rightNav": "Right navigation",
+    "mobileNav": "Mobile menu"
+  },
+  "locale": {
+    "switchLabel": "Language",
+    "fr": "FR",
+    "en": "EN",
+    "ru": "RU"
+  },
+  "home": {
+    "season": "Spring · Summer 2026",
+    "heroTagline": "For the moments you want to keep.",
+    "heroCta": "Explore the collection",
+    "quote": "\"Some days you don't need a reason. You just need the right dress.\"",
+    "featuredTitle": "Our dresses",
+    "viewCollection": "View collection →",
+    "viewFullCollection": "View full collection →",
+    "editorialLabel": "The Lénue spirit",
+    "editorialHeadline": "Lénue isn't about dressing.",
+    "editorialSubline": "It's about feeling like yourself.",
+    "editorialBody": "Every piece is chosen for its fabric, its cut, and what it says about you. Order simply, via WhatsApp.",
+    "editorialCta": "Explore the boutique",
+    "exploreLabel": "Explore",
+    "allCollection": "Full collection",
+    "heroImageAlt": "Lénue Paris — Spring Summer 2026 collection",
+    "editorialImageAlt": "Woman in a Lénue Paris dress at Café de Flore"
+  },
+  "catalogue": {
+    "title": "Collection",
+    "metaTitle": "Catalogue — Lénue Paris",
+    "metaDescription": "Browse our collection of luxury dresses, bags and scarves.",
+    "all": "All",
+    "emptyDresses": "No dresses available right now.",
+    "emptyBags": "No bags available right now.",
+    "emptyScarfs": "No scarves available right now.",
+    "emptyDefault": "The collection is coming soon.",
+    "loadError": "Unable to load the catalogue. Please try again.",
+    "retry": "Try again",
+    "loading": "Loading catalogue"
+  },
+  "product": {
+    "backToCollection": "← Collection",
+    "notFoundTitle": "Product not found — Lénue Paris",
+    "metaDescriptionFallback": "Discover {title} on Lénue Paris.",
+    "lengthLabel": "Length",
+    "lengthLong": "Long version",
+    "lengthShort": "Short version",
+    "sizeLabel": "Size"
+  },
+  "order": {
+    "namePlaceholder": "Your first and last name",
+    "contactPlaceholder": "Your WhatsApp number",
+    "selectionRequired": "Please choose a length and size to continue.",
+    "submitError": "Unable to save the order. Please try again.",
+    "successMessage": "Your order has been saved. WhatsApp is opening…",
+    "successFallback": "If WhatsApp didn't open,",
+    "successFallbackLink": "click here to open it manually",
+    "submitButton": "Order via WhatsApp",
+    "submitting": "Sending…",
+    "whatsappHello": "Hello, I'd like to order: {title}",
+    "whatsappLength": "Length: {length}",
+    "whatsappSize": "Size: {size}",
+    "whatsappPrice": "Price: {price} €",
+    "whatsappName": "My name: {name}",
+    "whatsappContact": "My contact: {contact}"
+  }
+}

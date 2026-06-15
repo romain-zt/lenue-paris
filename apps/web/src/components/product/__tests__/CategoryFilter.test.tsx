@@ -1,10 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { CategoryFilter } from "../CategoryFilter";
+import { WithIntl } from "@/test-utils/with-intl";
 
 describe("CategoryFilter", () => {
   it("renders all category options", () => {
-    render(<CategoryFilter selected={null} onSelect={vi.fn()} />);
+    render(<WithIntl><CategoryFilter selected={null} onSelect={vi.fn()} /></WithIntl>);
     expect(screen.getByText("Tout")).toBeDefined();
     expect(screen.getByText("Robes")).toBeDefined();
     expect(screen.getByText("Sacs")).toBeDefined();
@@ -13,20 +14,20 @@ describe("CategoryFilter", () => {
 
   it("calls onSelect with correct value when category clicked", () => {
     const onSelect = vi.fn();
-    render(<CategoryFilter selected={null} onSelect={onSelect} />);
+    render(<WithIntl><CategoryFilter selected={null} onSelect={onSelect} /></WithIntl>);
     fireEvent.click(screen.getByText("Robes"));
     expect(onSelect).toHaveBeenCalledWith("dresses");
   });
 
   it('calls onSelect with null when "Tout" clicked', () => {
     const onSelect = vi.fn();
-    render(<CategoryFilter selected={"dresses"} onSelect={onSelect} />);
+    render(<WithIntl><CategoryFilter selected={"dresses"} onSelect={onSelect} /></WithIntl>);
     fireEvent.click(screen.getByText("Tout"));
     expect(onSelect).toHaveBeenCalledWith(null);
   });
 
   it("marks selected category as active", () => {
-    render(<CategoryFilter selected={"bags"} onSelect={vi.fn()} />);
+    render(<WithIntl><CategoryFilter selected={"bags"} onSelect={vi.fn()} /></WithIntl>);
     const bagsBtn = screen.getByText("Sacs");
     expect(bagsBtn.getAttribute("aria-pressed")).toBe("true");
   });
