@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { DressSize } from "@/types/product";
 import { DRESS_SIZES } from "@/types/product";
 
@@ -9,9 +10,11 @@ interface SizePickerProps {
 }
 
 export function SizePicker({ selected, onChange }: SizePickerProps) {
+  const t = useTranslations("product");
+
   return (
     <fieldset>
-      <legend className="mb-2 text-sm font-medium text-stone-900">Taille</legend>
+      <legend className="mb-2 text-sm font-medium text-stone-900">{t("sizeLabel")}</legend>
       <div className="flex flex-wrap gap-2">
         {DRESS_SIZES.map((size) => (
           <button

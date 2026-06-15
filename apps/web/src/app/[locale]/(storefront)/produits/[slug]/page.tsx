@@ -1,43 +1,56 @@
 import { notFound } from "next/navigation";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getPayload } from "payload";
+import config from "@payload-config";
 import type { Product } from "@/types/product";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { OrderCTA } from "@/components/product/OrderCTA";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+
+type Locale = "fr" | "en" | "ru";
 
 interface ProductDetailPageProps {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ slug: string; locale: string }>;
 }
 
-async function getProduct(slug: string): Promise<Product | null> {
-  const cmsUrl = process.env.CMS_URL ?? "http://localhost:3000";
+async function getProduct(slug: string, locale: Locale): Promise<Product | null> {
   try {
-    const res = await fetch(
-      `${cmsUrl}/api/products?where[slug][equals]=${encodeURIComponent(slug)}&where[_status][equals]=published&limit=1&locale=fr&depth=1`,
-      { next: { revalidate: 60 } }
-    );
-    if (!res.ok) return null;
-    const data = await res.json() as { docs: Product[] };
-    return data.docs?.[0] ?? null;
+    const payload = await getPayload({ config });
+    const { docs } = await payload.find({
+      collection: "products",
+      where: {
+        slug: { equals: slug },
+        _status: { equals: "published" },
+      },
+      locale,
+      limit: 1,
+      depth: 1,
+    });
+    return (docs[0] as unknown as Product) ?? null;
   } catch {
     return null;
   }
 }
 
 export async function generateMetadata({ params }: ProductDetailPageProps) {
-  const { slug } = await params;
-  const product = await getProduct(slug);
+  const { slug, locale } = await params;
+  const t = await getTranslations({ locale, namespace: "product" });
+  const product = await getProduct(slug, locale as Locale);
   if (!product) {
-    return { title: "Produit introuvable — Lénue Paris" };
+    return { title: t("notFoundTitle") };
   }
   return {
     title: `${product.title} — Lénue Paris`,
-    description: product.description ?? `Découvrez ${product.title} sur Lénue Paris.`,
+    description: product.description ?? t("metaDescriptionFallback", { title: product.title }),
   };
 }
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
-  const { slug } = await params;
-  const product = await getProduct(slug);
+  const { slug, locale } = await params;
+  setRequestLocale(locale);
+
+  const t = await getTranslations("product");
+  const product = await getProduct(slug, locale as Locale);
 
   if (!product) {
     notFound();
@@ -55,16 +68,12 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           href="/catalogue"
           className="text-sm text-stone-500 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900"
         >
-          ← Collection
+          {t("backToCollection")}
         </Link>
       </nav>
 
       <div className="grid gap-8 md:grid-cols-2 md:gap-12 lg:gap-16">
-        <ProductGallery
-          mainImage={product.mainImage}
-          gallery={product.gallery}
-          title={product.title}
-        />
+        <ProductGallery mainImage={product.mainImage} gallery={product.gallery} title={product.title} />
 
         <div className="flex flex-col gap-6">
           <div>

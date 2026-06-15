@@ -1,10 +1,11 @@
+import { withPayload } from "@payloadcms/next/withPayload";
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  i18n: {
-    locales: ["en", "fr"],
-    defaultLocale: "fr",
-  },
   images: {
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
@@ -15,4 +16,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withPayload(withNextIntl(nextConfig));

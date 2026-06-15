@@ -1,7 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { DressLength } from "@/types/product";
-import { DRESS_LENGTHS } from "@/types/product";
+import { DRESS_LENGTH_VALUES } from "@/types/product";
 
 interface VariantSelectorProps {
   selected: DressLength | null;
@@ -9,11 +10,20 @@ interface VariantSelectorProps {
 }
 
 export function VariantSelector({ selected, onChange }: VariantSelectorProps) {
+  const t = useTranslations("product");
+
+  const dressLengths: { value: DressLength; label: string }[] = DRESS_LENGTH_VALUES.map(
+    (value) => ({
+      value,
+      label: value === "longer" ? t("lengthLong") : t("lengthShort"),
+    })
+  );
+
   return (
     <fieldset>
-      <legend className="mb-2 text-sm font-medium text-stone-900">Longueur</legend>
+      <legend className="mb-2 text-sm font-medium text-stone-900">{t("lengthLabel")}</legend>
       <div className="flex gap-2">
-        {DRESS_LENGTHS.map(({ value, label }) => (
+        {dressLengths.map(({ value, label }) => (
           <button
             key={value}
             type="button"

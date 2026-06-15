@@ -3,6 +3,7 @@
 import type { Product, DressLength, DressSize } from "@/types/product";
 import type { CreateOrderRequest } from "@/types/order";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { VariantSelector } from "./VariantSelector";
 import { SizePicker } from "./SizePicker";
 
@@ -12,10 +13,11 @@ interface OrderCTAProps {
   product: Product;
 }
 
-const WHATSAPP_PHONE =
-  process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "79117126262";
+const WHATSAPP_PHONE = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "79117126262";
 
 export function OrderCTA({ product }: OrderCTAProps) {
+  const t = useTranslations("order");
+  const tProduct = useTranslations("product");
   const isDress = product.category === "dresses";
   const [length, setLength] = useState<DressLength | null>(null);
   const [size, setSize] = useState<DressSize | null>(null);
@@ -26,25 +28,23 @@ export function OrderCTA({ product }: OrderCTAProps) {
 
   const selectionComplete = !isDress || (length !== null && size !== null);
   const selectionMissing = isDress && !selectionComplete;
-  const buyerFieldsFilled =
-    buyerName.trim().length > 0 && buyerContact.trim().length > 0;
+  const buyerFieldsFilled = buyerName.trim().length > 0 && buyerContact.trim().length > 0;
   const allRequiredFilled = selectionComplete && buyerFieldsFilled;
   const formDisabled = status === "submitting" || status === "success";
 
   function buildWhatsAppMessage(name: string, contact: string): string {
-    const lines: string[] = [
-      `Bonjour, je souhaite commander : ${product.title}`,
-    ];
+    const lines: string[] = [t("whatsappHello", { title: product.title })];
     if (isDress && length) {
-      const label = length === "longer" ? "version longue" : "version courte";
-      lines.push(`Longueur : ${label}`);
+      const lengthLabel =
+        length === "longer" ? tProduct("lengthLong") : tProduct("lengthShort");
+      lines.push(t("whatsappLength", { length: lengthLabel }));
     }
     if (isDress && size) {
-      lines.push(`Taille : ${size}`);
+      lines.push(t("whatsappSize", { size }));
     }
-    lines.push(`Prix : ${product.price} €`);
-    lines.push(`Mon nom : ${name.trim()}`);
-    lines.push(`Mon contact : ${contact.trim()}`);
+    lines.push(t("whatsappPrice", { price: product.price }));
+    lines.push(t("whatsappName", { name: name.trim() }));
+    lines.push(t("whatsappContact", { contact: contact.trim() }));
     return lines.join("\n");
   }
 
@@ -55,7 +55,6 @@ export function OrderCTA({ product }: OrderCTAProps) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
     if (!allRequiredFilled || status === "submitting") return;
 
     const trimmedName = buyerName.trim();
@@ -104,7 +103,7 @@ export function OrderCTA({ product }: OrderCTAProps) {
 
         {selectionMissing && (
           <p className="text-xs text-amber-700" role="alert">
-            Veuillez choisir une longueur et une taille pour continuer.
+            {t("selectionRequired")}
           </p>
         )}
 
@@ -112,7 +111,7 @@ export function OrderCTA({ product }: OrderCTAProps) {
           <input
             type="text"
             name="buyerName"
-            placeholder="Votre prénom et nom"
+            placeholder={t("namePlaceholder")}
             required
             value={buyerName}
             onChange={(e) => setBuyerName(e.target.value)}
@@ -122,7 +121,7 @@ export function OrderCTA({ product }: OrderCTAProps) {
           <input
             type="tel"
             name="buyerContact"
-            placeholder="Votre numéro WhatsApp"
+            placeholder={t("contactPlaceholder")}
             required
             value={buyerContact}
             onChange={(e) => setBuyerContact(e.target.value)}
@@ -133,23 +132,18 @@ export function OrderCTA({ product }: OrderCTAProps) {
 
         {status === "error" && (
           <p className="text-xs text-red-700" role="alert">
-            Impossible d&apos;enregistrer la commande. Veuillez réessayer.
+            {t("submitError")}
           </p>
         )}
 
         {status === "success" && (
           <div className="space-y-2 text-sm text-stone-700">
-            <p>
-              Votre commande a été enregistrée. WhatsApp va s&apos;ouvrir...
-            </p>
+            <p>{t("successMessage")}</p>
             {whatsAppUrl && (
               <p className="text-xs text-stone-500">
-                Si WhatsApp ne s&apos;est pas ouvert,{" "}
-                <a
-                  href={whatsAppUrl}
-                  className="underline hover:text-stone-900"
-                >
-                  cliquez ici pour l&apos;ouvrir manuellement
+                {t("successFallback")}{" "}
+                <a href={whatsAppUrl} className="underline hover:text-stone-900">
+                  {t("successFallbackLink")}
                 </a>
               </p>
             )}
@@ -166,9 +160,7 @@ export function OrderCTA({ product }: OrderCTAProps) {
               : "bg-stone-200 text-stone-400"
           }`}
         >
-          {status === "submitting"
-            ? "Envoi en cours…"
-            : "Commander via WhatsApp"}
+          {status === "submitting" ? t("submitting") : t("submitButton")}
         </button>
       </form>
     </div>

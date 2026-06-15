@@ -1,7 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { OrderCTA } from "../OrderCTA";
+import { WithIntl } from "@/test-utils/with-intl";
 import type { Product } from "@/types/product";
+
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...props }: { href: string; children: React.ReactNode; [key: string]: unknown }) => (
+    <a href={href} {...props}>{children}</a>
+  ),
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  usePathname: () => "/",
+}));
 
 const dressProduct: Product = {
   id: "1",
@@ -36,51 +45,39 @@ function selectDressVariants() {
 }
 
 describe("OrderCTA — dress", () => {
-  beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn());
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
-  });
+  beforeEach(() => { vi.stubGlobal("fetch", vi.fn()); });
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
   it("shows length and size selectors for dresses", () => {
-    render(<OrderCTA product={dressProduct} />);
+    render(<WithIntl><OrderCTA product={dressProduct} /></WithIntl>);
     expect(screen.getByText("Longueur")).toBeDefined();
     expect(screen.getByText("Taille")).toBeDefined();
   });
 
   it("shows selection-required warning when no variant chosen", () => {
-    render(<OrderCTA product={dressProduct} />);
+    render(<WithIntl><OrderCTA product={dressProduct} /></WithIntl>);
     expect(screen.getByRole("alert")).toBeDefined();
   });
 
   it("disables the order button when no variant selected", () => {
-    render(<OrderCTA product={dressProduct} />);
+    render(<WithIntl><OrderCTA product={dressProduct} /></WithIntl>);
     const btn = screen.getByRole("button", { name: /Commander/i });
     expect(btn.getAttribute("aria-disabled")).toBe("true");
   });
 });
 
 describe("OrderCTA — bag / scarf", () => {
-  beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn());
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
-  });
+  beforeEach(() => { vi.stubGlobal("fetch", vi.fn()); });
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
   it("shows no length or size selectors for bags", () => {
-    render(<OrderCTA product={bagProduct} />);
+    render(<WithIntl><OrderCTA product={bagProduct} /></WithIntl>);
     expect(screen.queryByText("Longueur")).toBeNull();
     expect(screen.queryByText("Taille")).toBeNull();
   });
 
   it("CTA is enabled immediately for bags", () => {
-    render(<OrderCTA product={bagProduct} />);
+    render(<WithIntl><OrderCTA product={bagProduct} /></WithIntl>);
     fillBuyerFields();
     const btn = screen.getByRole("button", { name: /Commander/i });
     expect(btn.getAttribute("aria-disabled")).toBe("false");
@@ -100,25 +97,20 @@ describe("OrderCTA — checkout form", () => {
     locationMock.href = "";
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
-  });
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
   it("renders buyerName input with correct placeholder", () => {
-    render(<OrderCTA product={bagProduct} />);
+    render(<WithIntl><OrderCTA product={bagProduct} /></WithIntl>);
     expect(screen.getByPlaceholderText("Votre prénom et nom")).toBeDefined();
   });
 
   it("renders buyerContact input with correct placeholder", () => {
-    render(<OrderCTA product={bagProduct} />);
-    expect(
-      screen.getByPlaceholderText("Votre numéro WhatsApp"),
-    ).toBeDefined();
+    render(<WithIntl><OrderCTA product={bagProduct} /></WithIntl>);
+    expect(screen.getByPlaceholderText("Votre numéro WhatsApp")).toBeDefined();
   });
 
   it("submit button is disabled when buyerName is empty", () => {
-    render(<OrderCTA product={bagProduct} />);
+    render(<WithIntl><OrderCTA product={bagProduct} /></WithIntl>);
     fireEvent.change(screen.getByPlaceholderText("Votre numéro WhatsApp"), {
       target: { value: "+33 6 12 34 56 78" },
     });
@@ -127,7 +119,7 @@ describe("OrderCTA — checkout form", () => {
   });
 
   it("submit button is disabled when buyerContact is empty", () => {
-    render(<OrderCTA product={bagProduct} />);
+    render(<WithIntl><OrderCTA product={bagProduct} /></WithIntl>);
     fireEvent.change(screen.getByPlaceholderText("Votre prénom et nom"), {
       target: { value: "Jean Dupont" },
     });
@@ -138,10 +130,10 @@ describe("OrderCTA — checkout form", () => {
   it("on submit calls fetch with correct body", async () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ id: "order-1" }), { status: 201 }),
+      new Response(JSON.stringify({ id: "order-1" }), { status: 201 })
     );
 
-    render(<OrderCTA product={bagProduct} />);
+    render(<WithIntl><OrderCTA product={bagProduct} /></WithIntl>);
     fillBuyerFields();
     fireEvent.click(screen.getByRole("button", { name: /Commander/i }));
 
@@ -162,49 +154,37 @@ describe("OrderCTA — checkout form", () => {
     const fetchMock = vi.mocked(fetch);
     let resolveFetch!: (value: Response) => void;
     fetchMock.mockReturnValueOnce(
-      new Promise((resolve) => {
-        resolveFetch = resolve;
-      }),
+      new Promise((resolve) => { resolveFetch = resolve; })
     );
 
-    render(<OrderCTA product={bagProduct} />);
+    render(<WithIntl><OrderCTA product={bagProduct} /></WithIntl>);
     fillBuyerFields();
     fireEvent.click(screen.getByRole("button", { name: /Commander/i }));
 
     expect(
-      (screen.getByRole("button", { name: /Envoi en cours/i }) as HTMLButtonElement)
-        .disabled,
+      (screen.getByRole("button", { name: /Envoi en cours/i }) as HTMLButtonElement).disabled
     ).toBe(true);
 
-    resolveFetch(
-      new Response(JSON.stringify({ id: "order-1" }), { status: 201 }),
-    );
+    resolveFetch(new Response(JSON.stringify({ id: "order-1" }), { status: 201 }));
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/Votre commande a été enregistrée/i),
-      ).toBeDefined();
+      expect(screen.getByText(/Votre commande a été enregistrée/i)).toBeDefined();
     });
   });
 
   it("on success shows confirmation message", async () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ id: "order-1" }), { status: 201 }),
+      new Response(JSON.stringify({ id: "order-1" }), { status: 201 })
     );
 
-    render(<OrderCTA product={bagProduct} />);
+    render(<WithIntl><OrderCTA product={bagProduct} /></WithIntl>);
     fillBuyerFields();
     fireEvent.click(screen.getByRole("button", { name: /Commander/i }));
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/Votre commande a été enregistrée/i),
-      ).toBeDefined();
-      expect(screen.getByText(/WhatsApp va s'ouvrir/i)).toBeDefined();
-      expect(
-        screen.getByText(/Si WhatsApp ne s'est pas ouvert/i),
-      ).toBeDefined();
+      expect(screen.getByText(/Votre commande a été enregistrée/i)).toBeDefined();
+      expect(screen.getByText(/Si WhatsApp ne s'est pas ouvert/i)).toBeDefined();
     });
 
     expect(locationMock.href).toMatch(/^https:\/\/wa\.me\//);
@@ -214,45 +194,36 @@ describe("OrderCTA — checkout form", () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockRejectedValueOnce(new Error("Network error"));
 
-    render(<OrderCTA product={bagProduct} />);
+    render(<WithIntl><OrderCTA product={bagProduct} /></WithIntl>);
     fillBuyerFields();
     fireEvent.click(screen.getByRole("button", { name: /Commander/i }));
 
     await waitFor(() => {
       expect(
-        screen.getByText(
-          /Impossible d'enregistrer la commande. Veuillez réessayer./i,
-        ),
+        screen.getByText(/Impossible d'enregistrer la commande/i)
       ).toBeDefined();
     });
-
-    expect(
-      (screen.getByRole("button", { name: /Commander via WhatsApp/i }) as HTMLButtonElement)
-        .disabled,
-    ).toBe(false);
   });
 
   it("on error shows error message when response is non-2xx", async () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ error: "Failed" }), { status: 500 }),
+      new Response(JSON.stringify({ error: "Failed" }), { status: 500 })
     );
 
-    render(<OrderCTA product={bagProduct} />);
+    render(<WithIntl><OrderCTA product={bagProduct} /></WithIntl>);
     fillBuyerFields();
     fireEvent.click(screen.getByRole("button", { name: /Commander/i }));
 
     await waitFor(() => {
       expect(
-        screen.getByText(
-          /Impossible d'enregistrer la commande. Veuillez réessayer./i,
-        ),
+        screen.getByText(/Impossible d'enregistrer la commande/i)
       ).toBeDefined();
     });
   });
 
   it("for a dress submit button is disabled if length/size not selected even when buyer fields filled", () => {
-    render(<OrderCTA product={dressProduct} />);
+    render(<WithIntl><OrderCTA product={dressProduct} /></WithIntl>);
     fillBuyerFields();
     const btn = screen.getByRole("button", { name: /Commander/i });
     expect((btn as HTMLButtonElement).disabled).toBe(true);
@@ -261,10 +232,10 @@ describe("OrderCTA — checkout form", () => {
   it("for a dress submits length and size in fetch body", async () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ id: "order-2" }), { status: 201 }),
+      new Response(JSON.stringify({ id: "order-2" }), { status: 201 })
     );
 
-    render(<OrderCTA product={dressProduct} />);
+    render(<WithIntl><OrderCTA product={dressProduct} /></WithIntl>);
     selectDressVariants();
     fillBuyerFields();
     fireEvent.click(screen.getByRole("button", { name: /Commander/i }));

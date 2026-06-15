@@ -1,13 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { ProductCategory } from "@/types/product";
-
-const CATEGORIES: { value: ProductCategory | null; label: string }[] = [
-  { value: null, label: "Tout" },
-  { value: "dresses", label: "Robes" },
-  { value: "bags", label: "Sacs" },
-  { value: "scarfs", label: "Foulards" },
-];
 
 interface CategoryFilterProps {
   selected: ProductCategory | null;
@@ -15,10 +9,19 @@ interface CategoryFilterProps {
 }
 
 export function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
+  const t = useTranslations();
+
+  const categories: { value: ProductCategory | null; label: string }[] = [
+    { value: null, label: t("catalogue.all") },
+    { value: "dresses", label: t("nav.dresses") },
+    { value: "bags", label: t("nav.bags") },
+    { value: "scarfs", label: t("nav.scarfs") },
+  ];
+
   return (
-    <nav aria-label="Filtrer par catégorie">
+    <nav aria-label={t("nav.filterByCategory")}>
       <ul className="flex flex-wrap gap-2">
-        {CATEGORIES.map(({ value, label }) => {
+        {categories.map(({ value, label }) => {
           const isActive = selected === value;
           return (
             <li key={label}>

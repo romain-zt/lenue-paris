@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import type { Product } from "@/types/product";
 
 interface ProductCardProps {
@@ -47,9 +47,7 @@ export function ProductCard({ product }: ProductCardProps) {
         )}
       </div>
       <div className="mt-3 space-y-1 px-0.5">
-        <p className="text-sm font-medium leading-snug text-stone-900">
-          {product.title}
-        </p>
+        <p className="text-sm font-medium leading-snug text-stone-900">{product.title}</p>
         <p className="text-sm font-light text-stone-400">{formattedPrice}</p>
       </div>
     </Link>

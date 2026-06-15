@@ -8,10 +8,19 @@
     "start": "next start -p 3001",
     "lint": "next lint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "generate:types": "payload generate:types",
+    "seed": "tsx --env-file=../../.env src/seed.ts"
   },
   "dependencies": {
+    "@payloadcms/db-postgres": "catalog:",
+    "@payloadcms/next": "catalog:",
+    "@payloadcms/richtext-lexical": "catalog:",
+    "@payloadcms/storage-s3": "catalog:",
+    "@payloadcms/translations": "catalog:",
     "next": "catalog:",
+    "next-intl": "^3.26.3",
+    "payload": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"
   },
@@ -23,10 +32,12 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@vitejs/plugin-react": "catalog:",
+    "dotenv": "^17.4.2",
     "eslint": "catalog:",
     "eslint-config-next": "catalog:",
     "jsdom": "catalog:",
     "tailwindcss": "catalog:",
+    "tsx": "^4.22.4",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

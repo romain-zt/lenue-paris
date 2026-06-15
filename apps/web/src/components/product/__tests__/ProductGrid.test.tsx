@@ -1,7 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ProductGrid } from "../ProductGrid";
+import { WithIntl } from "@/test-utils/with-intl";
 import type { Product } from "@/types/product";
+
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...props }: { href: string; children: React.ReactNode; [key: string]: unknown }) => (
+    <a href={href} {...props}>{children}</a>
+  ),
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  usePathname: () => "/",
+}));
 
 const mockProducts: Product[] = [
   {
@@ -24,24 +33,24 @@ const mockProducts: Product[] = [
 
 describe("ProductGrid", () => {
   it("renders all products", () => {
-    render(<ProductGrid products={mockProducts} />);
+    render(<WithIntl><ProductGrid products={mockProducts} /></WithIntl>);
     expect(screen.getByText("Robe Blanche")).toBeDefined();
     expect(screen.getByText("Sac Noir")).toBeDefined();
   });
 
   it("renders empty state when no products", () => {
-    render(<ProductGrid products={[]} emptyMessage="Rien ici." />);
+    render(<WithIntl><ProductGrid products={[]} emptyMessage="Rien ici." /></WithIntl>);
     expect(screen.getByText("Rien ici.")).toBeDefined();
   });
 
   it("renders error state when error prop set", () => {
-    render(<ProductGrid products={[]} error="fetch_failed" />);
+    render(<WithIntl><ProductGrid products={[]} error="fetch_failed" /></WithIntl>);
     expect(screen.getByRole("alert")).toBeDefined();
     expect(screen.getByText(/Impossible de charger/)).toBeDefined();
   });
 
   it("renders skeletons when loading", () => {
-    render(<ProductGrid products={[]} isLoading={true} />);
+    render(<WithIntl><ProductGrid products={[]} isLoading={true} /></WithIntl>);
     expect(screen.getByLabelText("Chargement du catalogue")).toBeDefined();
   });
 });

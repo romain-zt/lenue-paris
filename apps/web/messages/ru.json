@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "dresses": "Платья",
+    "bags": "Сумки",
+    "scarfs": "Платки",
+    "collection": "Коллекция",
+    "home": "Lénue Paris — Главная",
+    "openMenu": "Открыть меню",
+    "closeMenu": "Закрыть меню",
+    "filterByCategory": "Фильтр по категории",
+    "leftNav": "Левая навигация",
+    "rightNav": "Правая навигация",
+    "mobileNav": "Мобильное меню"
+  },
+  "locale": {
+    "switchLabel": "Язык",
+    "fr": "FR",
+    "en": "EN",
+    "ru": "РУ"
+  },
+  "home": {
+    "season": "Весна · Лето 2026",
+    "heroTagline": "Для моментов, которые хочется сохранить.",
+    "heroCta": "Смотреть коллекцию",
+    "quote": "«Иногда не нужен повод. Просто нужно правильное платье.»",
+    "featuredTitle": "Наши платья",
+    "viewCollection": "Смотреть коллекцию →",
+    "viewFullCollection": "Вся коллекция →",
+    "editorialLabel": "Дух Lénue",
+    "editorialHeadline": "Lénue — это не просто одежда.",
+    "editorialSubline": "Это ощущение себя.",
+    "editorialBody": "Каждая вещь выбрана за материал, крой и то, что она говорит о вас. Заказывайте просто — через WhatsApp.",
+    "editorialCta": "Открыть бутик",
+    "exploreLabel": "Смотреть",
+    "allCollection": "Вся коллекция",
+    "heroImageAlt": "Lénue Paris — коллекция Весна Лето 2026",
+    "editorialImageAlt": "Женщина в платье Lénue Paris в Café de Flore"
+  },
+  "catalogue": {
+    "title": "Коллекция",
+    "metaTitle": "Каталог — Lénue Paris",
+    "metaDescription": "Смотрите коллекцию платьев, сумок и платков класса люкс.",
+    "all": "Все",
+    "emptyDresses": "Платья пока недоступны.",
+    "emptyBags": "Сумки пока недоступны.",
+    "emptyScarfs": "Платки пока недоступны.",
+    "emptyDefault": "Коллекция скоро появится.",
+    "loadError": "Не удалось загрузить каталог. Попробуйте ещё раз.",
+    "retry": "Повторить",
+    "loading": "Загрузка каталога"
+  },
+  "product": {
+    "backToCollection": "← Коллекция",
+    "notFoundTitle": "Товар не найден — Lénue Paris",
+    "metaDescriptionFallback": "Откройте {title} на Lénue Paris.",
+    "lengthLabel": "Длина",
+    "lengthLong": "Длинная версия",
+    "lengthShort": "Короткая версия",
+    "sizeLabel": "Размер"
+  },
+  "order": {
+    "namePlaceholder": "Ваше имя и фамилия",
+    "contactPlaceholder": "Ваш номер WhatsApp",
+    "selectionRequired": "Выберите длину и размер, чтобы продолжить.",
+    "submitError": "Не удалось сохранить заказ. Попробуйте ещё раз.",
+    "successMessage": "Ваш заказ сохранён. Открывается WhatsApp…",
+    "successFallback": "Если WhatsApp не открылся,",
+    "successFallbackLink": "нажмите здесь, чтобы открыть вручную",
+    "submitButton": "Заказать через WhatsApp",
+    "submitting": "Отправка…",
+    "whatsappHello": "Здравствуйте, я хочу заказать: {title}",
+    "whatsappLength": "Длина: {length}",
+    "whatsappSize": "Размер: {size}",
+    "whatsappPrice": "Цена: {price} €",
+    "whatsappName": "Моё имя: {name}",
+    "whatsappContact": "Мой контакт: {contact}"
+  }
+}
