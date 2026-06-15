@@ -16,7 +16,7 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 export default buildConfig({
   // i18n is ALWAYS on (baseline). Default + at least one secondary locale.
   localization: {
-    locales: ["en", "fr"],
+    locales: ["en", "fr", "ru"],
     defaultLocale: "en",
     fallback: true,
   },

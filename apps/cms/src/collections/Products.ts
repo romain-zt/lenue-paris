@@ -93,5 +93,46 @@ export const Products: CollectionConfig = {
         description: "Description du produit affichée sur la page détail.",
       },
     },
+    {
+      name: "availableLengths",
+      type: "select",
+      hasMany: true,
+      options: [
+        { label: "Version longue", value: "longer" },
+        { label: "Version courte", value: "shorter" },
+      ],
+      admin: {
+        description: "Variantes de longueur disponibles pour cette robe.",
+        condition: (data) => data?.category === "dresses",
+      },
+    },
+    {
+      name: "availableSizes",
+      type: "select",
+      hasMany: true,
+      options: [
+        { label: "XS", value: "XS" },
+        { label: "S", value: "S" },
+        { label: "M", value: "M" },
+        { label: "L", value: "L" },
+        { label: "XL", value: "XL" },
+      ],
+      admin: {
+        description: "Tailles disponibles pour cette robe.",
+        condition: (data) => data?.category === "dresses",
+      },
+    },
+    {
+      name: "pairings",
+      type: "relationship",
+      relationTo: "products",
+      hasMany: true,
+      access: {
+        read: ({ req }) => Boolean(req.user),
+      },
+      admin: {
+        description: "Associations propriétaire uniquement (robe ↔ sac/foulard). Non visible sur le site en v0.",
+      },
+    },
   ],
 };
