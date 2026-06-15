@@ -4,3 +4,8 @@
   --font-sans: var(--font-jost), "Helvetica Neue", Arial, sans-serif;
   --font-serif: var(--font-cormorant), Georgia, "Times New Roman", serif;
 }
+
+/* Warm off-white page base — matches brand identity */
+body {
+  background-color: #faf7f4;
+}
