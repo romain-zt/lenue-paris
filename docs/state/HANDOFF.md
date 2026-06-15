@@ -115,7 +115,24 @@ Tracking PR #61 (`orchestrator/tracking-orch-cms-products--product-management-17
 
 **Known open item (infrastructure, pre-existing gap):** No Payload migration files committed — the project has no `migrations/` dir and prior field additions (gallery, description) were merged the same way. Payload's auto-push covers dev/staging; a prod migration step (`payload migrate`) is needed before deploying to Neon. Not a blocker for v0 but worth adding to the stack before first production deploy.
 
+**`orch-cms-products--order-viewing` — IN-REVIEW (2026-06-15)**
+
+Tracking PR #62 (`orchestrator/tracking-orch-cms-products--order-viewing-1781501840309`).
+
+**What was built:**
+
+- **CMS admin config (`apps/cms/src/collections/Orders.ts`)**: Improved Payload admin presentation for the owner:
+  - `admin.defaultColumns`: `productTitle, category, buyerName, buyerContact, price, createdAt` — key order info visible at a glance in the list view
+  - `admin.description`: "Commandes passées par les acheteurs. Lecture seule — la prise en charge se fait sur WhatsApp."
+  - `admin.group: "Boutique"` — grouped alongside Products in the admin sidebar
+  - All fields, access control, and data schema unchanged
+- **User story**: `docs/product/user-stories/cms-products--order-viewing--US-001--view-orders.md`
+- **Tests (`apps/cms/src/collections/Orders.test.ts`)**: 4 new tests covering admin config (9 total, all green)
+
+**Checks:** 19 CMS tests + 39 web tests green, typecheck clean on both apps.
+
+**UX states covered by Payload admin automatically:** empty, list, detail, loading, error — no custom UI needed.
+
 ## Next recommended step
 
 1. **`orch-storefront-shell--global-chrome`** (P0) — shared layout/chrome (header, navigation) so both pages have proper context; unblocks visual QA.
-2. **`orch-cms-products--order-viewing`** (P2) — owner-side order viewing (Orders collection is now in place).

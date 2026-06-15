@@ -66,4 +66,9 @@
 {"ts":"2026-06-15T05:16:33.032Z","step":"orch-cms-products--product-management","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-15T05:37:01.139Z","step":"orch-cms-products--order-viewing","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-15T05:37:19.220Z","step":"orch-cms-products--order-viewing","status":"not-started","note":"orphan reset (agent failed)","actor":"orchestrator"}
+{"ts":"2026-06-15T05:38:29.789Z","step":"orch-cms-products--order-viewing","status":"in-progress","note":"Decomposing: user story + CMS admin config + tests","actor":"agent"}
+{"ts":"2026-06-15T05:40:29.188Z","step":"orch-cms-products--order-viewing","status":"in-review","note":"CMS admin config + 9 tests green, typecheck clean, PR #62 up","actor":"agent"}
+{"ts":"2026-06-15T05:41:02.470Z","step":"orch-cms-products--order-viewing","status":"validated","note":"Re-test green: 19 CMS + 39 web, typecheck clean","actor":"agent"}
+{"ts":"2026-06-15T05:41:06.128Z","step":"orch-cms-products--order-viewing","status":"complete","note":"All checks pass, PR #62 ready","actor":"agent"}
 {"ts":"2026-06-15T05:37:22.661Z","step":"orch-cms-products--order-viewing","status":"in-progress","actor":"orchestrator"}
+{"ts":"2026-06-15T06:47:19.261Z","step":"orch-cms-products--order-viewing","status":"complete","note":"Re-verified: 19 CMS + 39 web tests green, typecheck clean on both apps; Orders admin config complete","actor":"agent"}

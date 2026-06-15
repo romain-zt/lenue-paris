@@ -29,4 +29,31 @@ describe("Orders collection", () => {
     expect(field("buyerName")).toBeDefined();
     expect(field("buyerContact")).toBeDefined();
   });
+
+  it("configures admin list columns for owner UX", () => {
+    expect(Orders.admin?.defaultColumns).toEqual([
+      "productTitle",
+      "category",
+      "buyerName",
+      "buyerContact",
+      "price",
+      "createdAt",
+    ]);
+    expect(Orders.admin?.defaultColumns).toContain("productTitle");
+    expect(Orders.admin?.defaultColumns).toContain("buyerName");
+    expect(Orders.admin?.defaultColumns).toContain("buyerContact");
+    expect(Orders.admin?.defaultColumns).toContain("price");
+  });
+
+  it('groups the collection under "Boutique" in the admin sidebar', () => {
+    expect(Orders.admin?.group).toBe("Boutique");
+  });
+
+  it("sorts orders by newest first", () => {
+    expect(Orders.defaultSort).toBe("-createdAt");
+  });
+
+  it("uses productTitle as the admin title field", () => {
+    expect(Orders.admin?.useAsTitle).toBe("productTitle");
+  });
 });
