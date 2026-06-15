@@ -23,13 +23,19 @@ export function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Close mobile menu on navigation
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
-  // Header is transparent only when at the top of the home page and menu is closed
-  const transparent = isHome && !scrolled && !open;
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  // Light-on-hero only at home top with menu closed
+  const overlayMode = isHome && !scrolled && !open;
 
   const navLeft = [
     { href: "/catalogue?categorie=robes" as const, label: t("dresses") },
@@ -48,159 +54,172 @@ export function Header() {
   }
 
   const linkClass = `text-[10px] font-medium uppercase tracking-[0.22em] transition-colors duration-300 ${
-    transparent
-      ? "text-white/60 hover:text-white"
-      : "text-stone-400 hover:text-stone-800"
+    overlayMode
+      ? "text-white/70 hover:text-white"
+      : "text-stone-500 hover:text-stone-900"
   }`;
 
   return (
-    <header
-      className={[
-        "sticky top-0 z-50 will-change-[background-color,border-color] transition-[background-color,border-color,box-shadow] duration-500 ease-out",
-        transparent
-          ? "border-b border-white/10 bg-transparent"
-          : "border-b border-stone-200/70 bg-white/97 shadow-[0_1px_0_0_rgba(0,0,0,0.04)]",
-      ].join(" ")}
-    >
-      <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between md:h-[72px]">
-
-          {/* Left nav — desktop only */}
-          <nav className="hidden flex-1 items-center gap-7 md:flex" aria-label={t("leftNav")}>
-            {navLeft.map((link) => (
-              <Link key={link.href} href={link.href} className={linkClass}>
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Logo */}
-          <Link
-            href="/"
-            className="flex flex-col items-center leading-none"
-            aria-label={t("home")}
-          >
-            <span
-              className={`font-serif text-xl tracking-[0.42em] transition-colors duration-500 sm:text-2xl ${
-                transparent ? "text-white" : "text-stone-900"
-              }`}
-            >
-              LÉNUE
-            </span>
-            <span
-              className={`mt-0.5 font-serif text-[9px] tracking-[0.62em] transition-colors duration-500 sm:text-[10px] ${
-                transparent ? "text-white/50" : "text-stone-400"
-              }`}
-            >
-              PARIS
-            </span>
-          </Link>
-
-          {/* Right nav — desktop only */}
-          <nav className="hidden flex-1 items-center justify-end gap-7 md:flex" aria-label={t("rightNav")}>
-            {navRight.map((link) => (
-              <Link key={link.href} href={link.href} className={linkClass}>
-                {link.label}
-              </Link>
-            ))}
-
-            {/* Locale switcher — desktop */}
-            <div
-              className={`flex items-center gap-1.5 border-l pl-5 transition-colors duration-500 ${
-                transparent ? "border-white/20" : "border-stone-200"
-              }`}
-              aria-label={tLocale("switchLabel")}
-            >
-              {routing.locales.map((l) => (
-                <button
-                  key={l}
-                  onClick={() => switchLocale(l)}
-                  aria-current={locale === l ? "true" : undefined}
-                  className={`min-h-[44px] px-1 text-[9px] font-medium uppercase tracking-[0.18em] transition-colors duration-300 ${
-                    locale === l
-                      ? transparent ? "text-white" : "text-stone-900"
-                      : transparent
-                        ? "text-white/30 hover:text-white/70"
-                        : "text-stone-300 hover:text-stone-600"
-                  }`}
-                >
-                  {tLocale(l as "fr" | "en" | "ru")}
-                </button>
+    <>
+      <header
+        className={[
+          "sticky top-0 z-50 transition-[background-color,border-color,box-shadow] duration-300 ease-out",
+          overlayMode
+            ? "border-b border-white/15 bg-transparent"
+            : "border-b border-stone-200 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.03)]",
+        ].join(" ")}
+      >
+        <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between md:h-[72px]">
+            <nav className="hidden flex-1 items-center gap-7 md:flex" aria-label={t("leftNav")}>
+              {navLeft.map((link) => (
+                <Link key={link.href} href={link.href} className={linkClass}>
+                  {link.label}
+                </Link>
               ))}
-            </div>
-          </nav>
+            </nav>
 
-          {/* Mobile hamburger — animates to × */}
-          <button
-            className={`flex min-h-[44px] min-w-[44px] items-center justify-center transition-colors duration-300 md:hidden ${
-              transparent ? "text-white/80 hover:text-white" : "text-stone-500 hover:text-stone-900"
-            }`}
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            aria-controls="mobile-nav"
-            aria-label={open ? t("closeMenu") : t("openMenu")}
-          >
-            <span className="relative block h-[18px] w-5" aria-hidden="true">
+            <Link
+              href="/"
+              className="flex flex-col items-center leading-none"
+              aria-label={t("home")}
+            >
               <span
-                className={`absolute left-0 top-0 h-px w-5 bg-current transition-all duration-300 ${
-                  open ? "translate-y-[8px] rotate-45" : ""
+                className={`font-serif text-xl tracking-[0.42em] transition-colors duration-300 sm:text-2xl ${
+                  overlayMode ? "text-white" : "text-stone-900"
                 }`}
-              />
+              >
+                LÉNUE
+              </span>
               <span
-                className={`absolute left-0 top-[8px] h-px w-5 bg-current transition-all duration-200 ${
-                  open ? "scale-x-0 opacity-0" : ""
+                className={`mt-0.5 font-serif text-[9px] tracking-[0.62em] transition-colors duration-300 sm:text-[10px] ${
+                  overlayMode ? "text-white/60" : "text-stone-400"
                 }`}
-              />
-              <span
-                className={`absolute left-0 top-[17px] h-px w-5 bg-current transition-all duration-300 ${
-                  open ? "-translate-y-[9px] -rotate-45" : ""
+              >
+                PARIS
+              </span>
+            </Link>
+
+            <nav className="hidden flex-1 items-center justify-end gap-7 md:flex" aria-label={t("rightNav")}>
+              {navRight.map((link) => (
+                <Link key={link.href} href={link.href} className={linkClass}>
+                  {link.label}
+                </Link>
+              ))}
+
+              <div
+                className={`flex items-center gap-1.5 border-l pl-5 transition-colors duration-300 ${
+                  overlayMode ? "border-white/20" : "border-stone-200"
                 }`}
-              />
-            </span>
-          </button>
+                aria-label={tLocale("switchLabel")}
+              >
+                {routing.locales.map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => switchLocale(l)}
+                    aria-current={locale === l ? "true" : undefined}
+                    className={`min-h-[44px] px-1 text-[9px] font-medium uppercase tracking-[0.18em] transition-colors duration-300 ${
+                      locale === l
+                        ? overlayMode
+                          ? "text-white"
+                          : "text-stone-900"
+                        : overlayMode
+                          ? "text-white/40 hover:text-white/80"
+                          : "text-stone-300 hover:text-stone-600"
+                    }`}
+                  >
+                    {tLocale(l as "fr" | "en" | "ru")}
+                  </button>
+                ))}
+              </div>
+            </nav>
+
+            <button
+              className={`flex min-h-[44px] min-w-[44px] items-center justify-center transition-colors duration-300 md:hidden ${
+                overlayMode ? "text-white hover:text-white/80" : "text-stone-800 hover:text-stone-600"
+              }`}
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-controls="mobile-nav"
+              aria-label={open ? t("closeMenu") : t("openMenu")}
+            >
+              <span className="relative block h-[18px] w-5" aria-hidden="true">
+                <span
+                  className={`absolute left-0 top-0 h-px w-5 bg-current transition-all duration-300 ${
+                    open ? "translate-y-[8px] rotate-45" : ""
+                  }`}
+                />
+                <span
+                  className={`absolute left-0 top-[8px] h-px w-5 bg-current transition-all duration-200 ${
+                    open ? "scale-x-0 opacity-0" : ""
+                  }`}
+                />
+                <span
+                  className={`absolute left-0 top-[17px] h-px w-5 bg-current transition-all duration-300 ${
+                    open ? "-translate-y-[9px] -rotate-45" : ""
+                  }`}
+                />
+              </span>
+            </button>
+          </div>
         </div>
+      </header>
 
-        {/* Mobile nav — smooth slide */}
+      {/* Mobile menu — fixed overlay, never shifts page content */}
+      <div
+        className={`fixed inset-0 z-40 md:hidden transition-opacity duration-300 ${
+          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        aria-hidden={!open}
+      >
+        <button
+          type="button"
+          className="absolute inset-0 bg-stone-900/25"
+          onClick={() => setOpen(false)}
+          aria-label={t("closeMenu")}
+          tabIndex={open ? 0 : -1}
+        />
+
         <nav
           id="mobile-nav"
           aria-label={t("mobileNav")}
-          className={`overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out md:hidden ${
-            open ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
+          className={`absolute left-0 right-0 top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-stone-200 bg-white shadow-lg transition-transform duration-300 ease-out ${
+            open ? "translate-y-0" : "-translate-y-3"
           }`}
         >
-          <div className={`border-t py-2 ${transparent ? "border-white/10" : "border-stone-100"}`}>
-            {allNav.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className="block border-b border-stone-100 px-1 py-4 text-xs font-medium uppercase tracking-[0.2em] text-stone-600 last:border-0 hover:text-stone-900"
-              >
-                {link.label}
-              </Link>
-            ))}
+          {allNav.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setOpen(false)}
+              className="block border-b border-stone-100 px-6 py-4 text-xs font-medium uppercase tracking-[0.2em] text-stone-700 transition-colors hover:bg-stone-50 hover:text-stone-900"
+            >
+              {link.label}
+            </Link>
+          ))}
 
-            {/* Locale switcher — mobile */}
-            <div className="flex items-center gap-3 border-t border-stone-100 px-1 py-4">
-              <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-stone-300">
-                {tLocale("switchLabel")}
-              </span>
-              {routing.locales.map((l) => (
-                <button
-                  key={l}
-                  onClick={() => { switchLocale(l); setOpen(false); }}
-                  aria-current={locale === l ? "true" : undefined}
-                  className={`min-h-[44px] px-2 text-xs font-medium uppercase tracking-[0.15em] transition-colors ${
-                    locale === l ? "text-stone-900" : "text-stone-400 hover:text-stone-700"
-                  }`}
-                >
-                  {tLocale(l as "fr" | "en" | "ru")}
-                </button>
-              ))}
-            </div>
+          <div className="flex items-center gap-3 px-6 py-4">
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-stone-400">
+              {tLocale("switchLabel")}
+            </span>
+            {routing.locales.map((l) => (
+              <button
+                key={l}
+                onClick={() => {
+                  switchLocale(l);
+                  setOpen(false);
+                }}
+                aria-current={locale === l ? "true" : undefined}
+                className={`min-h-[44px] px-2 text-xs font-medium uppercase tracking-[0.15em] transition-colors ${
+                  locale === l ? "text-stone-900" : "text-stone-400 hover:text-stone-700"
+                }`}
+              >
+                {tLocale(l as "fr" | "en" | "ru")}
+              </button>
+            ))}
           </div>
         </nav>
       </div>
-    </header>
+    </>
   );
 }
