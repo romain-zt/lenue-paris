@@ -9,13 +9,14 @@
       "orch-cms-products--product-management": "complete",
       "orch-cms-products--order-viewing": "complete",
       "orch-editorial--brand-page": "complete",
-      "orch-i18n--localized-storefront": "not-started"
+      "orch-i18n--localized-storefront": "in-progress"
     },
     "remediation_counts": {
       "orch-product-detail--gallery-and-variants": 2,
       "orch-whatsapp-checkout--order-save-and-handoff": 3,
       "orch-cms-products--order-viewing": 1,
-      "orch-editorial--brand-page": 4
+      "orch-editorial--brand-page": 4,
+      "orch-i18n--localized-storefront": 1
     }
   }
 }
