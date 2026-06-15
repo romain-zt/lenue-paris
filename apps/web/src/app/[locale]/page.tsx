@@ -45,7 +45,7 @@ const PLACEHOLDER_BY_SLUG: Record<
     mainImage: {
       id: "ph-img-elise",
       alt: "Look Complet Élise — Lénue Paris",
-      url: "/images/lenue-complete-look-mannequin.jpg",
+      url: "/images/PHOTO-2026-06-12-17-30-46.jpg",
     },
     isPlaceholder: true,
   },
@@ -94,7 +94,7 @@ const PLACEHOLDER_BY_SLUG: Record<
     mainImage: {
       id: "ph-img-celeste",
       alt: "Sac Céleste — Lénue Paris",
-      url: "/images/lenue-sac-champagne.jpg",
+      url: "/images/PHOTO-2026-06-12-23-17-32.jpg",
     },
     isPlaceholder: true,
   },

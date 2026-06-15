@@ -11,7 +11,7 @@ export interface ProductImageSet {
 export const PRODUCT_IMAGES: Record<string, ProductImageSet> = {
   "robe-camille": {
     main: "dress-camille.jpg",
-    gallery: ["lenue-complete-look.jpg", "PHOTO-2026-06-12-17-30-46.jpg"],
+    gallery: ["PHOTO-2026-06-12-17-30-46.jpg", "PHOTO-2026-06-12-23-17-33.jpg"],
   },
   "robe-louise": {
     main: "dress-louise.jpg",
@@ -19,11 +19,11 @@ export const PRODUCT_IMAGES: Record<string, ProductImageSet> = {
   },
   "robe-margot": {
     main: "dress-margot.jpg",
-    gallery: ["PHOTO-2026-06-12-17-30-33.jpg"],
+    gallery: ["PHOTO-2026-06-12-17-30-56.jpg"],
   },
   "robe-heloise": {
     main: "dress-heloise.jpg",
-    gallery: ["PHOTO-2026-06-12-18-02-57.jpg"],
+    gallery: ["PHOTO-2026-06-12-18-02-57.jpg", "PHOTO-2026-06-12-18-07-47.jpg"],
   },
   "sac-juliette": {
     main: "PHOTO-2026-06-12-18-07-47.jpg",
@@ -34,16 +34,16 @@ export const PRODUCT_IMAGES: Record<string, ProductImageSet> = {
     gallery: ["PHOTO-2026-06-12-23-17-33.jpg"],
   },
   "sac-celeste": {
-    main: "lenue-sac-champagne.jpg",
+    main: "PHOTO-2026-06-12-23-17-32.jpg",
   },
   "sac-victoire": {
     main: "PHOTO-2026-06-13-08-45-41.jpg",
   },
   "foulard-diane": {
-    main: "lenue-foulard-floral.jpg",
+    main: "PHOTO-2026-06-12-23-29-2.jpg",
   },
   "foulard-aurore": {
-    main: "PHOTO-2026-06-12-17-32-34.jpg",
+    main: "PHOTO-2026-06-13-08-45-41.jpg",
   },
   "foulard-claire": {
     main: "PHOTO-2026-06-12-18-02-57.jpg",
@@ -52,8 +52,12 @@ export const PRODUCT_IMAGES: Record<string, ProductImageSet> = {
     main: "PHOTO-2026-06-12-22-37-24.jpg",
   },
   "look-elise-edition-limitee": {
-    main: "lenue-complete-look-mannequin.jpg",
-    gallery: ["lenue-complete-look.jpg", "lenue-sac-champagne-mannequin.jpg", "lenue-foulard-floral-mannequin.jpg"],
+    main: "PHOTO-2026-06-12-17-30-46.jpg",
+    gallery: [
+      "PHOTO-2026-06-12-17-30-56.jpg",
+      "PHOTO-2026-06-12-18-02-57.jpg",
+      "PHOTO-2026-06-12-22-37-24.jpg",
+    ],
   },
 };
 
