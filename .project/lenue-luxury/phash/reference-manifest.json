@@ -1,0 +1,87 @@
+{
+  "algorithm": "dhash-8x8",
+  "reference_frames": [
+    {
+      "file": "lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-30-32.jpg",
+      "phash": "0110010001101110110001101100101001101010010010100100101000001000",
+      "phash_hex": "0x646ec6ca6a4a4a08"
+    },
+    {
+      "file": "lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-30-46 2.jpg",
+      "phash": "0101110000111000010110000101100000110111001100111000100100001000",
+      "phash_hex": "0x5c38585837338908"
+    },
+    {
+      "file": "lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-30-46.jpg",
+      "phash": "1000010010110000101100001000010010100000100100000001000000010000",
+      "phash_hex": "0x84b0b084a0901010"
+    },
+    {
+      "file": "lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-30-55.jpg",
+      "phash": "0011011100110111011101110011011101110011001100110111101100011111",
+      "phash_hex": "0x3737773773337b1f"
+    },
+    {
+      "file": "lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-32-33.jpg",
+      "phash": "0010100000110000001100000011001000010010000100111101000001000000",
+      "phash_hex": "0x283030321213d040"
+    },
+    {
+      "file": "lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-34-10.jpg",
+      "phash": "1111111011110111011110000111100001110101111100011111000111001001",
+      "phash_hex": "0xfef7787875f1f1c9"
+    },
+    {
+      "file": "lenue-assets-bootstrap/pics/PHOTO-2026-06-12-18-02-44.jpg",
+      "phash": "1101110101111110111101101101001011011010100111100111001111110011",
+      "phash_hex": "0xdd7ef6d2da9e73f3"
+    },
+    {
+      "file": "lenue-assets-bootstrap/pics/PHOTO-2026-06-12-18-02-56.jpg",
+      "phash": "1110010100100101001001100010011000100111001101011011000111000011",
+      "phash_hex": "0xe52526262735b1c3"
+    },
+    {
+      "file": "lenue-assets-bootstrap/pics/PHOTO-2026-06-12-18-07-46.jpg",
+      "phash": "0110010001001110011001100100101001100010011001100100100000001000",
+      "phash_hex": "0x644e664a62664808"
+    },
+    {
+      "file": "lenue-assets-bootstrap/pics/PHOTO-2026-06-12-22-37-23.jpg",
+      "phash": "1011100011110100111001101100011000110111011000101100011011000110",
+      "phash_hex": "0xb8f4e6c63762c6c6"
+    },
+    {
+      "file": "lenue-assets-bootstrap/pics/PHOTO-2026-06-12-23-17-32 2.jpg",
+      "phash": "1110001011001110100011101100111001001110100011100001000001000100",
+      "phash_hex": "0xe2ce8ece4e8e1044"
+    },
+    {
+      "file": "lenue-assets-bootstrap/pics/PHOTO-2026-06-12-23-17-32.jpg",
+      "phash": "0111100011100100110001101010011000100110110001101000010010101010",
+      "phash_hex": "0x78e4c6a626c684aa"
+    },
+    {
+      "file": "lenue-assets-bootstrap/pics/PHOTO-2026-06-12-23-29-01.jpg",
+      "phash": "0001000100100001001000010000000100000001000100010001000100010001",
+      "phash_hex": "0x1121210101111111"
+    },
+    {
+      "file": "lenue-assets-bootstrap/pics/PHOTO-2026-06-13-08-45-40.jpg",
+      "phash": "0100010001000010010001100000010000011010010010100000111010011000",
+      "phash_hex": "0x444246041a4a0e98"
+    }
+  ],
+  "negative_fixture": {
+    "file": "lenue-assets-bootstrap/pics/ref-stock-harsh-01.jpg",
+    "phash": "0110000000000000011010010110100101101001011010010000000001100000",
+    "phash_hex": "0x6000696969690060",
+    "role": "negative_fixture"
+  },
+  "thresholds": {
+    "phash_distance_max_to_any_reference": 18,
+    "phash_distance_min_to_negative_fixture": 12,
+    "observed_max_mood_pair_distance": 44,
+    "observed_min_mood_to_stock_distance": 24
+  }
+}
