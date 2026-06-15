@@ -16,8 +16,8 @@ interface ProductDetailPageProps {
 async function getProduct(slug: string, locale: Locale): Promise<Product | null> {
   try {
     const payload = await getPayload({ config });
-    const { docs } = await payload.find({
-      collection: "products",
+    const query = {
+      collection: "products" as const,
       where: {
         slug: { equals: slug },
         _status: { equals: "published" },
@@ -25,8 +25,20 @@ async function getProduct(slug: string, locale: Locale): Promise<Product | null>
       locale,
       limit: 1,
       depth: 1,
-    });
-    return (docs[0] as unknown as Product) ?? null;
+    };
+
+    const { docs } = await payload.find(query);
+    if (docs[0]) {
+      return docs[0] as unknown as Product;
+    }
+
+    // Fall back to French when the product was published from the FR admin context.
+    if (locale !== "fr") {
+      const { docs: frDocs } = await payload.find({ ...query, locale: "fr" });
+      return (frDocs[0] as unknown as Product) ?? null;
+    }
+
+    return null;
   } catch {
     return null;
   }
