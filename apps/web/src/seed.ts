@@ -214,7 +214,7 @@ const PRODUCTS = [
 
 // ---------- Seed runner ----------
 
-async function seed() {
+export async function seed() {
   const payload = await getPayload({ config });
 
   console.log("⚙  Payload initialized");
