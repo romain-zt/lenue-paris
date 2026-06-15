@@ -67,7 +67,7 @@ export function Header() {
         className={[
           `sticky top-0 z-50 transition-[background-color,border-color,box-shadow] duration-500 ${softEase}`,
           overlayMode
-            ? "border-b border-white/15 bg-transparent"
+            ? "border-b border-transparent bg-transparent"
             : "border-b border-stone-200 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.03)]",
         ].join(" ")}
       >

@@ -219,20 +219,22 @@ export default async function Home({ params }: HomePageProps) {
   return (
     <main>
       {/* ── 1. Hero ── */}
-      {/* Negative margin pulls the section behind the sticky header so the
-          transparent header overlays the image instead of sitting above it. */}
+      {/* Pulls behind the sticky header — image fills the full viewport */}
       <section
         aria-labelledby="hero-heading"
-        className="relative -mt-16 h-[90svh] min-h-[560px] overflow-hidden bg-stone-800 md:-mt-[72px]"
+        className="relative -mt-16 h-[100svh] min-h-[100dvh] overflow-hidden bg-stone-800 md:-mt-[72px]"
       >
-        <Image
-          src="/images/hero.jpg"
-          alt={t("heroImageAlt")}
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-[center_15%]"
-        />
+        {/* Taller frame so the face sits below the header with headroom above */}
+        <div className="absolute inset-x-0 -top-16 bottom-0 md:-top-[72px]">
+          <Image
+            src="/images/hero.jpg"
+            alt={t("heroImageAlt")}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-[50%_38%] sm:object-[50%_36%] lg:object-[50%_34%]"
+          />
+        </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" aria-hidden="true" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-transparent" aria-hidden="true" />
 
