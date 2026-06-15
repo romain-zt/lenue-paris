@@ -56,7 +56,11 @@
     "lengthLabel": "Longueur",
     "lengthLong": "Version longue",
     "lengthShort": "Version courte",
-    "sizeLabel": "Taille"
+    "sizeLabel": "Taille",
+    "outOfStock": "Épuisé",
+    "outOfStockBadge": "Édition limitée — épuisé",
+    "outOfStockMessage": "Cette pièce est momentanément indisponible. Laissez-nous un message — nous vous prévenons en priorité dès son retour.",
+    "outOfStockCta": "Me prévenir sur WhatsApp"
   },
   "order": {
     "namePlaceholder": "Votre prénom et nom",
@@ -73,7 +77,8 @@
     "whatsappSize": "Taille : {size}",
     "whatsappPrice": "Prix : {price} €",
     "whatsappName": "Mon nom : {name}",
-    "whatsappContact": "Mon contact : {contact}"
+    "whatsappContact": "Mon contact : {contact}",
+    "whatsappInterest": "Bonjour, je suis intéressée par {title} (actuellement épuisé). Merci de me prévenir en priorité lors de son retour."
   },
   "about": {
     "title": "À propos",

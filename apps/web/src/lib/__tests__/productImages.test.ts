@@ -34,6 +34,7 @@ describe("productImages", () => {
       "foulard-aurore",
       "foulard-claire",
       "foulard-iris",
+      "look-elise-edition-limitee",
     ];
     for (const slug of slugs) {
       expect(PRODUCT_IMAGES[slug]?.main).toBeTruthy();

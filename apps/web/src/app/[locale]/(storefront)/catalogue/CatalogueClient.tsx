@@ -42,9 +42,16 @@ export function CatalogueClient({
     router.replace(query ? `${pathname}?${query}` : pathname);
   };
 
-  const filteredProducts = selectedCategory
-    ? initialProducts.filter((p) => p.category === selectedCategory)
-    : initialProducts;
+  const filteredProducts = (
+    selectedCategory
+      ? initialProducts.filter((p) => p.category === selectedCategory)
+      : initialProducts
+  ).sort((a, b) => {
+    // Pin the out-of-stock piece first — scarcity drives desire.
+    if (a.inStock === false && b.inStock !== false) return -1;
+    if (b.inStock === false && a.inStock !== false) return 1;
+    return 0;
+  });
 
   const emptyMessage = selectedCategory
     ? selectedCategory === "dresses"

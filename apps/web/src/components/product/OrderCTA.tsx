@@ -18,6 +18,7 @@ const WHATSAPP_PHONE = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "79117126262";
 export function OrderCTA({ product }: OrderCTAProps) {
   const t = useTranslations("order");
   const tProduct = useTranslations("product");
+  const isOutOfStock = product.inStock === false;
   const isDress = product.category === "dresses";
   const [length, setLength] = useState<DressLength | null>(null);
   const [size, setSize] = useState<DressSize | null>(null);
@@ -55,7 +56,7 @@ export function OrderCTA({ product }: OrderCTAProps) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!allRequiredFilled || status === "submitting") return;
+    if (isOutOfStock || !allRequiredFilled || status === "submitting") return;
 
     const trimmedName = buyerName.trim();
     const trimmedContact = buyerContact.trim();
@@ -89,6 +90,29 @@ export function OrderCTA({ product }: OrderCTAProps) {
     } catch {
       setStatus("error");
     }
+  }
+
+  if (isOutOfStock) {
+    const interestUrl = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(
+      t("whatsappInterest", { title: product.title }),
+    )}`;
+
+    return (
+      <div className="space-y-4 rounded-sm border border-stone-200 bg-stone-50 p-5">
+        <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-stone-500">
+          {tProduct("outOfStock")}
+        </p>
+        <p className="text-sm leading-relaxed text-stone-600">{tProduct("outOfStockMessage")}</p>
+        <a
+          href={interestUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex min-h-[44px] w-full items-center justify-center bg-stone-900 px-6 py-3 text-sm font-semibold tracking-wide text-white transition-colors hover:bg-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2"
+        >
+          {tProduct("outOfStockCta")}
+        </a>
+      </div>
+    );
   }
 
   return (

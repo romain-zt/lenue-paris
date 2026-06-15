@@ -253,3 +253,14 @@ describe("OrderCTA — checkout form", () => {
     });
   });
 });
+
+describe("OrderCTA — out of stock", () => {
+  it("shows WhatsApp interest CTA instead of order form", () => {
+    const soldOut: Product = { ...dressProduct, inStock: false, slug: "look-elise-edition-limitee" };
+    render(<WithIntl><OrderCTA product={soldOut} /></WithIntl>);
+
+    expect(screen.getByText("Épuisé")).toBeDefined();
+    expect(screen.queryByPlaceholderText("Votre prénom et nom")).toBeNull();
+    expect(screen.getByRole("link", { name: /Me prévenir sur WhatsApp/i })).toBeDefined();
+  });
+});

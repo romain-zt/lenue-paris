@@ -69,6 +69,14 @@ export const Products: CollectionConfig = {
       },
     },
     {
+      name: "inStock",
+      type: "checkbox",
+      defaultValue: true,
+      admin: {
+        description: "Uncheck to show as out of stock — buyers can express interest via WhatsApp.",
+      },
+    },
+    {
       name: "mainImage",
       type: "upload",
       relationTo: "media",

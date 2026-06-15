@@ -26,6 +26,7 @@ export interface Product {
   slug: string;
   category: ProductCategory;
   price: number;
+  inStock?: boolean | null;
   mainImage: ProductMedia;
   gallery?: ProductGalleryItem[] | null;
   description?: string | null;

@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { getProductMainImageUrl } from "@/lib/productImages";
 import type { Product } from "@/types/product";
@@ -8,7 +11,9 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const t = useTranslations("product");
   const imageUrl = getProductMainImageUrl(product.slug, product.mainImage?.url);
+  const isOutOfStock = product.inStock === false;
 
   const formattedPrice = new Intl.NumberFormat("fr-FR", {
     style: "currency",
@@ -22,13 +27,20 @@ export function ProductCard({ product }: ProductCardProps) {
       aria-label={product.title}
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-stone-100">
+        {isOutOfStock && (
+          <span className="absolute left-2 top-2 z-10 max-w-[calc(100%-1rem)] bg-white/95 px-2.5 py-1 text-[9px] font-medium uppercase leading-snug tracking-[0.12em] text-stone-800 shadow-sm">
+            {t("outOfStockBadge")}
+          </span>
+        )}
         {imageUrl ? (
           <Image
             src={imageUrl}
             alt={product.title}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="object-cover transition-transform duration-700 group-hover:scale-105"
+            className={`object-cover transition-transform duration-700 group-hover:scale-105 ${
+              isOutOfStock ? "opacity-90 saturate-[0.85]" : ""
+            }`}
           />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-stone-50 to-stone-200 transition-transform duration-700 group-hover:scale-[1.02]">

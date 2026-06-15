@@ -43,6 +43,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
 
+  if (product.inStock === false) {
+    return NextResponse.json({ error: "Product is out of stock" }, { status: 409 });
+  }
+
   let order: { id: string | number };
   try {
     order = await payload.create({

@@ -224,6 +224,20 @@ const PRODUCTS = [
       fr: "Carré en mousseline de coton 90×90 cm. Impression géométrique noir et écru. Assez léger pour un nœud dans les cheveux.",
     },
   },
+  // Aspirational complete look — always out of stock to drive desire + WhatsApp waitlist.
+  {
+    title: { en: "Élise Complete Look", fr: "Look Complet Élise" },
+    slug: "look-elise-edition-limitee",
+    category: "dresses" as const,
+    price: 495,
+    inStock: false,
+    description: {
+      en: "Our most coveted complete look — dress, bag and scarf styled as one. This limited edition is temporarily unavailable. Message us and we'll notify you first when it returns.",
+      fr: "Notre look complet le plus convoité — robe, sac et foulard pensés ensemble. Cette édition limitée est momentanément indisponible. Écrivez-nous et vous serez prévenue en priorité lors de son retour.",
+    },
+    availableLengths: ["longer", "shorter"] as const,
+    availableSizes: ["XS", "S", "M", "L"] as const,
+  },
 ];
 
 const PRODUCT_LOCALES = ["en", "fr", "ru"] as const;
@@ -351,6 +365,7 @@ export async function seed() {
       slug: product.slug,
       category: product.category,
       price: product.price,
+      inStock: "inStock" in product ? product.inStock !== false : true,
       mainImage: mainImageId,
       gallery: galleryItems,
       description: product.description.en,

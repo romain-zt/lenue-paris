@@ -208,12 +208,16 @@ export interface Product {
   slug: string;
   category: 'dresses' | 'bags' | 'scarfs';
   /**
-   * Prix en EUR (ex: 290.00)
+   * Price in EUR (e.g. 290.00)
    */
   price: number;
+  /**
+   * Uncheck to show as out of stock — buyers can express interest via WhatsApp.
+   */
+  inStock?: boolean | null;
   mainImage: number | Media;
   /**
-   * Images supplémentaires du produit (après l'image principale).
+   * Additional product photos (shown after the main image).
    */
   gallery?:
     | {
@@ -222,19 +226,19 @@ export interface Product {
       }[]
     | null;
   /**
-   * Description du produit affichée sur la page détail.
+   * Product description shown on the detail page.
    */
   description?: string | null;
   /**
-   * Variantes de longueur disponibles pour cette robe.
+   * Available length variants for this dress.
    */
   availableLengths?: ('longer' | 'shorter')[] | null;
   /**
-   * Tailles disponibles pour cette robe.
+   * Available sizes for this dress.
    */
   availableSizes?: ('XS' | 'S' | 'M' | 'L' | 'XL')[] | null;
   /**
-   * Associations propriétaire uniquement (robe ↔ sac/foulard). Non visible sur le site en v0.
+   * Owner-only pairings (dress ↔ bag/scarf). Not shown on the site in v0.
    */
   pairings?: (number | Product)[] | null;
   updatedAt: string;
@@ -242,7 +246,7 @@ export interface Product {
   _status?: ('draft' | 'published') | null;
 }
 /**
- * Commandes passées par les acheteurs. Lecture seule — la prise en charge se fait sur WhatsApp.
+ * Orders placed by buyers. Read-only — fulfilment happens on WhatsApp.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "orders".
@@ -251,22 +255,22 @@ export interface Order {
   id: number;
   product?: (number | null) | Product;
   /**
-   * Snapshot du titre produit au moment de la commande (renseigné côté serveur).
+   * Product title snapshot at order time (set server-side).
    */
   productTitle?: string | null;
   /**
-   * Snapshot de la catégorie au moment de la commande (renseigné côté serveur).
+   * Category snapshot at order time (set server-side).
    */
   category?: ('dresses' | 'bags' | 'scarfs') | null;
   length?: ('longer' | 'shorter') | null;
   size?: ('XS' | 'S' | 'M' | 'L' | 'XL') | null;
   /**
-   * Snapshot du prix au moment de la commande (renseigné côté serveur).
+   * Price snapshot at order time (set server-side).
    */
   price?: number | null;
   buyerName: string;
   /**
-   * Numéro de téléphone de l'acheteur.
+   * Buyer phone number.
    */
   buyerContact: string;
   updatedAt: string;
@@ -420,6 +424,7 @@ export interface ProductsSelect<T extends boolean = true> {
   slug?: T;
   category?: T;
   price?: T;
+  inStock?: T;
   mainImage?: T;
   gallery?:
     | T

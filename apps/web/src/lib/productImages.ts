@@ -51,6 +51,10 @@ export const PRODUCT_IMAGES: Record<string, ProductImageSet> = {
   "foulard-iris": {
     main: "PHOTO-2026-06-12-22-37-24.jpg",
   },
+  "look-elise-edition-limitee": {
+    main: "lenue-complete-look-mannequin.jpg",
+    gallery: ["lenue-complete-look.jpg", "lenue-sac-champagne-mannequin.jpg", "lenue-foulard-floral-mannequin.jpg"],
+  },
 };
 
 export function staticImageUrl(filename: string): string {

@@ -56,7 +56,11 @@
     "lengthLabel": "Длина",
     "lengthLong": "Длинная версия",
     "lengthShort": "Короткая версия",
-    "sizeLabel": "Размер"
+    "sizeLabel": "Размер",
+    "outOfStock": "Нет в наличии",
+    "outOfStockBadge": "Лимитированная серия — распродано",
+    "outOfStockMessage": "Эта модель временно недоступна. Напишите нам — мы сообщим вам первой, когда она вернётся.",
+    "outOfStockCta": "Уведомить в WhatsApp"
   },
   "order": {
     "namePlaceholder": "Ваше имя и фамилия",
@@ -73,7 +77,8 @@
     "whatsappSize": "Размер: {size}",
     "whatsappPrice": "Цена: {price} €",
     "whatsappName": "Моё имя: {name}",
-    "whatsappContact": "Мой контакт: {contact}"
+    "whatsappContact": "Мой контакт: {contact}",
+    "whatsappInterest": "Здравствуйте, меня интересует {title} (сейчас нет в наличии). Пожалуйста, сообщите мне первой, когда модель вернётся."
   },
   "about": {
     "title": "О нас",
