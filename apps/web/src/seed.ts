@@ -293,7 +293,8 @@ export async function seed() {
 
     const created = await payload.create({
       collection: "products",
-      data: data as Record<string, unknown>,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: data as any,
       locale: "en",
       draft: false,
     });
