@@ -80,3 +80,4 @@
 {"ts":"2026-06-15T07:28:55.707Z","step":"orch-editorial--brand-page","status":"complete","note":"Brand page complete: CMS textarea, /a-propos RSC, fr/en/ru copy, footer nav. All checks green.","actor":"agent"}
 {"ts":"2026-06-15T07:15:35.366Z","step":"orch-editorial--brand-page","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-15T07:33:55.321Z","step":"orch-editorial--brand-page","status":"complete","note":"Re-verified: 46 web + 21 CMS tests green, typecheck clean. Brand page /a-propos complete.","actor":"agent"}
+{"ts":"2026-06-15T07:41:00.491Z","step":"orch-editorial--brand-page","status":"complete","note":"CI lint fixed: a→Link in layout+not-found, CMS seed eslint-disable removed, next/font mock for tests. 46 web + 21 CMS tests green, typecheck + lint clean.","actor":"agent"}
