@@ -15,6 +15,9 @@ interface OrderCTAProps {
 
 const WHATSAPP_PHONE = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "79117126262";
 
+const INPUT_CLASS =
+  "min-h-[44px] w-full border border-stone-300 bg-white px-4 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400";
+
 export function OrderCTA({ product }: OrderCTAProps) {
   const t = useTranslations("order");
   const tProduct = useTranslations("product");
@@ -116,7 +119,7 @@ export function OrderCTA({ product }: OrderCTAProps) {
             value={buyerName}
             onChange={(e) => setBuyerName(e.target.value)}
             disabled={formDisabled}
-            className="min-h-[44px] w-full border border-stone-300 bg-white px-4 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400"
+            className={INPUT_CLASS}
           />
           <input
             type="tel"
@@ -126,7 +129,7 @@ export function OrderCTA({ product }: OrderCTAProps) {
             value={buyerContact}
             onChange={(e) => setBuyerContact(e.target.value)}
             disabled={formDisabled}
-            className="min-h-[44px] w-full border border-stone-300 bg-white px-4 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400"
+            className={INPUT_CLASS}
           />
         </div>
 

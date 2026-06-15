@@ -3,9 +3,15 @@
 @theme {
   --font-sans: var(--font-jost), "Helvetica Neue", Arial, sans-serif;
   --font-serif: var(--font-cormorant), Georgia, "Times New Roman", serif;
+
+  /* Brand palette — warm off-whites used throughout storefront */
+  --color-lenue-cream: #faf7f4;
+  --color-lenue-warm: #f5f0ea;
+  --color-lenue-beige: #f0ebe4;
+  --color-lenue-taupe: #e8e0d6;
 }
 
 /* Warm off-white page base — matches brand identity */
 body {
-  background-color: #faf7f4;
+  background-color: var(--color-lenue-cream);
 }

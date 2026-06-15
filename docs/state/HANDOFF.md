@@ -79,7 +79,7 @@ Implemented in PR #58 (`orchestrator/tracking-orch-product-detail--gallery-and-v
 
 | Feature Area | Band | Scope Slice(s) | Implementation status |
 |---|---|---|---|
-| storefront-shell | P0 | storefront-shell--global-chrome | not-started |
+| storefront-shell | P0 | storefront-shell--global-chrome | **complete** |
 | product-catalog | P0 | product-catalog--category-grid | **complete** |
 | product-detail | P1 | product-detail--gallery-and-variants | **complete** |
 | whatsapp-checkout | P1 | whatsapp-checkout--order-save-and-handoff | **complete** |
@@ -90,10 +90,10 @@ Implemented in PR #58 (`orchestrator/tracking-orch-product-detail--gallery-and-v
 ## Known issues / decisions in effect
 
 - **PD-007** (`docs/product-decisions/PD-007-implementation-phase.md`) authored and `approved` — implementation phase is now formally authorized.
-- **storefront-shell--global-chrome** is not yet implemented; both the catalogue page and product detail page render without a shared chrome (acceptable stub for v0 slices). The next step should implement the global chrome.
+- **storefront-shell--global-chrome** is implemented: `Header.tsx` (desktop nav, mobile hamburger, locale switcher, scroll-aware transparency) is in place; localized footer lives in `[locale]/layout.tsx`. Both were built as part of the editorial/i18n work and are fully functional.
 - **WhatsApp CTA** on product detail (`OrderCTA`) now has a full checkout form — buyer fields, order persistence, and WhatsApp deep-link handoff.
 - **`@payloadcms/next` peer dependency** expects a narrower Next.js range than 15.5.x; install succeeds and all checks pass. No action needed.
-- **Open questions folder**: `docs/prd/questions copy/open-questions.md` vs canonical `docs/prd/questions/open-questions.md` — content is complete; worth renaming.
+- **Open questions folder**: `docs/prd/questions/open-questions.md` — canonical path (renamed from `docs/prd/questions copy/` in quality sweep 2026-06-15).
 - **PD files** (PD-001, PD-006, PD-008) are not authored as standalone records; no blocker for current work.
 
 **`orch-cms-products--product-management` — IN-REVIEW (2026-06-15)**
@@ -188,4 +188,5 @@ Tracking PR #68.
 
 ## Next recommended step
 
-1. **`orch-storefront-shell--global-chrome`** (P0) — shared layout/chrome (header, navigation) so both pages have proper context; unblocks visual QA.
+1. **`orch-cms-products--product-management`** and **`orch-cms-products--order-viewing`** (P2) — currently in-review (PRs #61, #62). Once merged, all v0 scope slices will be complete.
+2. **Production deploy prep** — run `payload migrate` against Neon before first production deploy; commit migration files. See known open item in `orch-cms-products--product-management` section above.

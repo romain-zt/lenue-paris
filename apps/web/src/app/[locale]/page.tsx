@@ -77,7 +77,7 @@ function ProductCard({ product, formattedPrice }: { product: FeaturedProduct; fo
 
   return (
     <Link href={href} className="group block">
-      <div className="relative aspect-[3/4] overflow-hidden bg-[#f0ebe4]">
+      <div className="relative aspect-[3/4] overflow-hidden bg-lenue-beige">
         {imageUrl ? (
           <Image
             src={imageUrl}
@@ -91,7 +91,7 @@ function ProductCard({ product, formattedPrice }: { product: FeaturedProduct; fo
             className="object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.04]"
           />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-[#f5f0ea] to-[#e8e0d6]">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-lenue-warm to-lenue-taupe">
             <span className="select-none font-serif text-6xl font-light text-stone-300" aria-hidden="true">
               L
             </span>
@@ -191,7 +191,7 @@ export default async function Home({ params }: HomePageProps) {
       </section>
 
       {/* ── 2. Quote ── */}
-      <section aria-label="Philosophie" className="bg-[#f5f0ea] px-4 py-16 sm:py-20 lg:py-24">
+      <section aria-label="Philosophie" className="bg-lenue-warm px-4 py-16 sm:py-20 lg:py-24">
         <div className="mx-auto max-w-xl text-center">
           <p className="font-serif text-xl font-light italic leading-relaxed text-stone-600 sm:text-2xl sm:leading-relaxed">
             {t("quote")}
@@ -246,7 +246,7 @@ export default async function Home({ params }: HomePageProps) {
       </section>
 
       {/* ── 4. Editorial ── */}
-      <section aria-label={t("editorialLabel")} className="overflow-hidden bg-[#f0ebe4] lg:flex">
+      <section aria-label={t("editorialLabel")} className="overflow-hidden bg-lenue-beige lg:flex">
         <div className="flex flex-col justify-center px-8 py-16 sm:px-12 sm:py-20 lg:w-[42%] lg:px-14 lg:py-24">
           <p className="mb-6 text-[9px] font-medium uppercase tracking-[0.38em] text-stone-400">
             {t("editorialLabel")}
@@ -279,7 +279,7 @@ export default async function Home({ params }: HomePageProps) {
             className="object-cover object-top"
           />
           <div
-            className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-[#f0ebe4] to-transparent lg:block"
+            className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-lenue-beige to-transparent lg:block"
             aria-hidden="true"
           />
         </div>
