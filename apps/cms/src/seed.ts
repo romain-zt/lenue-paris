@@ -272,8 +272,7 @@ async function seed() {
       galleryItems.push({ image: id });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data: any = {
+    const data: Record<string, unknown> = {
       title: product.title.en,
       slug: product.slug,
       category: product.category,
