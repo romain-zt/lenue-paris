@@ -12,6 +12,7 @@ import { Media } from "./collections/Media";
 import { Pages } from "./collections/Pages";
 import { Products } from "./collections/Products";
 import { Orders } from "./collections/Orders";
+import { getPostgresPoolConfig } from "./lib/database";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -38,13 +39,7 @@ export default buildConfig({
   },
 
   db: postgresAdapter({
-    pool: {
-      connectionString:
-        process.env.DATABASE_URI ||
-        process.env.DATABASE_URL ||
-        process.env.POSTGRES_URL ||
-        "",
-    },
+    pool: getPostgresPoolConfig(),
   }),
 
   plugins: [
