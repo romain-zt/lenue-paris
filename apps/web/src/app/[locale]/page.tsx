@@ -5,51 +5,101 @@ import config from "@payload-config";
 import { Link } from "@/i18n/navigation";
 import type { Product } from "@/types/product";
 import { formatPrice } from "@/lib/formatPrice";
+import { getProductMainImageUrl } from "@/lib/productImages";
 
 type Locale = "fr" | "en" | "ru";
 
+/** Home featured grid — 6 pieces including the sold-out showcase look. */
+const FEATURED_SLUGS = [
+  "look-elise-edition-limitee",
+  "robe-camille",
+  "robe-louise",
+  "robe-margot",
+  "robe-heloise",
+  "sac-celeste",
+] as const;
+
 export const dynamic = "force-dynamic";
 
-const PLACEHOLDER_PRODUCTS = [
+const PLACEHOLDER_BY_SLUG: Record<
+  (typeof FEATURED_SLUGS)[number],
   {
+    id: string;
+    title: string;
+    slug: (typeof FEATURED_SLUGS)[number];
+    price: number;
+    category: "dresses" | "bags" | "scarfs";
+    inStock?: boolean;
+    mainImage: { id: string; alt: string; url: string };
+    isPlaceholder: true;
+  }
+> = {
+  "look-elise-edition-limitee": {
+    id: "ph-elise",
+    title: "Look Complet Élise",
+    slug: "look-elise-edition-limitee",
+    price: 495,
+    category: "dresses",
+    inStock: false,
+    mainImage: {
+      id: "ph-img-elise",
+      alt: "Look Complet Élise — Lénue Paris",
+      url: "/images/lenue-complete-look-mannequin.jpg",
+    },
+    isPlaceholder: true,
+  },
+  "robe-camille": {
     id: "ph-1",
     title: "Robe Camille",
     slug: "robe-camille",
     price: 290,
-    category: "dresses" as const,
+    category: "dresses",
     mainImage: { id: "ph-img-1", alt: "Robe Camille — Lénue Paris", url: "/images/dress-camille.jpg" },
     isPlaceholder: true,
   },
-  {
+  "robe-louise": {
     id: "ph-2",
     title: "Robe Louise",
     slug: "robe-louise",
     price: 320,
-    category: "dresses" as const,
+    category: "dresses",
     mainImage: { id: "ph-img-2", alt: "Robe Louise — Lénue Paris", url: "/images/dress-louise.jpg" },
     isPlaceholder: true,
   },
-  {
+  "robe-margot": {
     id: "ph-3",
     title: "Robe Margot",
     slug: "robe-margot",
     price: 275,
-    category: "dresses" as const,
+    category: "dresses",
     mainImage: { id: "ph-img-3", alt: "Robe Margot — Lénue Paris", url: "/images/dress-margot.jpg" },
     isPlaceholder: true,
   },
-  {
+  "robe-heloise": {
     id: "ph-4",
     title: "Robe Héloïse",
     slug: "robe-heloise",
     price: 345,
-    category: "dresses" as const,
+    category: "dresses",
     mainImage: { id: "ph-img-4", alt: "Robe Héloïse — Lénue Paris", url: "/images/dress-heloise.jpg" },
     isPlaceholder: true,
   },
-];
+  "sac-celeste": {
+    id: "ph-celeste",
+    title: "Sac Céleste",
+    slug: "sac-celeste",
+    price: 310,
+    category: "bags",
+    mainImage: {
+      id: "ph-img-celeste",
+      alt: "Sac Céleste — Lénue Paris",
+      url: "/images/lenue-sac-champagne.jpg",
+    },
+    isPlaceholder: true,
+  },
+};
 
-type PlaceholderProduct = (typeof PLACEHOLDER_PRODUCTS)[0];
+type PlaceholderProduct = (typeof PLACEHOLDER_BY_SLUG)[keyof typeof PLACEHOLDER_BY_SLUG];
 type FeaturedProduct = PlaceholderProduct | (Product & { isPlaceholder?: false });
 
 async function getFeaturedProducts(locale: Locale): Promise<FeaturedProduct[]> {
@@ -59,10 +109,10 @@ async function getFeaturedProducts(locale: Locale): Promise<FeaturedProduct[]> {
       collection: "products" as const,
       where: {
         _status: { equals: "published" as const },
-        category: { equals: "dresses" as const },
+        slug: { in: [...FEATURED_SLUGS] },
       },
       locale,
-      limit: 4,
+      limit: FEATURED_SLUGS.length,
       depth: 1,
     };
 
@@ -71,34 +121,51 @@ async function getFeaturedProducts(locale: Locale): Promise<FeaturedProduct[]> {
       ({ docs } = await payload.find({ ...query, locale: "fr" }));
     }
 
-    return docs.length > 0 ? (docs as unknown as Product[]).slice(0, 4) : PLACEHOLDER_PRODUCTS;
+    return FEATURED_SLUGS.map((slug) => {
+      const fromCms = docs.find((doc) => doc.slug === slug);
+      if (fromCms) {
+        return fromCms as unknown as Product;
+      }
+      return PLACEHOLDER_BY_SLUG[slug];
+    });
   } catch {
-    return PLACEHOLDER_PRODUCTS;
+    return FEATURED_SLUGS.map((slug) => PLACEHOLDER_BY_SLUG[slug]);
   }
 }
 
-function ProductCard({ product, formattedPrice }: { product: FeaturedProduct; formattedPrice: string }) {
-  const imageUrl =
-    "mainImage" in product && product.mainImage
-      ? (product.mainImage as { url?: string | null }).url
-      : null;
-
-  const href = product.isPlaceholder ? "/catalogue?categorie=robes" : `/produits/${product.slug}`;
+function ProductCard({
+  product,
+  formattedPrice,
+  outOfStockBadge,
+}: {
+  product: FeaturedProduct;
+  formattedPrice: string;
+  outOfStockBadge: string;
+}) {
+  const imageUrl = getProductMainImageUrl(
+    product.slug,
+    product.isPlaceholder ? product.mainImage.url : product.mainImage?.url,
+  );
+  const isOutOfStock = product.inStock === false;
+  const href = product.isPlaceholder ? `/produits/${product.slug}` : `/produits/${product.slug}`;
 
   return (
     <Link href={href} className="group block">
       <div className="relative aspect-[3/4] overflow-hidden bg-[#f0ebe4]">
+        {isOutOfStock && (
+          <span className="absolute left-2 top-2 z-10 max-w-[calc(100%-1rem)] bg-white/95 px-2.5 py-1 text-[9px] font-medium uppercase leading-snug tracking-[0.12em] text-stone-800 shadow-sm">
+            {outOfStockBadge}
+          </span>
+        )}
         {imageUrl ? (
           <Image
             src={imageUrl}
-            alt={
-              "mainImage" in product && product.mainImage
-                ? (product.mainImage as { alt?: string }).alt ?? product.title
-                : product.title
-            }
+            alt={product.title}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+            className={`object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.04] ${
+              isOutOfStock ? "opacity-90 saturate-[0.85]" : ""
+            }`}
           />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-[#f5f0ea] to-[#e8e0d6]">
@@ -137,6 +204,7 @@ export default async function Home({ params }: HomePageProps) {
 
   const t = await getTranslations("home");
   const nav = await getTranslations("nav");
+  const tProduct = await getTranslations("product");
   const featured = await getFeaturedProducts(locale as Locale);
   const priceFormatter = (price: number) => formatPrice(price, locale as Locale);
 
@@ -231,12 +299,13 @@ export default async function Home({ params }: HomePageProps) {
               {t("viewCollection")}
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 md:grid-cols-4 lg:gap-x-8">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 md:grid-cols-3 lg:gap-x-8">
             {featured.map((product) => (
               <ProductCard
-                key={product.id}
+                key={product.slug}
                 product={product}
                 formattedPrice={priceFormatter(product.price)}
+                outOfStockBadge={tProduct("outOfStockBadge")}
               />
             ))}
           </div>
