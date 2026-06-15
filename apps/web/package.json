@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "payload generate:importmap && next build",
+    "build": "payload generate:importmap && payload migrate && next build",
     "start": "payload migrate && next start -p 3001",
     "migrate": "payload migrate",
     "lint": "next lint",
