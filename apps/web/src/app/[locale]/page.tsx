@@ -10,14 +10,14 @@ import { FeaturedProductItem, FeaturedProductsScroll } from "@/components/home/F
 
 type Locale = "fr" | "en" | "ru";
 
-/** Home featured carousel — sold-out look first, then varied pieces (bag before dresses). */
+/** Home featured carousel — sold-out look in 3rd slot. */
 const FEATURED_SLUGS = [
+  "robe-camille",
   "look-elise-edition-limitee",
+  "robe-margot",
   "sac-celeste",
   "robe-louise",
-  "robe-margot",
   "robe-heloise",
-  "robe-camille",
 ] as const;
 
 export const dynamic = "force-dynamic";
