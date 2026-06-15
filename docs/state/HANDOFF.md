@@ -170,6 +170,22 @@ Tracking PR #68 (`orchestrator/tracking-orch-i18n--localized-storefront-17815126
 
 **Locale switcher**: FR/EN/RU buttons already in Header (desktop + mobile) — persists via next-intl cookie. `localePrefix: "as-needed"` so fr URLs have no prefix.
 
+**`orch-i18n--localized-storefront` — VALIDATED (2026-06-15, second pass)**
+
+Tracking PR #68.
+
+**Additional work in this pass (on top of prior `24dfad5`):**
+
+- **`getPage(slug, locale?)`**: locale param threaded through CMS fetch (was hardcoded `fr`)
+- **`getBrandPageData(locale?)`**: threads locale to `getPage`; fallback uses `BRAND_PAGE_COPY[locale] ?? BRAND_PAGE_COPY.fr`
+- **`i18n/request.ts`**: French messages merged as base — missing en/ru keys fall back to French value
+- **`about` + `footer` message sections**: added to fr/en/ru message files
+- **User story**: `docs/product/user-stories/i18n--localized-storefront--US-001--switch-locale.md`
+- **`docs/project.config.md`**: i18n row updated to `fr (primary) + en + ru`
+- **Tests**: 9 new focused tests (getPage locale param, getBrandPageData locale fallback, request.ts fr-fallback merge)
+
+**Final checks: 55 web + 21 CMS tests green, typecheck clean on both apps.**
+
 ## Next recommended step
 
 1. **`orch-storefront-shell--global-chrome`** (P0) — shared layout/chrome (header, navigation) so both pages have proper context; unblocks visual QA.
