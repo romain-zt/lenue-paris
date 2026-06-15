@@ -8,6 +8,17 @@ export const Orders: CollectionConfig = {
   },
   admin: {
     useAsTitle: "productTitle",
+    defaultColumns: [
+      "productTitle",
+      "category",
+      "buyerName",
+      "buyerContact",
+      "price",
+      "createdAt",
+    ],
+    description:
+      "Commandes passées par les acheteurs. Lecture seule — la prise en charge se fait sur WhatsApp.",
+    group: "Boutique",
   },
   defaultSort: "-createdAt",
   access: {
