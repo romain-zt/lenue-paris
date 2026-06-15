@@ -73,3 +73,4 @@
 {"ts":"2026-06-15T05:37:22.661Z","step":"orch-cms-products--order-viewing","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-15T06:47:19.261Z","step":"orch-cms-products--order-viewing","status":"complete","note":"Re-verified: 19 CMS + 39 web tests green, typecheck clean on both apps; Orders admin config complete","actor":"agent"}
 {"ts":"2026-06-15T07:14:50.577Z","step":"orch-editorial--brand-page","status":"in-progress","actor":"orchestrator"}
+{"ts":"2026-06-15T07:14:55.353Z","step":"orch-editorial--brand-page","status":"not-started","note":"orphan reset (no tracking PR)","actor":"cleanup"}
