@@ -74,5 +74,10 @@
     "whatsappPrice": "Price: {price} €",
     "whatsappName": "My name: {name}",
     "whatsappContact": "My contact: {contact}"
+  },
+  "footer": {
+    "boutique": "Boutique",
+    "catalogue": "Collection",
+    "about": "About"
   }
 }

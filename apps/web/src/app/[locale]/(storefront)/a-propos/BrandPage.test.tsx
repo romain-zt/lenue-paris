@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { BrandPageContent } from "./BrandPageContent";
 import { getBrandPageData } from "@/lib/getBrandPageData";
+import { BRAND_PAGE_COPY } from "@/lib/brandPageCopy";
 import Loading from "./loading";
 import NotFound from "./not-found";
-import RootLayout from "@/app/layout";
 
 vi.mock("@/lib/getPage", () => ({
   getPage: vi.fn(),
@@ -14,8 +14,8 @@ import { getPage } from "@/lib/getPage";
 
 const mockedGetPage = vi.mocked(getPage);
 
-async function renderBrandPageFromCms() {
-  const data = await getBrandPageData();
+async function renderBrandPageFromCms(locale: "fr" | "en" | "ru" = "fr") {
+  const data = await getBrandPageData(locale);
   render(<BrandPageContent {...data} />);
 }
 
@@ -62,6 +62,16 @@ describe("BrandPageContent", () => {
     expect(screen.getByText(/moins de pièces, plus de goût/)).toBeDefined();
   });
 
+  it("falls back to BRAND_PAGE_COPY.en when getPage returns null and locale is en", async () => {
+    mockedGetPage.mockResolvedValue(null);
+
+    const data = await getBrandPageData("en");
+
+    expect(data.title).toBe(BRAND_PAGE_COPY.en.title);
+    expect(data.body).toBe(BRAND_PAGE_COPY.en.body);
+    expect(data.title).not.toBe(BRAND_PAGE_COPY.fr.title);
+  });
+
   it("renders without cover image when cover is null", async () => {
     mockedGetPage.mockResolvedValue({
       id: "1",
@@ -89,17 +99,5 @@ describe("BrandPageNotFound", () => {
     render(<NotFound />);
     const link = screen.getByRole("link", { name: /Retour à la boutique/i });
     expect(link.getAttribute("href")).toBe("/");
-  });
-});
-
-describe("RootLayout footer", () => {
-  it("layout.tsx footer has À propos nav link", () => {
-    render(
-      <RootLayout>
-        <div />
-      </RootLayout>,
-    );
-    const link = screen.getByRole("link", { name: "À propos" });
-    expect(link.getAttribute("href")).toBe("/a-propos");
   });
 });

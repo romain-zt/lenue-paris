@@ -1,10 +1,10 @@
 import type { Page, PagesResponse } from "@/types/page";
 
-export async function getPage(slug: string): Promise<Page | null> {
+export async function getPage(slug: string, locale = "fr"): Promise<Page | null> {
   const cmsUrl = process.env.CMS_URL ?? "http://localhost:3000";
   try {
     const res = await fetch(
-      `${cmsUrl}/api/pages?where[slug][equals]=${encodeURIComponent(slug)}&locale=fr&depth=1`,
+      `${cmsUrl}/api/pages?where[slug][equals]=${encodeURIComponent(slug)}&locale=${encodeURIComponent(locale)}&depth=1`,
       { next: { revalidate: 3600 } },
     );
     if (!res.ok) return null;

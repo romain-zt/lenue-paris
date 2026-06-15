@@ -1,11 +1,13 @@
+import type { BrandPageContentProps } from "@/app/[locale]/(storefront)/a-propos/BrandPageContent";
 import { BRAND_PAGE_COPY } from "@/lib/brandPageCopy";
 import { getPage } from "@/lib/getPage";
-import type { BrandPageContentProps } from "@/app/(storefront)/a-propos/BrandPageContent";
 
 export type { BrandPageContentProps };
 
-export async function getBrandPageData(): Promise<BrandPageContentProps> {
-  const page = await getPage("a-propos");
+type Locale = "fr" | "en" | "ru";
+
+export async function getBrandPageData(locale: Locale = "fr"): Promise<BrandPageContentProps> {
+  const page = await getPage("a-propos", locale);
   if (page) {
     return {
       title: page.title,
@@ -14,8 +16,8 @@ export async function getBrandPageData(): Promise<BrandPageContentProps> {
     };
   }
   return {
-    title: BRAND_PAGE_COPY.fr.title,
-    body: BRAND_PAGE_COPY.fr.body,
+    title: BRAND_PAGE_COPY[locale].title,
+    body: BRAND_PAGE_COPY[locale].body,
     cover: null,
   };
 }
