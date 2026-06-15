@@ -4,11 +4,12 @@
   "type": "module",
   "description": "Cloud-agent CI scripts for the Cursor governance template. Installed in CI with `npm install --prefix .github/scripts/core`.",
   "scripts": {
-    "test:maison": "node --import tsx --test quality/maison-scorers/maison-scorers.test.ts",
+    "test:maison": "node --import tsx --test quality/maison-scorers/maison-scorers.test.ts quality/maison-scorers/asset-scorers.test.ts",
     "luxury-gate": "tsx luxury-brand-gate.ts"
   },
   "dependencies": {
     "@cursor/sdk": "1.0.12",
+    "sharp": "^0.34.2",
     "tsx": "^4.21.0"
   }
 }

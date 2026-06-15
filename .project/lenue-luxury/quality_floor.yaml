@@ -75,6 +75,24 @@ deterministic:
     s3_head_proof_required: true
     block_on_host_unreachable: true
 
+  asset_duplicate_hash:
+    # Hard-fail when distinct referenced filenames share MD5 (suffix-agnostic)
+    max_collisions: 0
+    sources:
+      - apps/web/src/lib/productImages.ts
+      - apps/web/src/app/[locale]/page.tsx
+
+  catalogue_frame_uniqueness:
+    # Rendered img dhash-8x8 (LANCZOS) — zero Hamming distance fails
+    dhash_zero_pairs_max: 0
+    surfaces:
+      - id: fr_featured_carousel
+        path: /fr
+        maison_attr: catalogue-grid
+      - id: look_elise_gallery
+        path: /fr/produits/look-elise-edition-limitee
+        maison_attr: product-gallery
+
   phash_mood_board:
     manifest: .project/lenue-luxury/phash/reference-manifest.json
     distance_max_to_any_reference: 18
