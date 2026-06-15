@@ -81,3 +81,4 @@
 {"ts":"2026-06-15T07:15:35.366Z","step":"orch-editorial--brand-page","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-15T07:33:55.321Z","step":"orch-editorial--brand-page","status":"complete","note":"Re-verified: 46 web + 21 CMS tests green, typecheck clean. Brand page /a-propos complete.","actor":"agent"}
 {"ts":"2026-06-15T07:41:00.491Z","step":"orch-editorial--brand-page","status":"complete","note":"CI lint fixed: a→Link in layout+not-found, CMS seed eslint-disable removed, next/font mock for tests. 46 web + 21 CMS tests green, typecheck + lint clean.","actor":"agent"}
+{"ts":"2026-06-15T07:52:01.676Z","step":"orch-editorial--brand-page","status":"complete","note":"Remediation run 4: all checks confirmed green (46 web + 21 CMS tests, typecheck clean). Marking ready.","actor":"agent"}
