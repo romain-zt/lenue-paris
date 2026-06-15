@@ -13,8 +13,53 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import fs from "fs";
+import { Client } from "pg";
 import { getPayload } from "payload";
 import config from "./payload.config";
+import { getPostgresPoolConfig } from "./lib/database";
+
+/**
+ * Drop columns whose Drizzle/Payload-desired type can no longer be
+ * automatically cast from the existing PostgreSQL column type
+ * (e.g. richText `body` was `text/varchar` and must become `jsonb`).
+ *
+ * Payload's dev schema push (drizzle-kit) does not emit a `USING …` clause,
+ * so we surgically drop these columns first and let Payload recreate them
+ * with the correct type on init.
+ */
+async function preInitSchemaCleanup() {
+  const { connectionString, ssl } = getPostgresPoolConfig();
+  if (!connectionString) return;
+
+  const client = new Client({ connectionString, ssl });
+  await client.connect();
+  try {
+    // Columns that need to become jsonb but were previously text-like.
+    const targets: { table: string; column: string }[] = [
+      { table: "pages_locales", column: "body" },
+    ];
+
+    for (const { table, column } of targets) {
+      const { rows } = await client.query<{ data_type: string }>(
+        `SELECT data_type FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2`,
+        [table, column],
+      );
+      const existing = rows[0]?.data_type;
+      if (!existing) continue; // table/column doesn't exist yet — nothing to do
+      if (existing === "jsonb") continue; // already correct
+
+      console.log(
+        `🧹 Dropping ${table}.${column} (was ${existing}) so Payload can recreate it as jsonb`,
+      );
+      await client.query(
+        `ALTER TABLE "${table}" DROP COLUMN IF EXISTS "${column}";`,
+      );
+    }
+  } finally {
+    await client.end();
+  }
+}
 
 const PICS_DIR = path.resolve(__dirname, "../../../lenue-assets-bootstrap/pics");
 
@@ -215,6 +260,8 @@ const PRODUCTS = [
 // ---------- Seed runner ----------
 
 export async function seed() {
+  await preInitSchemaCleanup();
+
   const payload = await getPayload({ config });
 
   console.log("⚙  Payload initialized");
@@ -235,12 +282,14 @@ export async function seed() {
     console.log("👤 Admin user already exists — skipping");
   }
 
-  // 2. Wipe existing products (re-runnable)
-  const existing = await payload.find({ collection: "products", limit: 100 });
-  for (const product of existing.docs) {
-    await payload.delete({ collection: "products", id: product.id });
-  }
-  console.log(`🗑  Cleared ${existing.totalDocs} existing products`);
+  // 2. Wipe existing products (re-runnable).
+  // Use a single bulk delete (vs. a per-id loop) to avoid transaction
+  // deadlocks when running through Neon's pgbouncer pooler.
+  const cleared = await payload.delete({
+    collection: "products",
+    where: { id: { exists: true } },
+  });
+  console.log(`🗑  Cleared ${cleared.docs.length} existing products`);
 
   // 3. Upload images and cache Media IDs
   const mediaCache: Record<string, number | string> = {};

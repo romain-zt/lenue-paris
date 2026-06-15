@@ -194,6 +194,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.19.21
+      '@types/pg':
+        specifier: ^8.11.10
+        version: 8.20.0
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.17
@@ -212,6 +215,9 @@ importers:
       jsdom:
         specifier: 'catalog:'
         version: 25.0.1
+      pg:
+        specifier: ^8.20.0
+        version: 8.20.0
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.1

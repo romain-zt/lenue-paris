@@ -16,6 +16,11 @@ import { getPostgresPoolConfig } from "./lib/database";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const hasS3Config =
+  !!process.env.S3_BUCKET &&
+  !!process.env.S3_ACCESS_KEY_ID &&
+  !!process.env.S3_SECRET_ACCESS_KEY;
+
 export default buildConfig({
   localization: {
     locales: ["en", "fr", "ru"],
@@ -42,21 +47,23 @@ export default buildConfig({
     pool: getPostgresPoolConfig(),
   }),
 
-  plugins: [
-    s3Storage({
-      collections: {
-        [Media.slug]: true,
-      },
-      bucket: process.env.S3_BUCKET || "media",
-      config: {
-        endpoint: process.env.S3_ENDPOINT,
-        region: process.env.S3_REGION || "us-east-1",
-        forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
-        credentials: {
-          accessKeyId: process.env.S3_ACCESS_KEY_ID || "",
-          secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || "",
-        },
-      },
-    }),
-  ],
+  plugins: hasS3Config
+    ? [
+        s3Storage({
+          collections: {
+            [Media.slug]: true,
+          },
+          bucket: process.env.S3_BUCKET as string,
+          config: {
+            endpoint: process.env.S3_ENDPOINT,
+            region: process.env.S3_REGION || "us-east-1",
+            forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
+            credentials: {
+              accessKeyId: process.env.S3_ACCESS_KEY_ID as string,
+              secretAccessKey: process.env.S3_SECRET_ACCESS_KEY as string,
+            },
+          },
+        }),
+      ]
+    : [],
 });

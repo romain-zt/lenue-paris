@@ -35,6 +35,8 @@
     "@types/react": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "dotenv": "^17.4.2",
+    "pg": "^8.20.0",
+    "@types/pg": "^8.11.10",
     "eslint": "catalog:",
     "eslint-config-next": "catalog:",
     "jsdom": "catalog:",
