@@ -8,7 +8,8 @@
       "orch-whatsapp-checkout--order-save-and-handoff": "complete",
       "orch-cms-products--product-management": "complete",
       "orch-cms-products--order-viewing": "complete",
-      "orch-editorial--brand-page": "in-progress"
+      "orch-editorial--brand-page": "complete",
+      "orch-i18n--localized-storefront": "in-progress"
     },
     "remediation_counts": {
       "orch-product-detail--gallery-and-variants": 2,
