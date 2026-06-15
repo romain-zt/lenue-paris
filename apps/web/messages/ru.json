@@ -74,5 +74,15 @@
     "whatsappPrice": "Цена: {price} €",
     "whatsappName": "Моё имя: {name}",
     "whatsappContact": "Мой контакт: {contact}"
+  },
+  "about": {
+    "title": "О нас",
+    "metaTitle": "О нас — Lénue Paris",
+    "metaDescription": "История Lénue Paris — бутика моды, рождённого в Париже."
+  },
+  "footer": {
+    "boutique": "Бутик",
+    "catalogue": "Коллекция",
+    "about": "О нас"
   }
 }

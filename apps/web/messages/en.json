@@ -74,5 +74,15 @@
     "whatsappPrice": "Price: {price} €",
     "whatsappName": "My name: {name}",
     "whatsappContact": "My contact: {contact}"
+  },
+  "about": {
+    "title": "About",
+    "metaTitle": "About — Lénue Paris",
+    "metaDescription": "The story of Lénue Paris, a fashion boutique born in Paris."
+  },
+  "footer": {
+    "boutique": "Boutique",
+    "catalogue": "Collection",
+    "about": "About"
   }
 }

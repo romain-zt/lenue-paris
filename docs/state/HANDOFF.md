@@ -85,7 +85,7 @@ Implemented in PR #58 (`orchestrator/tracking-orch-product-detail--gallery-and-v
 | whatsapp-checkout | P1 | whatsapp-checkout--order-save-and-handoff | **complete** |
 | cms-products | P2 | cms-products--product-management; cms-products--order-viewing | not-started |
 | editorial | P2 | editorial--brand-page | not-started |
-| i18n | P3 | i18n--localized-storefront | not-started |
+| i18n | P3 | i18n--localized-storefront | **complete** |
 
 ## Known issues / decisions in effect
 
@@ -153,6 +153,38 @@ Tracking PR #64 (`orchestrator/tracking-orch-editorial--brand-page-1781507732913
 - richText→textarea: no Lexical serializer needed in web
 - subtitle dropped (gold-plating)
 - Hardcoded fallback copy is the v0 brand story; CMS is for owner customization
+
+**`orch-i18n--localized-storefront` — COMPLETE (2026-06-15)**
+
+Tracking PR #68 (`orchestrator/tracking-orch-i18n--localized-storefront-1781512609328`).
+
+**What was built:**
+
+- **Root layout fix (`apps/web/src/app/layout.tsx`)**: Made minimal pass-through (imports globals.css, returns children). The `[locale]/layout.tsx` renders `<html lang={locale}><body>...</body></html>`.
+- **Brand page migration**: `(storefront)/a-propos/` moved to `[locale]/(storefront)/a-propos/` — page now calls `setRequestLocale`, passes locale to `getBrandPageData`, uses `getTranslations` for metadata.
+- **Data layer**: `getPage(slug, locale?)` and `getBrandPageData(locale?)` updated to accept locale; fallback copy uses `BRAND_PAGE_COPY[locale]` instead of always fr.
+- **Footer localization**: `[locale]/layout.tsx` has a localized footer using `getTranslations("footer")` and `Link` from `@/i18n/navigation`.
+- **Messages**: Added `"footer"` namespace to fr/en/ru messages files.
+- **User story**: `docs/product/user-stories/i18n--localized-storefront--US-001--browse-in-preferred-language.md`.
+- **Tests**: 46 web + 21 cms tests all green. Typecheck clean on both apps.
+
+**Locale switcher**: FR/EN/RU buttons already in Header (desktop + mobile) — persists via next-intl cookie. `localePrefix: "as-needed"` so fr URLs have no prefix.
+
+**`orch-i18n--localized-storefront` — VALIDATED (2026-06-15, second pass)**
+
+Tracking PR #68.
+
+**Additional work in this pass (on top of prior `24dfad5`):**
+
+- **`getPage(slug, locale?)`**: locale param threaded through CMS fetch (was hardcoded `fr`)
+- **`getBrandPageData(locale?)`**: threads locale to `getPage`; fallback uses `BRAND_PAGE_COPY[locale] ?? BRAND_PAGE_COPY.fr`
+- **`i18n/request.ts`**: French messages merged as base — missing en/ru keys fall back to French value
+- **`about` + `footer` message sections**: added to fr/en/ru message files
+- **User story**: `docs/product/user-stories/i18n--localized-storefront--US-001--switch-locale.md`
+- **`docs/project.config.md`**: i18n row updated to `fr (primary) + en + ru`
+- **Tests**: 9 new focused tests (getPage locale param, getBrandPageData locale fallback, request.ts fr-fallback merge)
+
+**Final checks: 55 web + 21 CMS tests green, typecheck clean on both apps.**
 
 ## Next recommended step
 
