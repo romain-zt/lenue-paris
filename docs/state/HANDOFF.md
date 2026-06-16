@@ -186,7 +186,7 @@ Tracking PR #68.
 
 **Final checks: 55 web + 21 CMS tests green, typecheck clean on both apps.**
 
-**`orch-selection-ux--p0-primary-cta` — IN-REVIEW (2026-06-16)**
+**`orch-selection-ux--p0-primary-cta` — COMPLETE (2026-06-16)**
 
 Tracking PR #81 (`orchestrator/tracking-orch-selection-ux--p0-primary-cta-1781642794357`).
 
@@ -206,6 +206,8 @@ Tracking PR #81 (`orchestrator/tracking-orch-selection-ux--p0-primary-cta-178164
 **Checks:** 90 web tests green (0 failed), typecheck clean.
 
 **WhatsApp handoff location:** Inside `SelectionPanel` only, via "Continuer sur WhatsApp" → `buildMultiPieceWhatsAppMessage` (unchanged).
+
+**Remediation note (2026-06-16):** Re-affirmed complete after orchestrator re-sync overwrote status.json with in-progress. Re-appended complete event; status.json regenerated from projection.
 
 ## Next recommended step
 
