@@ -1,6 +1,7 @@
 import path from "path";
 import { fileURLToPath } from "url";
 import type { CollectionConfig } from "payload";
+import { ADMIN_GROUPS, COLLECTION_LABELS, FIELD_LABELS } from "@/i18n/admin-labels";
 
 const mediaDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../public/media-uploads");
 
@@ -9,18 +10,14 @@ const hasS3Config =
   !!process.env.S3_ACCESS_KEY_ID &&
   !!process.env.S3_SECRET_ACCESS_KEY;
 
-// Upload collection. Storage is handled by the S3 plugin (MinIO local).
 export const Media: CollectionConfig = {
   slug: "media",
-  labels: {
-    singular: "Media",
-    plural: "Media",
-  },
+  labels: COLLECTION_LABELS.media,
   admin: {
-    group: "Shop",
+    group: ADMIN_GROUPS.media,
   },
   access: {
-    read: () => true, // public read; tighten if media is private
+    read: () => true,
     create: ({ req }) => Boolean(req.user),
     update: ({ req }) => Boolean(req.user),
     delete: ({ req }) => Boolean(req.user),
@@ -33,8 +30,9 @@ export const Media: CollectionConfig = {
     {
       name: "alt",
       type: "text",
-      localized: true, // i18n: alt text is user-facing
+      localized: true,
       required: true,
+      label: FIELD_LABELS.alt,
     },
   ],
 };

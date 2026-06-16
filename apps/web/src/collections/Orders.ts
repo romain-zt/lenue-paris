@@ -1,10 +1,11 @@
 import type { CollectionConfig } from "payload";
+import { ADMIN_GROUPS } from "@/i18n/admin-labels";
 
 export const Orders: CollectionConfig = {
   slug: "orders",
   labels: {
-    singular: "Order",
-    plural: "Orders",
+    singular: { en: "Order", fr: "Commande", ru: "Заказ" },
+    plural: { en: "Orders", fr: "Commandes", ru: "Заказы" },
   },
   admin: {
     useAsTitle: "productTitle",
@@ -16,9 +17,12 @@ export const Orders: CollectionConfig = {
       "price",
       "createdAt",
     ],
-    description:
-      "Orders placed by buyers. Read-only — fulfilment happens on WhatsApp.",
-    group: "Shop",
+    description: {
+      en: "Orders placed by buyers. Read-only — fulfilment happens on WhatsApp.",
+      fr: "Commandes clientes. Lecture seule — le suivi se fait sur WhatsApp.",
+      ru: "Заказы покупательниц. Только просмотр — обработка в WhatsApp.",
+    },
+    group: ADMIN_GROUPS.orders,
   },
   defaultSort: "-createdAt",
   access: {

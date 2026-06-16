@@ -6,6 +6,7 @@ import { lexicalEditor } from "@payloadcms/richtext-lexical";
 import { s3Storage } from "@payloadcms/storage-s3";
 import { en } from "@payloadcms/translations/languages/en";
 import { fr } from "@payloadcms/translations/languages/fr";
+import { ru } from "@payloadcms/translations/languages/ru";
 
 import { Users } from "./collections/Users";
 import { Media } from "./collections/Media";
@@ -26,8 +27,8 @@ export default buildConfig({
   i18n: {
     // Admin UI language (separate from content localization below).
     // Browser defaults to fr if supported; user can override in Account → Language.
-    fallbackLanguage: "en",
-    supportedLanguages: { en, fr },
+    fallbackLanguage: "fr",
+    supportedLanguages: { en, fr, ru },
   },
 
   localization: {

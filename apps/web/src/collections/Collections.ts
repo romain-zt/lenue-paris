@@ -1,16 +1,19 @@
 import type { CollectionConfig } from "payload";
+import {
+  ADMIN_GROUPS,
+  COLLECTION_LABELS,
+  FIELD_DESCRIPTIONS,
+  FIELD_LABELS,
+} from "@/i18n/admin-labels";
 
 export const Collections: CollectionConfig = {
   slug: "collections",
-  labels: {
-    singular: "Collection",
-    plural: "Collections",
-  },
+  labels: COLLECTION_LABELS.collections,
   admin: {
-    group: "Shop",
+    group: ADMIN_GROUPS.boutique,
     useAsTitle: "title",
     defaultColumns: ["title", "slug", "_status", "updatedAt"],
-    description: "Curated product groups — Été 2026, Sacs, Nouveautés. Never one Page per SKU.",
+    description: FIELD_DESCRIPTIONS.collectionsIntro,
   },
   access: {
     read: () => true,
@@ -27,22 +30,25 @@ export const Collections: CollectionConfig = {
       type: "text",
       required: true,
       localized: true,
+      label: FIELD_LABELS.title,
     },
     {
       name: "slug",
       type: "text",
       required: true,
       unique: true,
+      label: FIELD_LABELS.slug,
       admin: {
-        description: "URL segment for /collections/[slug]",
+        description: FIELD_DESCRIPTIONS.slugCollection,
       },
     },
     {
       name: "hero",
       type: "upload",
       relationTo: "media",
+      label: FIELD_LABELS.hero,
       admin: {
-        description: "Optional editorial hero for the collection page.",
+        description: FIELD_DESCRIPTIONS.collectionsHero,
       },
     },
     {
@@ -50,8 +56,9 @@ export const Collections: CollectionConfig = {
       type: "relationship",
       relationTo: "products",
       hasMany: true,
+      label: FIELD_LABELS.products,
       admin: {
-        description: "Drag to reorder — storefront respects this order.",
+        description: FIELD_DESCRIPTIONS.collectionsProducts,
       },
     },
   ],

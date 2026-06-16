@@ -1,13 +1,17 @@
 import type { CollectionConfig } from "payload";
+import {
+  ADMIN_GROUPS,
+  COLLECTION_LABELS,
+  FIELD_DESCRIPTIONS,
+  FIELD_LABELS,
+  SELECT_LABELS,
+} from "@/i18n/admin-labels";
 
 export const Products: CollectionConfig = {
   slug: "products",
-  labels: {
-    singular: "Product",
-    plural: "Products",
-  },
+  labels: COLLECTION_LABELS.products,
   admin: {
-    group: "Shop",
+    group: ADMIN_GROUPS.boutique,
     useAsTitle: "title",
     defaultColumns: ["title", "category", "price", "_status", "updatedAt"],
   },
@@ -26,14 +30,16 @@ export const Products: CollectionConfig = {
       type: "text",
       required: true,
       localized: true,
+      label: FIELD_LABELS.title,
     },
     {
       name: "slug",
       type: "text",
       required: true,
       unique: true,
+      label: FIELD_LABELS.slug,
       admin: {
-        description: "URL-safe identifier. Auto-generated from title if left blank.",
+        description: FIELD_DESCRIPTIONS.slugProduct,
       },
       hooks: {
         beforeValidate: [
@@ -53,10 +59,11 @@ export const Products: CollectionConfig = {
       name: "category",
       type: "select",
       required: true,
+      label: FIELD_LABELS.category,
       options: [
-        { label: "Dresses", value: "dresses" },
-        { label: "Bags", value: "bags" },
-        { label: "Scarves", value: "scarfs" },
+        { label: SELECT_LABELS.dresses, value: "dresses" },
+        { label: SELECT_LABELS.bags, value: "bags" },
+        { label: SELECT_LABELS.scarfs, value: "scarfs" },
       ],
     },
     {
@@ -64,16 +71,18 @@ export const Products: CollectionConfig = {
       type: "number",
       required: true,
       min: 0,
+      label: FIELD_LABELS.price,
       admin: {
-        description: "Price in EUR (e.g. 290.00)",
+        description: FIELD_DESCRIPTIONS.price,
       },
     },
     {
       name: "inStock",
       type: "checkbox",
       defaultValue: true,
+      label: FIELD_LABELS.inStock,
       admin: {
-        description: "Uncheck to show as out of stock — buyers can express interest via WhatsApp.",
+        description: FIELD_DESCRIPTIONS.inStock,
       },
     },
     {
@@ -81,13 +90,14 @@ export const Products: CollectionConfig = {
       type: "upload",
       relationTo: "media",
       required: true,
+      label: FIELD_LABELS.mainImage,
     },
     {
       name: "gallery",
       type: "array",
-      label: "Image gallery",
+      label: FIELD_LABELS.gallery,
       admin: {
-        description: "Additional product photos (shown after the main image).",
+        description: FIELD_DESCRIPTIONS.gallery,
       },
       fields: [
         {
@@ -95,6 +105,7 @@ export const Products: CollectionConfig = {
           type: "upload",
           relationTo: "media",
           required: true,
+          label: FIELD_LABELS.image,
         },
       ],
     },
@@ -102,20 +113,21 @@ export const Products: CollectionConfig = {
       name: "description",
       type: "textarea",
       localized: true,
+      label: FIELD_LABELS.description,
       admin: {
-        description: "Product description shown on the detail page.",
+        description: FIELD_DESCRIPTIONS.description,
       },
     },
     {
       name: "availableLengths",
       type: "select",
       hasMany: true,
+      label: FIELD_LABELS.availableLengths,
       options: [
-        { label: "Long version", value: "longer" },
-        { label: "Short version", value: "shorter" },
+        { label: SELECT_LABELS.longer, value: "longer" },
+        { label: SELECT_LABELS.shorter, value: "shorter" },
       ],
       admin: {
-        description: "Available length variants for this dress.",
         condition: (data) => data?.category === "dresses",
       },
     },
@@ -123,6 +135,7 @@ export const Products: CollectionConfig = {
       name: "availableSizes",
       type: "select",
       hasMany: true,
+      label: FIELD_LABELS.availableSizes,
       options: [
         { label: "XS", value: "XS" },
         { label: "S", value: "S" },
@@ -131,7 +144,6 @@ export const Products: CollectionConfig = {
         { label: "XL", value: "XL" },
       ],
       admin: {
-        description: "Available sizes for this dress.",
         condition: (data) => data?.category === "dresses",
       },
     },
@@ -140,11 +152,9 @@ export const Products: CollectionConfig = {
       type: "relationship",
       relationTo: "products",
       hasMany: true,
+      label: FIELD_LABELS.pairings,
       access: {
         read: ({ req }) => Boolean(req.user),
-      },
-      admin: {
-        description: "Owner-only pairings (dress ↔ bag/scarf). Not shown on the site in v0.",
       },
     },
   ],
