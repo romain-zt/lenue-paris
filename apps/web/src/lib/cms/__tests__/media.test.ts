@@ -18,6 +18,7 @@ describe("resolveMediaUrl", () => {
     expect(
       resolveMediaUrl({
         id: 1,
+        alt: "Hero",
         url: "/api/media/file/hero.jpg",
         updatedAt: "",
         createdAt: "",
@@ -29,6 +30,7 @@ describe("resolveMediaUrl", () => {
     expect(
       resolveMediaUrl({
         id: 1,
+        alt: "Hero",
         filename: "hero.jpg",
         updatedAt: "",
         createdAt: "",

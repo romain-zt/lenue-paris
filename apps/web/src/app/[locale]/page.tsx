@@ -3,10 +3,9 @@ import { RenderBlocks } from "@/components/cms/RenderBlocks";
 import { HomeCategoryStrip } from "@/components/cms/HomeCategoryStrip";
 import { HomeEmptyState } from "@/components/cms/HomeEmptyState";
 import { enrichFeaturedBlock, findHeroTagline } from "@/lib/cms/blocks";
-import { DEFAULT_OG_IMAGE_PATH } from "@/lib/seo/metadata";
 import { getHomePage } from "@/lib/cms/queries";
 import type { ContentLocale, MappedHomeBlock } from "@/lib/cms/types";
-import { buildPageMetadata } from "@/lib/seo/metadata";
+import { buildPageMetadata, DEFAULT_OG_IMAGE_PATH } from "@/lib/seo/metadata";
 
 export const dynamic = "force-dynamic";
 

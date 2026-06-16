@@ -9,7 +9,7 @@ export const HERO_PUBLIC_FALLBACK = "/images/hero.jpg";
  */
 export function rewritePayloadMediaUrl(url: string): string {
   const match = url.match(/^\/api\/media\/file\/(.+)$/);
-  if (!match) return url;
+  if (!match?.[1]) return url;
   return `/images/${decodeURIComponent(match[1])}`;
 }
 
