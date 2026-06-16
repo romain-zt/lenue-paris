@@ -81,7 +81,7 @@ npm run luxury-gate -- --diff apps/web --slice storefront-shell--global-chrome \
 ## 3b pass record (Skeptic fills when green)
 
 ```
-commit: (pending — Spark landing allowlisted 3b commit)
+commit: 46c81d2
 command: npm run luxury-gate -- --diff apps/web --slice storefront-shell--global-chrome --preview-url http://localhost:3001/fr
 exit_code: 1 (parser honest — see frame rows; dhash fail on cafe-de-flore ↔ PHOTO-23-17-32 MD5 twin)
 llm_calls: 0
