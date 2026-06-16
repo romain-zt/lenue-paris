@@ -186,6 +186,27 @@ Tracking PR #68.
 
 **Final checks: 55 web + 21 CMS tests green, typecheck clean on both apps.**
 
+**`orch-selection-ux--p0-primary-cta` — IN-REVIEW (2026-06-16)**
+
+Tracking PR #81 (`orchestrator/tracking-orch-selection-ux--p0-primary-cta-1781642794357`).
+
+**What was built:**
+
+- **`SelectionProvider`**: Added `isPanelOpen`, `openPanel`, `closePanel` to context — shared panel state across all components.
+- **`SelectionPill`**: Removed local `open` state; now uses context `isPanelOpen`/`openPanel`/`closePanel`. Panel opens from any component that calls `openPanel()`.
+- **`OrderCTA`** (major refactor): Replaced checkout form (name/tel/fetch to `/api/orders`) with selection-aware CTA:
+  - Dresses: VariantSelector + SizePicker → "Ajouter à ma sélection" (disabled until both variants picked) → `addItem({ slug, title, price, length, size })` + `openPanel()`
+  - Bags/scarfs: button enabled immediately
+  - Already in selection: shows "Ajoutée" (disabled)
+  - Out-of-stock: unchanged WhatsApp interest link
+  - `data-maison="cta-add-selection"` on primary button (brand gate hook)
+- **`ProductPageContent`**: Removed standalone `AddToSelectionButton` (redundant; `OrderCTA` now handles add-to-selection with full variant awareness).
+- **Tests**: Replaced 15 old checkout-form tests with 10 new selection-flow tests; fixed `ProductCard`, `ProductGrid`, `OrderCTA.maison` tests to mock `SelectionProvider`.
+
+**Checks:** 90 web tests green (0 failed), typecheck clean.
+
+**WhatsApp handoff location:** Inside `SelectionPanel` only, via "Continuer sur WhatsApp" → `buildMultiPieceWhatsAppMessage` (unchanged).
+
 ## Next recommended step
 
 1. **`orch-storefront-shell--global-chrome`** (P0) — shared layout/chrome (header, navigation) so both pages have proper context; unblocks visual QA.
