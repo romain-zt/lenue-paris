@@ -117,3 +117,4 @@
 {"ts":"2026-06-16T22:12:36.916Z","step":"orch-selection-ux--p0-list-overlay","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-16T22:37:54.497Z","step":"orch-selection-ux--p0-drawer-motion","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-16T22:38:18.930Z","step":"orch-selection-ux--p0-drawer-motion","status":"not-started","note":"orphan reset (no tracking PR)","actor":"cleanup"}
+{"ts":"2026-06-16T22:38:24.170Z","step":"orch-selection-ux--p0-drawer-motion","status":"in-progress","actor":"orchestrator"}
