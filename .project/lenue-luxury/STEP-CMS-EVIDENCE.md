@@ -232,7 +232,7 @@ pass: true
 ## CMS-e pass record (fill when green)
 
 ```
-commit: (fill on push)
+commit: df70d65
 cms_no_hardcoded_fallback: pass
 cms_route_purity: pass
 test_cms_scorers: 4/4
