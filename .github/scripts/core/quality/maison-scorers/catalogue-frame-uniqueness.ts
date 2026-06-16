@@ -16,11 +16,23 @@ function extractSurfaceHtml(html: string, maisonAttr: string): string {
   return match?.[0] ?? html;
 }
 
+function primaryImgUrl(tag: string): string | null {
+  const src = tag.match(/\bsrc=["']([^"']+)["']/i)?.[1];
+  if (src) return src;
+  const srcset = tag.match(/\bsrcset=["']([^"']+)["']/i)?.[1];
+  if (srcset) {
+    const first = srcset.split(",")[0]?.trim().split(/\s+/)[0];
+    return first ?? null;
+  }
+  return null;
+}
+
 export function extractImgSrcs(html: string, maisonAttr: string): string[] {
   const chunk = extractSurfaceHtml(html, maisonAttr);
   const srcs: string[] = [];
-  for (const m of chunk.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)) {
-    srcs.push(m[1]);
+  for (const m of chunk.matchAll(/<img\b[^>]*>/gi)) {
+    const url = primaryImgUrl(m[0]);
+    if (url) srcs.push(url);
   }
   return srcs;
 }
@@ -33,13 +45,27 @@ export async function scoreCatalogueFrameUniquenessFromSrcs(
     .map((src) => ({ src, path: resolvePublicImageSrc(src) }))
     .filter((r): r is { src: string; path: string } => Boolean(r.path));
 
-  if (resolved.length < 2) {
+  const minFrames = 2;
+  if (resolved.length === 0) {
+    return [
+      {
+        floor_id: "catalogue_frame_uniqueness",
+        observed: `${surfaceId}:frames=0`,
+        threshold: `≥${minFrames} resolvable`,
+        reference_violated: surfaceId,
+        status: "blocked",
+      },
+    ];
+  }
+
+  if (resolved.length < minFrames) {
     return [
       {
         floor_id: "catalogue_frame_uniqueness",
         observed: `${surfaceId}:frames=${resolved.length}`,
-        threshold: "dhash_zero_pairs:0",
-        status: "pass",
+        threshold: `≥${minFrames} resolvable`,
+        reference_violated: surfaceId,
+        status: "fail",
       },
     ];
   }
@@ -50,10 +76,12 @@ export async function scoreCatalogueFrameUniquenessFromSrcs(
   }
 
   const rows: FloorRow[] = [];
+  let dhashZeroPairs = 0;
   for (let i = 0; i < hashes.length; i++) {
     for (let j = i + 1; j < hashes.length; j++) {
       const dist = hammingDistance(hashes[i].dhash, hashes[j].dhash);
       if (dist === 0) {
+        dhashZeroPairs++;
         rows.push({
           floor_id: "catalogue_frame_uniqueness",
           observed: `${hashes[i].src} ↔ ${hashes[j].src} (dhash:0)`,
@@ -65,17 +93,19 @@ export async function scoreCatalogueFrameUniquenessFromSrcs(
     }
   }
 
+  const summary: FloorRow = {
+    floor_id: "catalogue_frame_uniqueness",
+    observed: `${surfaceId}:frames=${resolved.length}, dhash_zero_pairs=${dhashZeroPairs}`,
+    threshold: "dhash_zero_pairs:0",
+    reference_violated: surfaceId,
+    status: dhashZeroPairs === 0 ? "pass" : "fail",
+  };
+
   if (rows.length === 0) {
-    rows.push({
-      floor_id: "catalogue_frame_uniqueness",
-      observed: 0,
-      threshold: 0,
-      reference_violated: surfaceId,
-      status: "pass",
-    });
+    return [summary];
   }
 
-  return rows;
+  return [summary, ...rows];
 }
 
 export async function scoreCatalogueFrameUniquenessFromHtml(
