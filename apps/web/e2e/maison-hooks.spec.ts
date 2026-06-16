@@ -146,21 +146,26 @@ test.describe("maison hooks on built storefront", () => {
   });
 
   test("/fr exposes shell hooks after next start on port 3001", async ({ page }) => {
-    await page.goto(HOME_URL, { waitUntil: "domcontentloaded" });
+    await page.goto(HOME_URL, { waitUntil: "load" });
+
+    // Wait for React hydration to complete: the real HeroBlock has aria-labelledby,
+    // the skeleton does not. This avoids strict-mode violations when the Suspense
+    // skeleton and the actual content are briefly in the DOM simultaneously.
+    await page.waitForSelector('[data-maison="hero"][aria-labelledby]', { state: "visible" });
 
     await expect(page.locator('[data-maison="header"]')).toBeVisible();
     await expect(page.locator('[data-maison="wordmark"]')).toBeVisible();
     await expect(page.locator('[data-maison="nav"]')).toBeAttached();
-    await expect(page.locator('[data-maison="hero"]')).toBeVisible();
-    await expect(page.locator('[data-maison="hero-image"]')).toBeAttached();
-    await expect(page.locator('[data-maison="hero"] img')).toBeVisible();
+    await expect(page.locator('[data-maison="hero"][aria-labelledby]')).toBeVisible();
+    await expect(page.locator('[data-maison="hero"][aria-labelledby] [data-maison="hero-image"]')).toBeAttached();
+    await expect(page.locator('[data-maison="hero"][aria-labelledby] img')).toBeVisible();
     await expect(page.locator('[data-maison="footer"]')).toBeVisible();
     await expect(page.locator('[data-maison="catalogue-grid"]')).toBeVisible();
 
     const wordmarkText = await page.locator('[data-maison="wordmark"]').innerText();
     expect(wordmarkText).toContain("LÉNUE");
 
-    const heroWordmark = page.locator('[data-maison="hero"] h1');
+    const heroWordmark = page.locator('[data-maison="hero"][aria-labelledby] h1');
     await expect(heroWordmark).toBeVisible();
     await expect(page.locator('[data-maison="wordmark"]')).not.toHaveAttribute(
       "id",
