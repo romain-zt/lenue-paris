@@ -60,6 +60,11 @@ export const FIELD_LABELS = {
   products: { en: "Products", fr: "Produits", ru: "Товары" },
   hero: { en: "Hero image", fr: "Image hero", ru: "Главное изображение" },
   heroImage: { en: "Hero image", fr: "Image hero", ru: "Главное изображение" },
+  heroVideo: {
+    en: "Hero video (optional)",
+    fr: "Vidéo hero (optionnelle)",
+    ru: "Hero-видео (необязательно)",
+  },
   season: { en: "Season line", fr: "Ligne saison", ru: "Сезонная линия" },
   tagline: { en: "Tagline", fr: "Accroche", ru: "Слоган" },
   ctaLabel: { en: "Button label", fr: "Texte du bouton", ru: "Текст кнопки" },
@@ -137,6 +142,11 @@ export const FIELD_DESCRIPTIONS = {
     en: "Curated product groups — Été 2026, Sacs, Nouveautés. Never one Page per SKU.",
     fr: "Groupes de produits — Été 2026, Sacs, Nouveautés. Jamais une page par référence.",
     ru: "Подборки товаров — Été 2026, Sacs, Nouveautés. Не создавайте страницу на каждый SKU.",
+  },
+  heroVideo: {
+    en: "Optional muted loop (max 8 s). Poster uses the hero image. Respects reduced-motion.",
+    fr: "Boucle muette optionnelle (max 8 s). L'image hero sert d'affiche. Respecte prefers-reduced-motion.",
+    ru: "Необязательный беззвучный цикл (до 8 с). Постер — hero-изображение. Учитывает prefers-reduced-motion.",
   },
 } satisfies Record<string, AdminLabel>;
 

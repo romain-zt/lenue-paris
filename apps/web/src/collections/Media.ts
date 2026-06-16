@@ -24,7 +24,7 @@ export const Media: CollectionConfig = {
   },
   upload: {
     ...(hasS3Config ? {} : { staticDir: mediaDir }),
-    mimeTypes: ["image/*", "application/pdf"],
+    mimeTypes: ["image/*", "video/mp4", "video/webm", "application/pdf"],
   },
   fields: [
     {

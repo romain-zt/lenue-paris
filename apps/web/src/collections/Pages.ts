@@ -23,6 +23,15 @@ const HeroBlock: Block = {
       label: FIELD_LABELS.heroImage,
     },
     {
+      name: "heroVideo",
+      type: "upload",
+      relationTo: "media",
+      label: FIELD_LABELS.heroVideo,
+      admin: {
+        description: FIELD_DESCRIPTIONS.heroVideo,
+      },
+    },
+    {
       name: "season",
       type: "text",
       required: true,

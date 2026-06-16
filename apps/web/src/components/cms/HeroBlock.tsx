@@ -9,7 +9,10 @@ export function HeroBlock({
   ctaLink,
   heroImageUrl,
   heroImageAlt,
+  heroVideoUrl,
 }: HeroBlockProps) {
+  const hasVideo = Boolean(heroVideoUrl);
+
   return (
     <section
       data-maison="hero"
@@ -17,14 +20,37 @@ export function HeroBlock({
       className="relative -mt-16 h-[100svh] min-h-[100dvh] overflow-hidden bg-stone-800 md:-mt-[72px]"
     >
       <div className="absolute inset-0" data-maison="hero-image">
-        <Image
-          src={heroImageUrl}
-          alt={heroImageAlt}
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-[50%_40%] sm:object-[50%_32%] lg:object-[50%_24%]"
-        />
+        {hasVideo ? (
+          <>
+            <video
+              src={heroVideoUrl}
+              poster={heroImageUrl}
+              autoPlay
+              muted
+              loop
+              playsInline
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full object-cover object-[50%_40%] motion-reduce:hidden sm:object-[50%_32%] lg:object-[50%_24%]"
+            />
+            <Image
+              src={heroImageUrl}
+              alt={heroImageAlt}
+              fill
+              priority
+              sizes="100vw"
+              className="hidden object-cover object-[50%_40%] motion-reduce:block sm:object-[50%_32%] lg:object-[50%_24%]"
+            />
+          </>
+        ) : (
+          <Image
+            src={heroImageUrl}
+            alt={heroImageAlt}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-[50%_40%] sm:object-[50%_32%] lg:object-[50%_24%]"
+          />
+        )}
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" aria-hidden="true" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-transparent" aria-hidden="true" />

@@ -1,7 +1,7 @@
 import type { Page as PayloadPage, Product as PayloadProduct, Collection as PayloadCollection } from "@/payload-types";
 import type { Product } from "@/types/product";
 import { getProductMainImageUrl } from "@/lib/productImages";
-import { resolveHeroImageUrl, resolveMediaAlt, resolveMediaUrl } from "./media";
+import { resolveHeroImageUrl, resolveMediaAlt, resolveMediaUrl, resolveHeroVideoUrl } from "./media";
 import type { ContentLocale, MappedHomeBlock } from "./types";
 
 type PayloadBlock = NonNullable<PayloadPage["blocks"]>[number];
@@ -97,6 +97,7 @@ export function mapHomePageBlocks(blocks: PayloadPage["blocks"]): MappedHomeBloc
   for (const block of blocks) {
     if (block.blockType === "hero") {
       const heroImageUrl = resolveHeroImageUrl(block.heroImage);
+      const heroVideoUrl = resolveHeroVideoUrl(block.heroVideo);
       mapped.push({
         blockType: "hero",
         props: {
@@ -106,6 +107,7 @@ export function mapHomePageBlocks(blocks: PayloadPage["blocks"]): MappedHomeBloc
           ctaLink: block.ctaLink,
           heroImageUrl,
           heroImageAlt: resolveMediaAlt(block.heroImage, "Lénue Paris"),
+          ...(heroVideoUrl ? { heroVideoUrl } : {}),
         },
       });
       continue;

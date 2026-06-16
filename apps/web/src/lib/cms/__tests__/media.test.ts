@@ -11,6 +11,10 @@ describe("rewritePayloadMediaUrl", () => {
     expect(rewritePayloadMediaUrl("/api/media/file/hero.jpg")).toBe("/images/hero.jpg");
     expect(rewritePayloadMediaUrl("/images/hero.jpg")).toBe("/images/hero.jpg");
   });
+
+  it("rewrites video API paths to public/videos", () => {
+    expect(rewritePayloadMediaUrl("/api/media/file/hero-loop.mp4")).toBe("/videos/hero-loop.mp4");
+  });
 });
 
 describe("resolveMediaUrl", () => {

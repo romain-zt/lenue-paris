@@ -251,6 +251,10 @@ export interface Page {
     | (
         | {
             heroImage: number | Media;
+            /**
+             * Optional muted loop (max 8 s). Poster uses the hero image. Respects reduced-motion.
+             */
+            heroVideo?: (number | null) | Media;
             season: string;
             tagline: string;
             ctaLabel: string;
@@ -486,6 +490,7 @@ export interface PagesSelect<T extends boolean = true> {
           | T
           | {
               heroImage?: T;
+              heroVideo?: T;
               season?: T;
               tagline?: T;
               ctaLabel?: T;

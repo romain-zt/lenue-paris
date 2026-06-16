@@ -9,6 +9,8 @@ export interface HeroBlockProps {
   ctaLink: string;
   heroImageUrl: string;
   heroImageAlt: string;
+  /** Optional muted hero loop — poster always uses heroImageUrl. */
+  heroVideoUrl?: string;
 }
 
 export interface FeaturedProductsBlockProps {

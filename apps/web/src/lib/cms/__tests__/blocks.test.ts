@@ -111,4 +111,29 @@ describe("mapHomePageBlocks", () => {
     ]);
     expect(findHeroTagline(mapped)).toBe("Tagline CMS");
   });
+
+  it("maps optional hero video URL from Payload media", () => {
+    const mapped = mapHomePageBlocks([
+      {
+        blockType: "hero",
+        season: "Saison",
+        tagline: "Tagline",
+        ctaLabel: "CTA",
+        ctaLink: "/catalogue",
+        heroImage: heroMedia,
+        heroVideo: {
+          id: 5,
+          alt: "Hero loop",
+          url: "/api/media/file/hero-loop.mp4",
+          updatedAt: "",
+          createdAt: "",
+        },
+      },
+    ]);
+    expect(mapped[0]?.blockType).toBe("hero");
+    if (mapped[0]?.blockType === "hero") {
+      expect(mapped[0].props.heroVideoUrl).toBe("/videos/hero-loop.mp4");
+      expect(mapped[0].props.heroImageUrl).toBe("/images/hero.jpg");
+    }
+  });
 });
