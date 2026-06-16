@@ -3,7 +3,7 @@ import { RenderBlocks } from "@/components/cms/RenderBlocks";
 import { HomeCategoryStrip } from "@/components/cms/HomeCategoryStrip";
 import { HomeEmptyState } from "@/components/cms/HomeEmptyState";
 import { enrichFeaturedBlock, findHeroTagline } from "@/lib/cms/blocks";
-import { resolveHeroImageUrl } from "@/lib/cms/media";
+import { DEFAULT_OG_IMAGE_PATH } from "@/lib/seo/metadata";
 import { getHomePage } from "@/lib/cms/queries";
 import type { ContentLocale, MappedHomeBlock } from "@/lib/cms/types";
 import { buildPageMetadata } from "@/lib/seo/metadata";
@@ -37,9 +37,7 @@ export async function generateMetadata({ params }: HomePageProps) {
 
   const heroBlock = home?.blocks.find((b) => b.blockType === "hero");
   const heroImagePath =
-    heroBlock?.blockType === "hero"
-      ? resolveHeroImageUrl(heroBlock.heroImage)
-      : undefined;
+    heroBlock?.blockType === "hero" ? heroBlock.props.heroImageUrl : DEFAULT_OG_IMAGE_PATH;
 
   return buildPageMetadata({
     title: "Lénue Paris",
