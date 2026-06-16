@@ -38,8 +38,9 @@ jobs:
       E2E_MODE: "true"
       DATABASE_URL: postgresql://e2e:e2e@localhost:5433/e2e
       TEST_DATABASE_URL: postgresql://e2e:e2e@localhost:5433/e2e
-      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
-      PAYLOAD_SECRET: ci-placeholder-secret-for-e2e
+      PAYLOAD_SECRET: ci-placeholder-secret-for-migrations
+      NEXT_PUBLIC_SITE_URL: http://localhost:3001
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
 
     steps:
       - uses: actions/checkout@v4
@@ -84,6 +85,11 @@ jobs:
         run: |
           pnpm --filter web exec payload migrate
           pnpm --filter web build
+
+      - name: Seed storefront content
+        if: steps.detect.outputs.has_e2e == 'true'
+        working-directory: apps/web
+        run: pnpm exec tsx src/seed.ts
 
       - name: Run E2E tests
         if: steps.detect.outputs.has_e2e == 'true'
