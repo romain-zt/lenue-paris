@@ -105,7 +105,7 @@ test.describe("maison hooks on built storefront", () => {
     }
 
     try {
-      execSync("pnpm run seed", {
+      execSync("pnpm exec tsx src/seed.ts", {
         cwd: WEB_ROOT,
         stdio: "inherit",
         env: process.env,
