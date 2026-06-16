@@ -1187,6 +1187,87 @@ function resumeBrainstorm(wss) {
     });
 }
 
+/** @param {WebSocketServer} wss */
+async function resetSession(wss) {
+  cancelAutoRetry();
+  autoRetryCount = 0;
+  broadcastAutoRetry(wss, false);
+  forceStopRequested = true;
+  await interruptLoop(wss);
+  forceStopRequested = false;
+  loopRunning = false;
+
+  if (activeRun?.supports?.("cancel")) {
+    try {
+      await activeRun.cancel();
+    } catch {
+      /* ok */
+    }
+  }
+  activeRun = null;
+  activeAuthor = null;
+  activeRunStartedAt = 0;
+  clearTyping(wss);
+
+  for (const author of Object.keys(agentInstances)) {
+    await disposeAgent(author);
+  }
+
+  messages.length = 0;
+  dynamicParticipants = {};
+  agentBindings = {};
+  sessionAssets = [];
+  sessionTopic = "";
+  conversationGoal = "";
+  lastOrchestratorHint = "";
+  agentsPaused = false;
+  waitingForHuman = false;
+  turnsThisCycle = 0;
+
+  sessionState.sessionId = randomUUID();
+  store.clearSession(sessionState.sessionId);
+  persistSession();
+
+  await createFreshAgent("orchestrator", "Orchestrator");
+  await createFreshAgent("spark", "Spark");
+  await createFreshAgent("skeptic", "Skeptic");
+  broadcastParticipants(wss);
+  broadcastAssets(wss);
+  broadcastGoal(wss);
+  broadcastWaitState(wss);
+  broadcast(wss, { type: "brainstorm_active", active: false, paused: false });
+  broadcast(wss, buildInitPayload());
+  broadcast(wss, {
+    type: "system",
+    text: "New brainstorm session — set a goal and send your first message.",
+  });
+}
+
+function buildInitPayload() {
+  return {
+    type: "init",
+    sessionId: sessionState.sessionId,
+    participants: allParticipants(),
+    agentBindings: { ...agentBindings },
+    messages,
+    assets: sessionAssets,
+    brainstormActive: loopRunning,
+    agentsPaused,
+    waitingForHuman,
+    sessionTopic,
+    conversationGoal,
+    activeAuthor,
+    activeElapsedMs: activeAuthor ? Date.now() - activeRunStartedAt : 0,
+    autoRetrying,
+    autoRetryInSec: autoRetrying ? Math.ceil(AUTO_RETRY_DELAY_MS / 1000) : 0,
+  };
+}
+
+/** @param {import('ws').WebSocket} socket */
+function sendInit(socket) {
+  socket.send(JSON.stringify(buildInitPayload()));
+}
+
 const server = createServer(serveStatic);
 const wss = new WebSocketServer({ server });
 
@@ -1204,35 +1285,21 @@ setInterval(() => {
 }, 3000);
 
 wss.on("connection", (socket) => {
-  socket.send(
-    JSON.stringify({
-      type: "init",
-      sessionId: sessionState.sessionId,
-      participants: allParticipants(),
-      agentBindings: { ...agentBindings },
-      messages,
-      assets: sessionAssets,
-      brainstormActive: loopRunning,
-      agentsPaused,
-      waitingForHuman,
-      sessionTopic,
-      conversationGoal,
-      activeAuthor,
-      activeElapsedMs: activeAuthor
-        ? Date.now() - activeRunStartedAt
-        : 0,
-      autoRetrying,
-      autoRetryInSec: autoRetrying
-        ? Math.ceil(AUTO_RETRY_DELAY_MS / 1000)
-        : 0,
-    }),
-  );
-
   socket.on("message", async (raw) => {
     let data;
     try {
       data = JSON.parse(String(raw));
     } catch {
+      return;
+    }
+
+    if (data.type === "fresh_start") {
+      await resetSession(wss);
+      return;
+    }
+
+    if (data.type === "sync") {
+      sendInit(socket);
       return;
     }
 
@@ -1327,37 +1394,12 @@ process.on("uncaughtException", (err) => {
 await initAgents();
 server.listen(PORT, () => {
   console.log(`Brainstorm chat → http://localhost:${PORT}`);
-  console.log(`Session ${sessionState.sessionId} · ${messages.length} messages persisted`);
+  console.log(
+    `Loaded session ${sessionState.sessionId} · ${messages.length} messages (reset on page load)`,
+  );
   if (Object.keys(dynamicParticipants).length) {
     console.log(
       `Dynamic specialists: ${Object.keys(dynamicParticipants).join(", ")}`,
     );
-  }
-
-  const shouldAutoResume =
-    !waitingForHuman &&
-    !forceStopRequested &&
-    humanMessages().length > 0 &&
-    (agentsPaused || hasUnansweredHumanMessages());
-
-  if (shouldAutoResume) {
-    console.log("Auto-resuming brainstorm (fresh orchestrator)…");
-    agentsPaused = false;
-    persistSession();
-    createFreshAgent("orchestrator", "Orchestrator")
-      .then(() => resumeBrainstorm(wss))
-      .catch((err) => {
-        console.error("Fresh orchestrator failed:", err);
-        scheduleAutoRetry(wss, "startup orchestrator recovery");
-      });
-  } else if (
-    agentsPaused &&
-    !waitingForHuman &&
-    humanMessages().length > 0 &&
-    autoRetryCount < MAX_AUTO_RETRIES &&
-    hasUnansweredHumanMessages()
-  ) {
-    console.log("Scheduling auto-retry after prior agent failure…");
-    scheduleAutoRetry(wss, "recovered paused session");
   }
 });
