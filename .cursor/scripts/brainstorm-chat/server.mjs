@@ -57,24 +57,24 @@ const BASE_PARTICIPANTS = {
 /** @typedef {{ id: string; path: string; author: string; tool: string; ts: number }} SessionAsset */
 
 /** @type {Record<string, ParticipantConfig>} */
-let dynamicParticipants = store.loadDynamicParticipants();
+let dynamicParticipants = {};
 /** @type {Record<string, import('@cursor/sdk').Agent>} */
 const agentInstances = {};
 /** @type {Record<string, string>} */
-let agentBindings = store.loadAgentBindings();
+let agentBindings = {};
 
-const sessionState = store.loadState();
+const sessionState = { sessionId: randomUUID() };
 /** @type {ChatMessage[]} */
-const messages = store.loadMessages();
+const messages = [];
 /** @type {SessionAsset[]} */
-let sessionAssets = store.loadAssets();
+let sessionAssets = [];
 
-let sessionTopic = sessionState.sessionTopic;
-let conversationGoal = sessionState.conversationGoal;
-let lastOrchestratorHint = sessionState.lastOrchestratorHint;
-let agentsPaused = sessionState.agentsPaused;
-let waitingForHuman = sessionState.waitingForHuman;
-let turnsThisCycle = sessionState.turnsThisCycle;
+let sessionTopic = "";
+let conversationGoal = "";
+let lastOrchestratorHint = "";
+let agentsPaused = false;
+let waitingForHuman = false;
+let turnsThisCycle = 0;
 
 const MAX_AGENT_TURNS_PER_CYCLE = 24;
 const MAX_AUTO_RETRIES = 5;
@@ -618,11 +618,11 @@ async function sendToAgent(agent, prompt, author) {
 }
 
 async function initAgents() {
-  await resumeOrCreateAgent("orchestrator", "Orchestrator");
-  await resumeOrCreateAgent("spark", "Spark");
-  await resumeOrCreateAgent("skeptic", "Skeptic");
+  await createFreshAgent("orchestrator", "Orchestrator");
+  await createFreshAgent("spark", "Spark");
+  await createFreshAgent("skeptic", "Skeptic");
   for (const [id, p] of Object.entries(dynamicParticipants)) {
-    await resumeOrCreateAgent(id, p.name);
+    await createFreshAgent(id, p.name);
   }
   console.log("Agents ready");
 }
@@ -1391,15 +1391,11 @@ process.on("uncaughtException", (err) => {
   process.exit(1);
 });
 
+store.clearSession(sessionState.sessionId);
+persistSession();
+
 await initAgents();
 server.listen(PORT, () => {
   console.log(`Brainstorm chat → http://localhost:${PORT}`);
-  console.log(
-    `Loaded session ${sessionState.sessionId} · ${messages.length} messages (reset on page load)`,
-  );
-  if (Object.keys(dynamicParticipants).length) {
-    console.log(
-      `Dynamic specialists: ${Object.keys(dynamicParticipants).join(", ")}`,
-    );
-  }
+  console.log(`Fresh session ${sessionState.sessionId} · ready for first message`);
 });

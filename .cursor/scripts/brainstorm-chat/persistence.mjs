@@ -5,6 +5,8 @@ import {
   existsSync,
   appendFileSync,
   renameSync,
+  readdirSync,
+  rmSync,
 } from "fs";
 import { join } from "path";
 import { randomUUID } from "crypto";
@@ -171,6 +173,13 @@ export function createPersistence(dataDir) {
     writeJsonAtomic(participantsPath, {});
     writeJsonAtomic(agentBindingsPath, {});
     writeJsonAtomic(assetsPath, []);
+
+    const skillsDir = join(dataDir, "skills");
+    if (existsSync(skillsDir)) {
+      for (const name of readdirSync(skillsDir)) {
+        rmSync(join(skillsDir, name), { recursive: true, force: true });
+      }
+    }
   }
 
   return {
