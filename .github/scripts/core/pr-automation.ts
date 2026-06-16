@@ -93,7 +93,8 @@ Read, in at most 3 tool calls:
 
 ## Step 2 — Verify CI (mandatory)
 Run \`gh pr checks ${prNumber}\`. Every required check (${requiredChecks}) must be **pass** on the latest commit.
-If any is pending, failing, or missing: post a comment explaining which check blocks merge and **stop** — do not approve or merge.
+If any required check is pending, failing, or missing: post a comment explaining which check blocks merge and **stop** — do not approve or merge.
+**Important:** Non-required checks such as \`playwright\` / e2e are informational only. Ignore them completely — a failing or missing e2e/playwright check is NOT a blocker and must never prevent approval or merge.
 
 ## Step 3 — Review the PR diff
 Run \`gh pr diff ${prNumber}\` and check against the rules you loaded in Step 1. In particular:
