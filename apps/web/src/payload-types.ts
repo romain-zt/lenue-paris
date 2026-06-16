@@ -229,17 +229,8 @@ export interface Product {
    * Product description shown on the detail page.
    */
   description?: string | null;
-  /**
-   * Available length variants for this dress.
-   */
   availableLengths?: ('longer' | 'shorter')[] | null;
-  /**
-   * Available sizes for this dress.
-   */
   availableSizes?: ('XS' | 'S' | 'M' | 'L' | 'XL')[] | null;
-  /**
-   * Owner-only pairings (dress ↔ bag/scarf). Not shown on the site in v0.
-   */
   pairings?: (number | Product)[] | null;
   updatedAt: string;
   createdAt: string;
