@@ -349,6 +349,14 @@ function hasUnansweredHumanMessages() {
   return !lastAgent || lastHuman.ts > lastAgent.ts;
 }
 
+function shouldResumeFlowOnStartup() {
+  return (
+    !waitingForHuman &&
+    !forceStopRequested &&
+    humanMessages().length > 0
+  );
+}
+
 function conversationGoalText() {
   return (
     conversationGoal || sessionTopic || lastHumanMessage() || "(not set yet)"
@@ -1401,5 +1409,21 @@ server.listen(PORT, () => {
     console.log(
       `Dynamic specialists: ${Object.keys(dynamicParticipants).join(", ")}`,
     );
+  }
+
+  if (shouldResumeFlowOnStartup()) {
+    console.log("Auto-resuming brainstorm…");
+    agentsPaused = false;
+    persistSession();
+    resumeBrainstorm(wss);
+  } else if (
+    agentsPaused &&
+    !waitingForHuman &&
+    humanMessages().length > 0 &&
+    autoRetryCount < MAX_AUTO_RETRIES &&
+    hasUnansweredHumanMessages()
+  ) {
+    console.log("Scheduling auto-retry after prior agent failure…");
+    scheduleAutoRetry(wss, "recovered paused session");
   }
 });

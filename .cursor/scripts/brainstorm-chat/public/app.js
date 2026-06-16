@@ -368,6 +368,19 @@ function startHeartbeatTicker() {
   }, 1000);
 }
 
+function maybeResumeFlow(data) {
+  if (
+    !ws ||
+    ws.readyState !== WebSocket.OPEN ||
+    !data.messages?.length ||
+    data.waitingForHuman ||
+    data.brainstormActive
+  ) {
+    return;
+  }
+  ws.send(JSON.stringify({ type: "resume_agents" }));
+}
+
 function handleServerMessage(data) {
   switch (data.type) {
     case "init":
@@ -393,6 +406,7 @@ function handleServerMessage(data) {
       for (const msg of data.messages) appendMessage(msg);
       updateStatus();
       updateComposerState();
+      maybeResumeFlow(data);
       break;
     case "participants_update":
       participants = data.participants;

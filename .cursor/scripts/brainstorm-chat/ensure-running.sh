@@ -41,7 +41,7 @@ pid=$!
 
 for _ in $(seq 1 "$STARTUP_WAIT_SECS"); do
   if http_ok; then
-    if grep -q "Agents ready" "$LOG" 2>/dev/null; then
+    if grep -qE "Agents ready|Auto-resuming brainstorm" "$LOG" 2>/dev/null; then
       log "up — pid $pid (agents ready)"
     else
       log "up — pid $pid"
