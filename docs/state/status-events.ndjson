@@ -93,3 +93,7 @@
 {"ts":"2026-06-15T08:49:19.190Z","step":"orch-i18n--localized-storefront","status":"in-review","note":"All parts complete: locale routing, root layout passthrough, a-propos ported to [locale], getPage/getBrandPageData threaded with locale, fr fallback merge, footer localized, user story created. 55 web + 21 CMS tests green, typecheck clean.","actor":"agent"}
 {"ts":"2026-06-15T08:49:39.162Z","step":"orch-i18n--localized-storefront","status":"validated","note":"Re-test pass: 55 web + 21 CMS tests green, typecheck clean. All vision-reviewer blockers addressed (locale threading, fr fallback, root layout passthrough, a-propos ported, footer localized).","actor":"agent"}
 {"ts":"2026-06-15T08:49:44.553Z","step":"orch-i18n--localized-storefront","status":"complete","note":"Slice complete: all buyer-facing surfaces localized (fr/en/ru), locale switching, fr fallback, persistence via next-intl cookie. All checks pass.","actor":"agent"}
+{"ts":"2026-06-16T20:45:02.132Z","step":"orch-selection-ux--p0-primary-cta","status":"todo","note":"queued from planner-queue","actor":"planner"}
+{"ts":"2026-06-16T20:45:02.133Z","step":"orch-selection-ux--p0-list-overlay","status":"todo","note":"queued from planner-queue","actor":"planner"}
+{"ts":"2026-06-16T20:45:02.133Z","step":"orch-selection-ux--p0-drawer-motion","status":"todo","note":"queued from planner-queue","actor":"planner"}
+{"ts":"2026-06-16T20:45:06.366Z","step":"orch-selection-ux--p0-primary-cta","status":"in-progress","actor":"orchestrator"}
