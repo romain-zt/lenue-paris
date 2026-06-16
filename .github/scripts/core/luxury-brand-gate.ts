@@ -12,6 +12,8 @@ import {
   runMaisonScorers,
 } from "./quality/maison-scorers/index.js";
 import { scoreAssetDuplicateHash } from "./quality/maison-scorers/asset-duplicate-hash.js";
+import { scoreCmsNoFallback } from "./quality/maison-scorers/cms-no-fallback.js";
+import { scoreCmsRoutePurity } from "./quality/maison-scorers/cms-route-purity.js";
 import {
   scoreCatalogueFrameUniquenessLive,
 } from "./quality/maison-scorers/catalogue-frame-uniqueness.js";
@@ -39,6 +41,7 @@ function parseArgs(argv: string[]) {
   let logPath: string | undefined;
   let checkAssets = false;
   let checkFrames = false;
+  let checkCms = false;
   let diffPath: string | undefined;
   let slice: string | undefined;
 
@@ -51,6 +54,7 @@ function parseArgs(argv: string[]) {
     else if (a === "--log" && argv[i + 1]) logPath = argv[++i];
     else if (a === "--check-assets") checkAssets = true;
     else if (a === "--check-frames") checkFrames = true;
+    else if (a === "--check-cms") checkCms = true;
     else if (a === "--diff" && argv[i + 1]) diffPath = argv[++i];
     else if (a === "--slice" && argv[i + 1]) slice = argv[++i];
     else if (a === "--help") {
@@ -58,13 +62,14 @@ function parseArgs(argv: string[]) {
   luxury-brand-gate.ts --fixture marketplace-heavy|maison-pass
   luxury-brand-gate.ts --html path/to/slice.html [--preview-url URL] [--log docs/state/luxury-review-log.ndjson]
   luxury-brand-gate.ts --check-assets
+  luxury-brand-gate.ts --check-cms
   luxury-brand-gate.ts --check-frames --preview http://localhost:3001
   luxury-brand-gate.ts --diff apps/web --slice storefront-shell--global-chrome --preview-url http://localhost:3001/fr`);
       process.exit(0);
     }
   }
 
-  return { fixture, htmlPath, previewUrl, logPath, checkAssets, checkFrames, diffPath, slice };
+  return { fixture, htmlPath, previewUrl, logPath, checkAssets, checkFrames, checkCms, diffPath, slice };
 }
 
 function loadSlicePaths(sliceId: string): SlicePathsEntry {
@@ -261,6 +266,8 @@ async function runDiffMode(
     ...scoreAssetContract(html, config).rows,
     ...scoreKitFromShell(html, cssContent, config.kit_scorers),
     ...scoreAssetDuplicateHash().rows,
+    ...scoreCmsNoFallback().rows,
+    ...scoreCmsRoutePurity().rows,
     ...scoreInfraBlocked("lighthouse", "preview_required_for_live_run").rows,
     ...scoreInfraBlocked("asset_host", "asset_host_unreachable").rows,
   ];
@@ -302,6 +309,9 @@ async function main() {
   if (args.checkAssets) {
     ({ rows } = scoreAssetDuplicateHash());
     mode = "check-assets";
+  } else if (args.checkCms) {
+    rows = [...scoreCmsNoFallback().rows, ...scoreCmsRoutePurity().rows];
+    mode = "check-cms";
   } else if (args.checkFrames) {
     if (!args.previewUrl) {
       console.error("❌ --check-frames requires --preview URL");
@@ -342,7 +352,7 @@ async function main() {
       previewUrl: args.previewUrl,
     }));
   } else {
-    console.error("❌ Provide --fixture, --html, --check-assets, --check-frames, or --diff");
+    console.error("❌ Provide --fixture, --html, --check-assets, --check-cms, --check-frames, or --diff");
     process.exit(2);
   }
 

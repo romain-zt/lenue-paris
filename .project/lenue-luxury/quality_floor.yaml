@@ -93,6 +93,18 @@ deterministic:
         path: /fr/produits/look-elise-edition-limitee
         maison_attr: product-gallery
 
+  cms_no_hardcoded_fallback:
+    forbidden_patterns:
+      - PLACEHOLDER_BY_SLUG
+      - FEATURED_SLUGS
+      - isPlaceholder
+
+  cms_route_purity:
+    forbidden_path_literals:
+      - /images/
+      - /media/
+      - /api/media/
+
   phash_mood_board:
     manifest: .project/lenue-luxury/phash/reference-manifest.json
     distance_max_to_any_reference: 18

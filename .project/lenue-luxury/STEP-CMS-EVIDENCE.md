@@ -232,9 +232,11 @@ pass: true
 ## CMS-e pass record (fill when green)
 
 ```
-commit:
+commit: (fill on push)
 cms_no_hardcoded_fallback: pass
 cms_route_purity: pass
+test_cms_scorers: 4/4
+check_cms_exit: 0
 llm_calls: 0
 forbidden_paths_touched: none
 ```
