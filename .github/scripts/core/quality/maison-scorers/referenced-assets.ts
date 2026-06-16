@@ -78,10 +78,33 @@ export function collectReferencedAssets(): ReferencedAsset[] {
   return [...entries.values()];
 }
 
+function decodeNextImageUrl(src: string): string {
+  if (!src.includes("/_next/image")) return src;
+  try {
+    const parsed = src.startsWith("http")
+      ? new URL(src)
+      : new URL(src, "http://localhost");
+    const inner = parsed.searchParams.get("url");
+    if (inner) return decodeURIComponent(inner);
+  } catch {
+    /* fall through */
+  }
+  return src;
+}
+
+function toImageFilename(src: string): string | null {
+  const decoded = decodeNextImageUrl(src.trim());
+  const withoutQuery = decoded.split("?")[0];
+  const match = withoutQuery.match(/(?:^|\/)images\/([^/]+)$/i);
+  if (match) return match[1];
+  const bare = withoutQuery.replace(/^\/images\//, "").replace(/^\//, "");
+  return bare || null;
+}
+
 export function resolvePublicImageSrc(src: string): string | null {
-  const normalized = src.replace(/^\/images\//, "").split("?")[0];
-  if (!normalized) return null;
-  return resolveImagePath(normalized);
+  const filename = toImageFilename(src);
+  if (!filename) return null;
+  return resolveImagePath(filename);
 }
 
 export { REPO_ROOT, WEB_ROOT, IMAGE_DIRS };

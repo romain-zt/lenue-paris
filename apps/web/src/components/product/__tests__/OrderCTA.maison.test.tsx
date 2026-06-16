@@ -10,7 +10,7 @@ const bagProduct: Product = {
   slug: "sac-celeste",
   category: "bags",
   price: 310,
-  mainImage: { id: "img2", url: "/images/lenue-sac-champagne.jpg", alt: "Sac Céleste" },
+  mainImage: { id: "img2", url: "/images/PHOTO-2026-06-12-23-17-32.jpg", alt: "Sac Céleste" },
 };
 
 describe("OrderCTA — maison hooks", () => {

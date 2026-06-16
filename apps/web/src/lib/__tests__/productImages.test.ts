@@ -8,8 +8,8 @@ import {
 describe("productImages", () => {
   it("maps known slugs to static /images paths", () => {
     expect(getProductMainImageUrl("robe-camille")).toBe("/images/dress-camille.jpg");
-    expect(getProductMainImageUrl("foulard-diane")).toBe("/images/lenue-foulard-floral.jpg");
-    expect(getProductMainImageUrl("sac-celeste")).toBe("/images/lenue-sac-champagne.jpg");
+    expect(getProductMainImageUrl("foulard-diane")).toBe("/images/PHOTO-2026-06-12-23-29-2.jpg");
+    expect(getProductMainImageUrl("sac-celeste")).toBe("/images/PHOTO-2026-06-12-23-17-32.jpg");
   });
 
   it("falls back to CMS url for unmapped slugs", () => {

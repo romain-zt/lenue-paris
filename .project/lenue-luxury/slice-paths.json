@@ -13,6 +13,11 @@
       "apps/web/src/app/[locale]/layout.tsx",
       "apps/web/src/app/globals.css",
       "apps/web/src/components/product/OrderCTA.tsx"
+    ],
+    "audited_image_paths": [
+      "apps/web/src/lib/productImages.ts",
+      "apps/web/public/images/",
+      "apps/web/media/"
     ]
   }
 }

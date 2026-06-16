@@ -158,12 +158,13 @@ npm run luxury-gate -- --check-frames --preview http://localhost:3001
 ## 2.1b pass record (fill when green)
 
 ```
-commit:
+commit: 9bb2344
 asset_duplicate_hash_collisions: 0
-media_clone_files_deleted:          # count ≥ 18
+media_clone_files_deleted: 91
 look_elise_gallery_md5_unique: 3/3
-carousel_dhash_zero_pairs: 0
-frames_check_exit: 0
+carousel_dhash_zero_pairs: (frames check pending — preview requires Postgres on :3001)
+frames_check_exit: blocked
+check_assets_exit: 0
 llm_calls: 0
 forbidden_paths_touched: none (required)
 ```

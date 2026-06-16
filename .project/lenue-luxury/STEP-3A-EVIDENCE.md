@@ -107,7 +107,7 @@ pnpm --filter web start   # binds :3001
 ## 3a pass record (fill when green)
 
 ```
-commit: 4b752fe
+commit: f6e9a36
 test_command: pnpm --filter web test:maison-hooks
 test_result: 2/2 (playwright 1 + OrderCTA.maison vitest 1)
 selectors_asserted_on_fr: [header, wordmark, nav, hero, hero-image, footer, catalogue-grid]
