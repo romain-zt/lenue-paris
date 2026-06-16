@@ -1,0 +1,108 @@
+name: Luxury Brand Gate
+
+# Deterministic maison floors on built storefront HTML (llm_calls: 0).
+# Runs on PRs that touch the web app or maison gate wiring.
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "apps/web/**"
+      - ".github/scripts/core/luxury-brand-gate.ts"
+      - ".github/scripts/core/quality/**"
+      - ".project/lenue-luxury/**"
+  workflow_dispatch:
+
+concurrency:
+  group: luxury-brand-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  maison-floors:
+    name: luxury-brand-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      CI: "true"
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      TEST_DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      PAYLOAD_SECRET: ci-placeholder-secret-for-migrations
+      NEXT_PUBLIC_SITE_URL: http://localhost:3001
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Install framework script deps
+        run: npm install --prefix .github/scripts/core
+
+      - name: Migrate database
+        run: |
+          pnpm --filter cms run migrate
+          pnpm --filter web run migrate
+
+      - name: Seed storefront content
+        working-directory: apps/web
+        run: pnpm exec tsx src/seed.ts
+
+      - name: Static maison checks (assets + CMS purity)
+        run: |
+          npm run luxury-gate --prefix .github/scripts/core -- --check-assets
+          npm run luxury-gate --prefix .github/scripts/core -- --check-cms
+
+      - name: Build web app
+        run: pnpm --filter web build
+
+      - name: Start preview server
+        working-directory: apps/web
+        run: |
+          pnpm start &
+          echo $! > /tmp/next-server.pid
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3001/fr >/dev/null; then
+              echo "✅ Preview ready on http://localhost:3001/fr"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "❌ Preview server did not become ready"
+          exit 1
+
+      - name: Maison floors on built HTML
+        run: |
+          npm run luxury-gate --prefix .github/scripts/core -- \
+            --diff apps/web \
+            --slice storefront-shell--global-chrome \
+            --preview-url http://localhost:3001/fr
+
+      - name: Stop preview server
+        if: always()
+        run: |
+          if [ -f /tmp/next-server.pid ]; then
+            kill "$(cat /tmp/next-server.pid)" 2>/dev/null || true
+          fi
