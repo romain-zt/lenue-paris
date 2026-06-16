@@ -1300,6 +1300,14 @@ wss.on("connection", (socket) => {
 
     if (data.type === "sync") {
       sendInit(socket);
+      if (messages.length === 0) {
+        socket.send(
+          JSON.stringify({
+            type: "system",
+            text: "New brainstorm session — set a goal and send your first message.",
+          }),
+        );
+      }
       return;
     }
 
