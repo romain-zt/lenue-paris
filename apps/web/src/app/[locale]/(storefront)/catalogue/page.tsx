@@ -6,6 +6,7 @@ import { parseCategoryParam } from "@/lib/catalogueCategory";
 import { getCataloguePage } from "@/lib/cms/queries";
 import type { ContentLocale } from "@/lib/cms/types";
 import type { Product } from "@/types/product";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
 export const dynamic = "force-dynamic";
 
@@ -17,10 +18,12 @@ interface CataloguePageProps {
 export async function generateMetadata({ params }: CataloguePageProps) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "catalogue" });
-  return {
+  return buildPageMetadata({
     title: t("metaTitle"),
     description: t("metaDescription"),
-  };
+    locale,
+    pathname: "/catalogue",
+  });
 }
 
 export default async function CataloguePage({ params, searchParams }: CataloguePageProps) {

@@ -78,21 +78,24 @@ describe("mapHomePageBlocks", () => {
     expect(mapped[2]?.blockType).toBe("editorialStrip");
   });
 
-  it("returns empty array when blocks are missing or unresolvable", () => {
+  it("uses public hero fallback when hero media is unresolvable", () => {
     expect(mapHomePageBlocks(null)).toEqual([]);
     expect(mapHomePageBlocks([])).toEqual([]);
-    expect(
-      mapHomePageBlocks([
-        {
-          blockType: "hero",
-          season: "Test",
-          tagline: "Test",
-          ctaLabel: "Test",
-          ctaLink: "/catalogue",
-          heroImage: 99,
-        },
-      ]),
-    ).toEqual([]);
+    const mapped = mapHomePageBlocks([
+      {
+        blockType: "hero",
+        season: "Test",
+        tagline: "Test",
+        ctaLabel: "Test",
+        ctaLink: "/catalogue",
+        heroImage: 99,
+      },
+    ]);
+    expect(mapped).toHaveLength(1);
+    expect(mapped[0]?.blockType).toBe("hero");
+    if (mapped[0]?.blockType === "hero") {
+      expect(mapped[0].props.heroImageUrl).toBe("/images/hero.jpg");
+    }
   });
 
   it("extracts hero tagline for metadata", () => {

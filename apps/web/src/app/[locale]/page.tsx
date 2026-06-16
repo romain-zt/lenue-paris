@@ -3,8 +3,10 @@ import { RenderBlocks } from "@/components/cms/RenderBlocks";
 import { HomeCategoryStrip } from "@/components/cms/HomeCategoryStrip";
 import { HomeEmptyState } from "@/components/cms/HomeEmptyState";
 import { enrichFeaturedBlock, findHeroTagline } from "@/lib/cms/blocks";
+import { resolveHeroImageUrl } from "@/lib/cms/media";
 import { getHomePage } from "@/lib/cms/queries";
 import type { ContentLocale, MappedHomeBlock } from "@/lib/cms/types";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
 export const dynamic = "force-dynamic";
 
@@ -30,19 +32,22 @@ export async function generateMetadata({ params }: HomePageProps) {
   const { locale } = await params;
   const home = await getHomePage(locale as ContentLocale);
   const heroTagline = home ? findHeroTagline(home.blocks) : null;
-
-  if (heroTagline) {
-    return {
-      title: "Lénue Paris",
-      description: heroTagline,
-    };
-  }
-
   const t = await getTranslations({ locale, namespace: "home" });
-  return {
+  const description = heroTagline ?? t("heroTagline");
+
+  const heroBlock = home?.blocks.find((b) => b.blockType === "hero");
+  const heroImagePath =
+    heroBlock?.blockType === "hero"
+      ? resolveHeroImageUrl(heroBlock.heroImage)
+      : undefined;
+
+  return buildPageMetadata({
     title: "Lénue Paris",
-    description: t("heroTagline"),
-  };
+    description,
+    locale,
+    pathname: "",
+    imagePath: heroImagePath,
+  });
 }
 
 export default async function Home({ params }: HomePageProps) {
