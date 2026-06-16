@@ -20,6 +20,9 @@ type SelectionContextValue = {
   addItem: (item: SelectionItem) => boolean;
   removeItem: (slug: string) => void;
   clear: () => void;
+  isPanelOpen: boolean;
+  openPanel: () => void;
+  closePanel: () => void;
 };
 
 const SelectionContext = createContext<SelectionContextValue | null>(null);
@@ -51,6 +54,9 @@ function writeStoredItems(items: SelectionItem[]) {
 
 export function SelectionProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<SelectionItem[]>(() => readStoredItems());
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const openPanel = useCallback(() => setIsPanelOpen(true), []);
+  const closePanel = useCallback(() => setIsPanelOpen(false), []);
 
   useEffect(() => {
     writeStoredItems(items);
@@ -83,8 +89,11 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
       addItem,
       removeItem,
       clear,
+      isPanelOpen,
+      openPanel,
+      closePanel,
     }),
-    [items, addItem, removeItem, clear],
+    [items, addItem, removeItem, clear, isPanelOpen, openPanel, closePanel],
   );
 
   return <SelectionContext.Provider value={value}>{children}</SelectionContext.Provider>;

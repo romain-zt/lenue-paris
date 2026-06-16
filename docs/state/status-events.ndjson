@@ -101,3 +101,10 @@
 {"ts":"2026-06-16T20:46:12.302Z","step":"orch-selection-ux--p0-primary-cta","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-16T20:46:32.628Z","step":"orch-selection-ux--p0-primary-cta","status":"not-started","note":"orphan reset (agent failed)","actor":"orchestrator"}
 {"ts":"2026-06-16T20:46:37.208Z","step":"orch-selection-ux--p0-primary-cta","status":"in-progress","actor":"orchestrator"}
+{"ts":"2026-06-16T20:48:13.176Z","step":"orch-selection-ux--p0-primary-cta","status":"in-progress","note":"Starting implementation: SelectionProvider panel state + OrderCTA refactor + ProductPageContent cleanup","actor":"agent"}
+{"ts":"2026-06-16T20:54:03.777Z","step":"orch-selection-ux--p0-primary-cta","status":"in-review","note":"Implementation + tests complete, 90 web tests green, typecheck clean","actor":"agent"}
+{"ts":"2026-06-16T20:54:44.558Z","step":"orch-selection-ux--p0-primary-cta","status":"validated","note":"Re-test pass: 90 web tests green, typecheck clean","actor":"agent"}
+{"ts":"2026-06-16T20:54:49.556Z","step":"orch-selection-ux--p0-primary-cta","status":"complete","note":"All checks green, luxury-gate can_pr_ready=true","actor":"agent"}
+{"ts":"2026-06-16T20:46:37.208Z","step":"orch-selection-ux--p0-primary-cta","status":"in-progress","actor":"orchestrator"}
+{"ts":"2026-06-16T21:00:03.458Z","step":"orch-selection-ux--p0-primary-cta","status":"complete","note":"re-affirm: all checks green (90 web tests, typecheck clean), PR #81 already open, remediation pass","actor":"agent"}
+{"ts":"2026-06-16T22:07:44.119Z","step":"orch-selection-ux--p0-primary-cta","status":"complete","note":"remediation pass: 90 web tests green, typecheck clean, luxury-gate (check-cms + check-assets + fixture) all pass","actor":"agent"}

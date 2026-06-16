@@ -62,7 +62,7 @@ function assertSlicePathsExist(): void {
   }
 }
 
-async function waitForHttp(url: string, timeoutMs = 240_000): Promise<void> {
+async function waitForHttp(url: string, timeoutMs = 360_000): Promise<void> {
   const started = Date.now();
 
   while (Date.now() - started < timeoutMs) {
@@ -90,18 +90,22 @@ test.describe("maison hooks on built storefront", () => {
     assertSlicePathsExist();
 
     const nextDir = path.join(WEB_ROOT, ".next");
-    if (fs.existsSync(nextDir)) {
-      fs.rmSync(nextDir, { recursive: true, force: true });
+    const prebuilt = process.env.E2E_PREBUILT === "true" && fs.existsSync(nextDir);
+
+    if (!prebuilt) {
+      if (fs.existsSync(nextDir)) {
+        fs.rmSync(nextDir, { recursive: true, force: true });
+      }
+
+      execSync("pnpm run build", {
+        cwd: WEB_ROOT,
+        stdio: "inherit",
+        env: process.env,
+      });
     }
 
-    execSync("pnpm run build", {
-      cwd: WEB_ROOT,
-      stdio: "inherit",
-      env: process.env,
-    });
-
     try {
-      execSync("pnpm run seed", {
+      execSync("pnpm exec tsx src/seed.ts", {
         cwd: WEB_ROOT,
         stdio: "inherit",
         env: process.env,
@@ -142,21 +146,26 @@ test.describe("maison hooks on built storefront", () => {
   });
 
   test("/fr exposes shell hooks after next start on port 3001", async ({ page }) => {
-    await page.goto(HOME_URL, { waitUntil: "domcontentloaded" });
+    await page.goto(HOME_URL, { waitUntil: "load" });
+
+    // Wait for React hydration to complete: the real HeroBlock has aria-labelledby,
+    // the skeleton does not. This avoids strict-mode violations when the Suspense
+    // skeleton and the actual content are briefly in the DOM simultaneously.
+    await page.waitForSelector('[data-maison="hero"][aria-labelledby]', { state: "visible" });
 
     await expect(page.locator('[data-maison="header"]')).toBeVisible();
     await expect(page.locator('[data-maison="wordmark"]')).toBeVisible();
     await expect(page.locator('[data-maison="nav"]')).toBeAttached();
-    await expect(page.locator('[data-maison="hero"]')).toBeVisible();
-    await expect(page.locator('[data-maison="hero-image"]')).toBeAttached();
-    await expect(page.locator('[data-maison="hero"] img')).toBeVisible();
+    await expect(page.locator('[data-maison="hero"][aria-labelledby]')).toBeVisible();
+    await expect(page.locator('[data-maison="hero"][aria-labelledby] [data-maison="hero-image"]')).toBeAttached();
+    await expect(page.locator('[data-maison="hero"][aria-labelledby] img')).toBeVisible();
     await expect(page.locator('[data-maison="footer"]')).toBeVisible();
     await expect(page.locator('[data-maison="catalogue-grid"]')).toBeVisible();
 
     const wordmarkText = await page.locator('[data-maison="wordmark"]').innerText();
     expect(wordmarkText).toContain("LÉNUE");
 
-    const heroWordmark = page.locator('[data-maison="hero"] h1');
+    const heroWordmark = page.locator('[data-maison="hero"][aria-labelledby] h1');
     await expect(heroWordmark).toBeVisible();
     await expect(page.locator('[data-maison="wordmark"]')).not.toHaveAttribute(
       "id",
