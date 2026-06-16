@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
+import { draftMode } from "next/headers";
 import { Cormorant_Garamond, Jost } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
@@ -9,6 +10,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { Header } from "@/components/Header";
+import { LivePreviewListener } from "@/components/cms/LivePreviewListener";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 
 const cormorant = Cormorant_Garamond({
@@ -62,11 +64,13 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
   const messages = await getMessages();
   const t = await getTranslations("footer");
+  const { isEnabled: isDraft } = await draftMode();
 
   return (
     <html lang={locale} className={`${cormorant.variable} ${jost.variable}`}>
       <body className="bg-white font-sans text-stone-900 antialiased">
         <NextIntlClientProvider messages={messages}>
+          {isDraft && <LivePreviewListener />}
           <Header />
           {children}
           <footer data-maison="footer" className="mt-12 border-t border-stone-200 py-6">

@@ -6,6 +6,7 @@ import {
   FIELD_LABELS,
   SELECT_LABELS,
 } from "@/i18n/admin-labels";
+import { generatePreviewPath, getPreviewSiteUrl } from "@/lib/cms/generatePreviewPath";
 
 const HeroBlock: Block = {
   slug: "hero",
@@ -195,6 +196,23 @@ export const Pages: CollectionConfig = {
     group: ADMIN_GROUPS.editorial,
     useAsTitle: "title",
     defaultColumns: ["title", "slug", "_status", "updatedAt"],
+    livePreview: {
+      url: ({ data, req }) => {
+        const slug = typeof data?.slug === "string" ? data.slug : "home";
+        const locale = req.locale || "fr";
+        const base = getPreviewSiteUrl();
+        if (slug === "home") {
+          return locale === "fr" ? `${base}/` : `${base}/${locale}`;
+        }
+        return locale === "fr" ? `${base}/${slug}` : `${base}/${locale}/${slug}`;
+      },
+    },
+    preview: (data, { req }) =>
+      generatePreviewPath({
+        slug: typeof data?.slug === "string" ? data.slug : "home",
+        collection: "pages",
+        req,
+      }),
   },
   access: {
     read: () => true,

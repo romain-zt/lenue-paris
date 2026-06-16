@@ -1,10 +1,10 @@
+import { draftMode } from "next/headers";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { RenderBlocks } from "@/components/cms/RenderBlocks";
-import { HomeCategoryStrip } from "@/components/cms/HomeCategoryStrip";
+import { HomePageContent } from "@/components/cms/HomePageContent";
 import { HomeEmptyState } from "@/components/cms/HomeEmptyState";
-import { enrichFeaturedBlock, findHeroTagline } from "@/lib/cms/blocks";
-import { getHomePage } from "@/lib/cms/queries";
-import type { ContentLocale, MappedHomeBlock } from "@/lib/cms/types";
+import { findHeroTagline } from "@/lib/cms/blocks";
+import { getHomePage, getHomePageDocument } from "@/lib/cms/queries";
+import type { ContentLocale } from "@/lib/cms/types";
 import { buildPageMetadata, DEFAULT_OG_IMAGE_PATH } from "@/lib/seo/metadata";
 
 export const dynamic = "force-dynamic";
@@ -13,23 +13,10 @@ interface HomePageProps {
   params: Promise<{ locale: string }>;
 }
 
-function enrichBlocks(
-  blocks: MappedHomeBlock[],
-  locale: ContentLocale,
-  labels: {
-    season: string;
-    viewFullCollectionLabel: string;
-    outOfStockBadge: string;
-  },
-): MappedHomeBlock[] {
-  return blocks.map((block) =>
-    block.blockType === "featuredProducts" ? enrichFeaturedBlock(block, locale, labels) : block,
-  );
-}
-
 export async function generateMetadata({ params }: HomePageProps) {
   const { locale } = await params;
-  const home = await getHomePage(locale as ContentLocale);
+  const { isEnabled: isDraft } = await draftMode();
+  const home = await getHomePage(locale as ContentLocale, { draft: isDraft });
   const heroTagline = home ? findHeroTagline(home.blocks) : null;
   const t = await getTranslations({ locale, namespace: "home" });
   const description = heroTagline ?? t("heroTagline");
@@ -53,22 +40,25 @@ export default async function Home({ params }: HomePageProps) {
 
   const t = await getTranslations("home");
   const tProduct = await getTranslations("product");
-  const home = await getHomePage(locale as ContentLocale);
+  const contentLocale = locale as ContentLocale;
+  const { isEnabled: isDraft } = await draftMode();
 
-  if (!home?.blocks.length) {
+  const homeDoc = await getHomePageDocument(contentLocale, { draft: isDraft });
+  if (!homeDoc?.blocks?.length) {
     return <HomeEmptyState />;
   }
 
-  const blocks = enrichBlocks(home.blocks, locale as ContentLocale, {
+  const labels = {
     season: t("season"),
     viewFullCollectionLabel: t("viewFullCollection"),
     outOfStockBadge: tProduct("outOfStockBadge"),
-  });
+  };
 
   return (
-    <main>
-      <RenderBlocks blocks={blocks} />
-      <HomeCategoryStrip />
-    </main>
+    <HomePageContent
+      initialPage={JSON.parse(JSON.stringify(homeDoc))}
+      locale={contentLocale}
+      labels={labels}
+    />
   );
 }

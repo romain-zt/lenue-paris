@@ -1,11 +1,12 @@
-import { getPayload } from "payload";
+import { getPayload, type Where } from "payload";
 import config from "@payload-config";
-import type { Page as PayloadPage, Collection as PayloadCollection } from "@/payload-types";
+import type { Page as PayloadPage, Collection as PayloadCollection, Product as PayloadProduct } from "@/payload-types";
 import type { Product } from "@/types/product";
 import {
   mapHomePageBlocks,
   enrichFeaturedBlock,
   mapPayloadProductToStorefront,
+  mapPayloadProductDetail,
   findProductGridBlock,
   mapProductGridBlock,
 } from "./blocks";
@@ -18,21 +19,39 @@ async function getPayloadClient() {
   return getPayload({ config });
 }
 
-export async function getHomePage(locale: ContentLocale): Promise<HomePageDto | null> {
+type QueryOptions = {
+  draft?: boolean;
+};
+
+export async function getHomePageDocument(
+  locale: ContentLocale,
+  options?: QueryOptions,
+): Promise<PayloadPage | null> {
   const payload = await getPayloadClient();
+  const draft = options?.draft ?? false;
+
+  const where: Where = draft
+    ? { and: [{ slug: { equals: HOME_SLUG } }] }
+    : { and: [{ slug: { equals: HOME_SLUG } }, { _status: { equals: "published" } }] };
 
   const result = await payload.find({
     collection: "pages",
     locale,
     fallbackLocale: "fr",
-    where: {
-      and: [{ slug: { equals: HOME_SLUG } }, { _status: { equals: "published" } }],
-    },
+    where,
     depth: 3,
     limit: 1,
+    draft,
   });
 
-  const doc = result.docs[0] as PayloadPage | undefined;
+  return (result.docs[0] as PayloadPage | undefined) ?? null;
+}
+
+export async function getHomePage(
+  locale: ContentLocale,
+  options?: QueryOptions,
+): Promise<HomePageDto | null> {
+  const doc = await getHomePageDocument(locale, options);
   if (!doc?.blocks?.length) return null;
 
   const mapped = mapHomePageBlocks(doc.blocks);
@@ -46,6 +65,50 @@ export async function getHomePage(locale: ContentLocale): Promise<HomePageDto | 
     slug: doc.slug ?? HOME_SLUG,
     blocks: enriched,
   };
+}
+
+export async function getProductBySlug(
+  slug: string,
+  locale: ContentLocale,
+  options?: QueryOptions,
+): Promise<Product | null> {
+  const doc = await getProductDocumentBySlug(slug, locale, options);
+  if (!doc) return null;
+  return mapPayloadProductDetail(doc, locale);
+}
+
+export async function getProductDocumentBySlug(
+  slug: string,
+  locale: ContentLocale,
+  options?: QueryOptions,
+): Promise<PayloadProduct | null> {
+  const payload = await getPayloadClient();
+  const draft = options?.draft ?? false;
+
+  const where: Where = draft
+    ? { and: [{ slug: { equals: slug } }] }
+    : { and: [{ slug: { equals: slug } }, { _status: { equals: "published" } }] };
+
+  const query = {
+    collection: "products" as const,
+    where,
+    locale,
+    fallbackLocale: "fr" as const,
+    limit: 1,
+    depth: 2,
+    draft,
+  };
+
+  const { docs } = await payload.find(query);
+  const doc = docs[0] as PayloadProduct | undefined;
+  if (doc) return doc;
+
+  if (locale !== "fr") {
+    const { docs: frDocs } = await payload.find({ ...query, locale: "fr" });
+    return (frDocs[0] as PayloadProduct | undefined) ?? null;
+  }
+
+  return null;
 }
 
 export interface CollectionPageDto {

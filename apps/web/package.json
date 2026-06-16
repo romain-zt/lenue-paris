@@ -19,6 +19,7 @@
     "seed": "tsx --env-file=../../.env src/seed.ts"
   },
   "dependencies": {
+    "@payloadcms/live-preview-react": "catalog:",
     "@payloadcms/db-postgres": "catalog:",
     "@payloadcms/next": "catalog:",
     "@payloadcms/richtext-lexical": "catalog:",

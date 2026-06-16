@@ -1,0 +1,73 @@
+"use client";
+
+import { useLivePreview } from "@payloadcms/live-preview-react";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { ProductGallery } from "@/components/product/ProductGallery";
+import { OrderCTA } from "@/components/product/OrderCTA";
+import { mapPayloadProductDetail } from "@/lib/cms/blocks";
+import { getPreviewSiteUrl } from "@/lib/cms/generatePreviewPath";
+import type { Product as PayloadProduct } from "@/payload-types";
+import type { ContentLocale } from "@/lib/cms/types";
+
+type ProductPageContentProps = {
+  initialProduct: PayloadProduct;
+  locale: ContentLocale;
+};
+
+export function ProductPageContent({ initialProduct, locale }: ProductPageContentProps) {
+  const t = useTranslations("product");
+  const serverURL =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || getPreviewSiteUrl();
+
+  const { data: liveDoc } = useLivePreview<PayloadProduct>({
+    initialData: initialProduct,
+    serverURL,
+    depth: 2,
+  });
+
+  const product = mapPayloadProductDetail(liveDoc, locale);
+  if (!product) return null;
+
+  const formattedPrice = new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+  }).format(product.price);
+
+  return (
+    <main className="mx-auto max-w-screen-xl px-4 py-8 sm:px-6 lg:px-8">
+      <nav className="mb-6">
+        <Link
+          href="/catalogue"
+          className="text-sm text-stone-500 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900"
+        >
+          {t("backToCollection")}
+        </Link>
+      </nav>
+
+      <div className="grid gap-8 md:grid-cols-2 md:gap-12 lg:gap-16">
+        <ProductGallery
+          slug={product.slug}
+          mainImage={product.mainImage}
+          gallery={product.gallery}
+          title={product.title}
+        />
+
+        <div className="flex flex-col gap-6">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl">
+              {product.title}
+            </h1>
+            <p className="mt-2 text-xl text-stone-700">{formattedPrice}</p>
+          </div>
+
+          {product.description && (
+            <p className="text-sm leading-relaxed text-stone-600">{product.description}</p>
+          )}
+
+          <OrderCTA product={product} />
+        </div>
+      </div>
+    </main>
+  );
+}

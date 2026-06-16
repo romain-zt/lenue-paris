@@ -29,6 +29,41 @@ export function mapPayloadProductToStorefront(product: PayloadProduct): Product 
   return mapPayloadProduct(product);
 }
 
+/** Full product detail for the storefront template (gallery, description, sizes). */
+export function mapPayloadProductDetail(
+  product: PayloadProduct | number,
+  _locale: ContentLocale,
+): Product | null {
+  if (typeof product === "number") return null;
+  const base = mapPayloadProduct(product);
+  if (!base) return null;
+
+  const gallery =
+    product.gallery?.map((item) => {
+      if (!item?.image) return null;
+      const image = item.image;
+      if (typeof image === "number") return null;
+      return {
+        id: item.id ?? undefined,
+        image: {
+          id: String(image.id),
+          url: resolveMediaUrl(image),
+          alt: resolveMediaAlt(image, product.title),
+          width: image.width ?? null,
+          height: image.height ?? null,
+        },
+      };
+    }).filter((entry): entry is NonNullable<typeof entry> => entry != null) ?? null;
+
+  return {
+    ...base,
+    gallery,
+    description: product.description ?? null,
+    availableLengths: product.availableLengths ?? null,
+    availableSizes: product.availableSizes ?? null,
+  };
+}
+
 function resolveProductsFromCollection(collection: PayloadCollection | number | null | undefined): Product[] {
   if (!collection || typeof collection === "number") return [];
   if (!collection.products?.length) return [];

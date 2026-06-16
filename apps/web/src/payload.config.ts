@@ -15,6 +15,7 @@ import { Pages } from "./collections/Pages";
 import { Products } from "./collections/Products";
 import { Orders } from "./collections/Orders";
 import { getPostgresPoolConfig } from "./lib/database";
+import { getPreviewSiteUrl } from "./lib/cms/generatePreviewPath";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -24,6 +25,8 @@ const hasS3Config =
   !!process.env.S3_SECRET_ACCESS_KEY;
 
 export default buildConfig({
+  cors: [getPreviewSiteUrl(), "http://localhost:3001"],
+
   i18n: {
     // Admin UI language (separate from content localization below).
     // Browser defaults to fr if supported; user can override in Account → Language.
@@ -39,6 +42,13 @@ export default buildConfig({
 
   admin: {
     user: Users.slug,
+    livePreview: {
+      breakpoints: [
+        { label: "Mobile", name: "mobile", width: 375, height: 667 },
+        { label: "Tablet", name: "tablet", width: 768, height: 1024 },
+        { label: "Desktop", name: "desktop", width: 1440, height: 900 },
+      ],
+    },
   },
 
   collections: [Users, Media, Collections, Pages, Products, Orders],

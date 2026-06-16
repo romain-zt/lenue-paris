@@ -6,6 +6,7 @@ import {
   FIELD_LABELS,
   SELECT_LABELS,
 } from "@/i18n/admin-labels";
+import { generatePreviewPath, getPreviewSiteUrl } from "@/lib/cms/generatePreviewPath";
 
 export const Products: CollectionConfig = {
   slug: "products",
@@ -14,6 +15,23 @@ export const Products: CollectionConfig = {
     group: ADMIN_GROUPS.boutique,
     useAsTitle: "title",
     defaultColumns: ["title", "category", "price", "_status", "updatedAt"],
+    livePreview: {
+      url: ({ data, req }) => {
+        const slug = typeof data?.slug === "string" ? data.slug : "";
+        if (!slug) return null;
+        const locale = req.locale || "fr";
+        const base = getPreviewSiteUrl();
+        const path =
+          locale === "fr" ? `/produits/${slug}` : `/${locale}/produits/${slug}`;
+        return `${base}${path}`;
+      },
+    },
+    preview: (data, { req }) =>
+      generatePreviewPath({
+        slug: typeof data?.slug === "string" ? data.slug : "",
+        collection: "products",
+        req,
+      }),
   },
   access: {
     read: () => true,
