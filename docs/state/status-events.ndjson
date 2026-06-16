@@ -99,3 +99,4 @@
 {"ts":"2026-06-16T20:45:06.366Z","step":"orch-selection-ux--p0-primary-cta","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-16T20:45:45.695Z","step":"orch-selection-ux--p0-primary-cta","status":"not-started","note":"orphan reset (no tracking PR)","actor":"cleanup"}
 {"ts":"2026-06-16T20:46:12.302Z","step":"orch-selection-ux--p0-primary-cta","status":"in-progress","actor":"orchestrator"}
+{"ts":"2026-06-16T20:46:32.628Z","step":"orch-selection-ux--p0-primary-cta","status":"not-started","note":"orphan reset (agent failed)","actor":"orchestrator"}
