@@ -15,6 +15,9 @@ type HomePageContentProps = {
     season: string;
     viewFullCollectionLabel: string;
     outOfStockBadge: string;
+    exploreLabel: string;
+    quote: string;
+    categoryLinks: { href: string; label: string }[];
   };
 };
 
@@ -37,8 +40,8 @@ export function HomePageContent({ initialPage, locale, labels }: HomePageContent
 
   return (
     <main>
-      <RenderBlocks blocks={blocks} />
-      <HomeCategoryStrip />
+      <RenderBlocks blocks={blocks} quote={labels.quote} />
+      <HomeCategoryStrip exploreLabel={labels.exploreLabel} categoryLinks={labels.categoryLinks} />
     </main>
   );
 }

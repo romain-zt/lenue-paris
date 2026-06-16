@@ -39,6 +39,7 @@ export default async function Home({ params }: HomePageProps) {
   setRequestLocale(locale);
 
   const t = await getTranslations("home");
+  const tNav = await getTranslations("nav");
   const tProduct = await getTranslations("product");
   const contentLocale = locale as ContentLocale;
   const { isEnabled: isDraft } = await draftMode();
@@ -52,6 +53,14 @@ export default async function Home({ params }: HomePageProps) {
     season: t("season"),
     viewFullCollectionLabel: t("viewFullCollection"),
     outOfStockBadge: tProduct("outOfStockBadge"),
+    exploreLabel: t("exploreLabel"),
+    quote: t("quote"),
+    categoryLinks: [
+      { href: "/catalogue?categorie=robes", label: tNav("dresses") },
+      { href: "/catalogue?categorie=sacs", label: tNav("bags") },
+      { href: "/catalogue?categorie=foulards", label: tNav("scarfs") },
+      { href: "/catalogue", label: t("allCollection") },
+    ],
   };
 
   return (

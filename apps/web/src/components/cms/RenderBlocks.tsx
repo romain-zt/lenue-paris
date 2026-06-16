@@ -7,9 +7,10 @@ import { HomeQuoteSection } from "./HomeQuoteSection";
 
 interface RenderBlocksProps {
   blocks: MappedHomeBlock[];
+  quote: string;
 }
 
-export function RenderBlocks({ blocks }: RenderBlocksProps) {
+export function RenderBlocks({ blocks, quote }: RenderBlocksProps) {
   return (
     <>
       {blocks.map((block, index) => {
@@ -19,7 +20,7 @@ export function RenderBlocks({ blocks }: RenderBlocksProps) {
           return (
             <Fragment key={key}>
               <HeroBlock {...block.props} />
-              <HomeQuoteSection />
+              <HomeQuoteSection quote={quote} />
             </Fragment>
           );
         }
