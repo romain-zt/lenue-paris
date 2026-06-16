@@ -135,6 +135,54 @@
         "planFile": null,
         "notes": "Auto-appended from docs/prd PRD Flow Inventory + orchestration.prd-flow-map.json. Create user story + plan if not present before implementing."
       }
+    },
+    {
+      "id": "orch-selection-ux--p0-primary-cta",
+      "dependsOn": [
+        "orch-i18n--localized-storefront"
+      ],
+      "priority": 0,
+      "workload": {
+        "kind": "slice",
+        "title": "Selection UX — Primary CTA (P0.1)",
+        "featureAreaFile": "docs/product/feature-areas/selection-ux.md",
+        "scopeSliceFile": "docs/product/scope-slices/selection-ux--p0-primary-cta.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Client P0.1: selection-first product page, strip name/tel from hero, luxury-brand-gate on apps/web diff."
+      }
+    },
+    {
+      "id": "orch-selection-ux--p0-list-overlay",
+      "dependsOn": [
+        "orch-selection-ux--p0-primary-cta"
+      ],
+      "priority": 0,
+      "workload": {
+        "kind": "slice",
+        "title": "Selection UX — List Overlay (P0.2)",
+        "featureAreaFile": "docs/product/feature-areas/selection-ux.md",
+        "scopeSliceFile": "docs/product/scope-slices/selection-ux--p0-list-overlay.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Client P0.2: add-to-selection on tile image overlay, Toteme cadence."
+      }
+    },
+    {
+      "id": "orch-selection-ux--p0-drawer-motion",
+      "dependsOn": [
+        "orch-selection-ux--p0-list-overlay"
+      ],
+      "priority": 0,
+      "workload": {
+        "kind": "slice",
+        "title": "Selection UX — Soft Drawer (P0.3)",
+        "featureAreaFile": "docs/product/feature-areas/selection-ux.md",
+        "scopeSliceFile": "docs/product/scope-slices/selection-ux--p0-drawer-motion.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Client P0.3: soft panel motion matching header nav."
+      }
     }
   ]
 }
