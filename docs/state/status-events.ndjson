@@ -117,4 +117,9 @@
 {"ts":"2026-06-16T22:12:36.916Z","step":"orch-selection-ux--p0-list-overlay","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-16T22:37:54.497Z","step":"orch-selection-ux--p0-drawer-motion","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-16T22:38:18.930Z","step":"orch-selection-ux--p0-drawer-motion","status":"not-started","note":"orphan reset (no tracking PR)","actor":"cleanup"}
+{"ts":"2026-06-16T22:39:50.951Z","step":"orch-selection-ux--p0-drawer-motion","status":"in-progress","note":"Starting drawer motion animation implementation","actor":"agent"}
+{"ts":"2026-06-16T22:42:28.686Z","step":"orch-selection-ux--p0-drawer-motion","status":"in-review","note":"Implementation + tests complete: animated mount/unmount with header-matching easing, prefers-reduced-motion fallback, 7 new tests, 103 total passing","actor":"agent"}
+{"ts":"2026-06-16T22:43:07.088Z","step":"orch-selection-ux--p0-drawer-motion","status":"validated","note":"Re-test passed: 103/103 web tests green, typecheck clean","actor":"agent"}
+{"ts":"2026-06-16T22:43:11.120Z","step":"orch-selection-ux--p0-drawer-motion","status":"complete","note":"All checks green, PR #86 ready","actor":"agent"}
 {"ts":"2026-06-16T22:38:24.170Z","step":"orch-selection-ux--p0-drawer-motion","status":"in-progress","actor":"orchestrator"}
+{"ts":"2026-06-16T22:45:47.930Z","step":"orch-selection-ux--p0-drawer-motion","status":"complete","note":"Re-affirmed complete after orchestrator re-invocation: 103 web tests green, typecheck clean","actor":"agent"}

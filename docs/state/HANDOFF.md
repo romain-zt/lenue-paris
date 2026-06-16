@@ -233,6 +233,20 @@ Tracking PR #84 (`orchestrator/tracking-orch-selection-ux--p0-list-overlay-17816
 
 **Checks:** 96 web tests green, typecheck clean. luxury-gate infra (sharp + dev server) not available in agent env; `can_pr_ready: true` (no open floor failures listed).
 
+**`orch-selection-ux--p0-drawer-motion` — IN-REVIEW (2026-06-16)**
+
+Tracking PR #86 (`orchestrator/tracking-orch-selection-ux--p0-drawer-motion-1781649501367`).
+
+**What was built:**
+
+- **`SelectionPanel` animated mount** (`apps/web/src/components/selection/SelectionPill.tsx`): Replaced `if (!open) return null` with `mounted` + `visible` two-state pattern using `useEffect` + `requestAnimationFrame` double-frame defer for CSS transition triggering.
+- **Backdrop:** `opacity 0 → 1` over 200ms, easing `cubic-bezier(0.25, 0.8, 0.25, 1)` (matches header nav `softEase`).
+- **Mobile sheet:** `translateY(100%) → translateY(0)` over 300ms with same easing.
+- **Desktop (sm+):** `opacity 0 → 1` + `translateY(-6px) → translateY(0)` over 250ms.
+- **Close:** reverse animation plays, panel unmounts after 350ms delay.
+- **`prefers-reduced-motion`:** `motion-reduce:!transition-none` on both backdrop and sheet — instant show/hide.
+- **Tests** (`apps/web/src/components/selection/__tests__/SelectionPill.test.tsx`): 7 new tests written test-first. All 103 web tests pass, typecheck clean.
+
 ## Next recommended step
 
 1. **`orch-storefront-shell--global-chrome`** (P0) — shared layout/chrome (header, navigation) so both pages have proper context; unblocks visual QA.
