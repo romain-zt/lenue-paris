@@ -38,6 +38,7 @@ jobs:
       E2E_MODE: "true"
       DATABASE_URL: postgresql://e2e:e2e@localhost:5433/e2e
       TEST_DATABASE_URL: postgresql://e2e:e2e@localhost:5433/e2e
+      PAYLOAD_SECRET: ci-placeholder-secret-for-migrations
       PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
 
     steps:
