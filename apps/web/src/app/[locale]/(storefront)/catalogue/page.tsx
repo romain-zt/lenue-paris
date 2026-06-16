@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getPayload } from "payload";
 import config from "@payload-config";
+import { CatalogueGridSkeleton } from "@/components/skeletons/CatalogueGridSkeleton";
 import { CatalogueClient } from "./CatalogueClient";
 import { parseCategoryParam } from "@/lib/catalogueCategory";
 import type { Product } from "@/types/product";
@@ -62,7 +63,7 @@ export default async function CataloguePage({ params, searchParams }: CatalogueP
   return (
     <main className="mx-auto max-w-screen-xl px-4 py-10 sm:px-6 lg:px-8">
       <h1 className="mb-8 text-2xl font-semibold tracking-tight sm:text-3xl">{t("title")}</h1>
-      <Suspense fallback={null}>
+      <Suspense fallback={<CatalogueGridSkeleton />}>
         <CatalogueClient
           initialProducts={products}
           initialError={error}

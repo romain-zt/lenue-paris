@@ -205,11 +205,12 @@ forbidden_paths_touched: none
 ## CMS-c pass record (fill when green)
 
 ```
-commit:
+commit: 26944df
 loading_tsx_locale: present
 loading_tsx_catalogue: present
 catalogue_suspense_fallback_null: 0
 skeleton_data_maison_hooks: [hero, catalogue-grid]
+loading_skeleton_tests: 2/2
 forbidden_paths_touched: none
 ```
 
