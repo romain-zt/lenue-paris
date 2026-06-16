@@ -209,6 +209,17 @@ Tracking PR #81 (`orchestrator/tracking-orch-selection-ux--p0-primary-cta-178164
 
 **Remediation note (2026-06-16):** Re-affirmed complete after orchestrator re-sync overwrote status.json with in-progress. Re-appended complete event; status.json regenerated from projection.
 
+**`orch-selection-ux--p0-primary-cta` — COMPLETE (remediation pass, 2026-06-16)**
+
+Tracking PR #81 (`orchestrator/tracking-orch-selection-ux--p0-primary-cta-1781642794357`).
+
+**Remediation actions:**
+- Branch was `CONFLICTING` vs `main` due to orchestrator commits (`remediation run 1/5`, `2/5`) touching `docs/state/status.json` while this branch also changed that file.
+- Resolved by rebasing the tracking branch onto `origin/main`; the only conflict was `docs/state/status.json` (keep `remediation_counts` from main, keep `complete` status from this branch).
+- Force-pushed the rebased branch. PR is now `MERGEABLE`.
+- E2E failure (`maison-hooks.spec.ts` — server timeout on port 3001) is pre-existing across all PRs containing that spec; `REQUIRED_CHECKS` is `'quality'` only — E2E does not block merge.
+- 90 web unit tests + typecheck clean confirmed locally.
+
 ## Next recommended step
 
 1. **`orch-storefront-shell--global-chrome`** (P0) — shared layout/chrome (header, navigation) so both pages have proper context; unblocks visual QA.
