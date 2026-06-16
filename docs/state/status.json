@@ -19,7 +19,8 @@
       "orch-whatsapp-checkout--order-save-and-handoff": 3,
       "orch-cms-products--order-viewing": 1,
       "orch-editorial--brand-page": 4,
-      "orch-i18n--localized-storefront": 1
+      "orch-i18n--localized-storefront": 1,
+      "orch-selection-ux--p0-primary-cta": 1
     }
   }
 }
