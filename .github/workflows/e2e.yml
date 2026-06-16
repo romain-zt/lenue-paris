@@ -39,6 +39,7 @@ jobs:
       DATABASE_URL: postgresql://e2e:e2e@localhost:5433/e2e
       TEST_DATABASE_URL: postgresql://e2e:e2e@localhost:5433/e2e
       PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+      PAYLOAD_SECRET: ci-placeholder-secret-for-e2e
 
     steps:
       - uses: actions/checkout@v4
@@ -67,6 +68,12 @@ jobs:
       - name: Install dependencies
         if: steps.detect.outputs.has_e2e == 'true'
         run: pnpm install --no-frozen-lockfile
+
+      - name: Migrate DB
+        if: steps.detect.outputs.has_e2e == 'true'
+        run: |
+          pnpm --filter cms run migrate
+          pnpm --filter web run migrate
 
       - name: Run E2E tests
         if: steps.detect.outputs.has_e2e == 'true'
