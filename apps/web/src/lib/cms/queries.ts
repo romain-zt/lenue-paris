@@ -11,6 +11,7 @@ import {
   mapProductGridBlock,
 } from "./blocks";
 import type { ContentLocale, HomePageDto } from "./types";
+import { resolveMediaAlt, resolveMediaUrl } from "./media";
 
 const HOME_SLUG = "home";
 const CATALOGUE_SLUG = "catalogue";
@@ -120,24 +121,46 @@ export interface CollectionPageDto {
   products: Product[];
 }
 
+export async function getCollectionDocumentBySlug(
+  slug: string,
+  locale: ContentLocale,
+  options?: QueryOptions,
+): Promise<PayloadCollection | null> {
+  const payload = await getPayloadClient();
+  const draft = options?.draft ?? false;
+
+  const where: Where = draft
+    ? { and: [{ slug: { equals: slug } }] }
+    : { and: [{ slug: { equals: slug } }, { _status: { equals: "published" } }] };
+
+  const query = {
+    collection: "collections" as const,
+    where,
+    locale,
+    fallbackLocale: "fr" as const,
+    limit: 1,
+    depth: 2,
+    draft,
+  };
+
+  const { docs } = await payload.find(query);
+  const doc = docs[0] as PayloadCollection | undefined;
+  if (doc) return doc;
+
+  if (locale !== "fr") {
+    const { docs: frDocs } = await payload.find({ ...query, locale: "fr" });
+    return (frDocs[0] as PayloadCollection | undefined) ?? null;
+  }
+
+  return null;
+}
+
 export async function getCollectionBySlug(
   slug: string,
   locale: ContentLocale,
+  options?: QueryOptions,
 ): Promise<CollectionPageDto | null> {
-  const payload = await getPayloadClient();
-
-  const result = await payload.find({
-    collection: "collections",
-    locale,
-    fallbackLocale: "fr",
-    where: {
-      and: [{ slug: { equals: slug } }, { _status: { equals: "published" } }],
-    },
-    depth: 2,
-    limit: 1,
-  });
-
-  const doc = result.docs[0] as PayloadCollection | undefined;
+  const doc = await getCollectionDocumentBySlug(slug, locale, options);
   if (!doc) return null;
 
   const products = (doc.products ?? [])
@@ -147,8 +170,8 @@ export async function getCollectionBySlug(
   let heroImageUrl: string | undefined;
   let heroImageAlt: string | undefined;
   if (doc.hero && typeof doc.hero !== "number") {
-    heroImageUrl = doc.hero.url ?? undefined;
-    heroImageAlt = doc.hero.alt ?? doc.title;
+    heroImageUrl = resolveMediaUrl(doc.hero) ?? undefined;
+    heroImageAlt = resolveMediaAlt(doc.hero, doc.title);
   }
 
   return {

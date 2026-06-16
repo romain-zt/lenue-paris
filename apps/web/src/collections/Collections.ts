@@ -5,6 +5,7 @@ import {
   FIELD_DESCRIPTIONS,
   FIELD_LABELS,
 } from "@/i18n/admin-labels";
+import { generatePreviewPath, getPreviewSiteUrl } from "@/lib/cms/generatePreviewPath";
 
 export const Collections: CollectionConfig = {
   slug: "collections",
@@ -14,6 +15,23 @@ export const Collections: CollectionConfig = {
     useAsTitle: "title",
     defaultColumns: ["title", "slug", "_status", "updatedAt"],
     description: FIELD_DESCRIPTIONS.collectionsIntro,
+    livePreview: {
+      url: ({ data, req }) => {
+        const slug = typeof data?.slug === "string" ? data.slug : "";
+        if (!slug) return null;
+        const locale = req.locale || "fr";
+        const base = getPreviewSiteUrl();
+        const path =
+          locale === "fr" ? `/collections/${slug}` : `/${locale}/collections/${slug}`;
+        return `${base}${path}`;
+      },
+    },
+    preview: (data, { req }) =>
+      generatePreviewPath({
+        slug: typeof data?.slug === "string" ? data.slug : "",
+        collection: "collections",
+        req,
+      }),
   },
   access: {
     read: () => true,

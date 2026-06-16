@@ -35,6 +35,18 @@ describe("generatePreviewPath", () => {
     vi.unstubAllEnvs();
   });
 
+  it("builds collection preview with collections segment", () => {
+    vi.stubEnv("PREVIEW_SECRET", "test-secret");
+    const url = generatePreviewPath({
+      collection: "collections",
+      slug: "ete-2026",
+      req: { locale: "en" } as never,
+    });
+    expect(url).toContain("collection=collections");
+    expect(url).toContain("path=%2Fen%2Fcollections%2Fete-2026");
+    vi.unstubAllEnvs();
+  });
+
   it("returns null when slug is empty", () => {
     const url = generatePreviewPath({
       collection: "products",

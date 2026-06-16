@@ -1,11 +1,12 @@
 import type { PayloadRequest } from "payload";
 import { localePath } from "@/lib/seo/metadata";
 
-export type PreviewCollection = "pages" | "products";
+export type PreviewCollection = "pages" | "products" | "collections";
 
 const COLLECTION_SEGMENT: Record<PreviewCollection, string | null> = {
   pages: null,
   products: "produits",
+  collections: "collections",
 };
 
 /** Storefront origin for admin preview URLs — port 3001 locally, prod from env. */
