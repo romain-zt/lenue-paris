@@ -1,8 +1,23 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { OrderCTA } from "../OrderCTA";
 import { WithIntl } from "@/test-utils/with-intl";
 import type { Product } from "@/types/product";
+
+vi.mock("@/lib/selection/SelectionProvider", () => ({
+  useSelection: () => ({
+    items: [],
+    count: 0,
+    isFull: false,
+    isInSelection: vi.fn().mockReturnValue(false),
+    addItem: vi.fn().mockReturnValue(true),
+    removeItem: vi.fn(),
+    clear: vi.fn(),
+    isPanelOpen: false,
+    openPanel: vi.fn(),
+    closePanel: vi.fn(),
+  }),
+}));
 
 const bagProduct: Product = {
   id: "2",
@@ -14,14 +29,14 @@ const bagProduct: Product = {
 };
 
 describe("OrderCTA — maison hooks", () => {
-  it("exposes data-maison=cta-whatsapp on the submit control", () => {
+  it("exposes data-maison=cta-add-selection on the primary add control", () => {
     render(
       <WithIntl>
         <OrderCTA product={bagProduct} />
       </WithIntl>,
     );
 
-    const cta = screen.getByRole("button", { name: /Commander/i });
-    expect(cta.getAttribute("data-maison")).toBe("cta-whatsapp");
+    const cta = screen.getByRole("button", { name: /Ajouter/i });
+    expect(cta.getAttribute("data-maison")).toBe("cta-add-selection");
   });
 });

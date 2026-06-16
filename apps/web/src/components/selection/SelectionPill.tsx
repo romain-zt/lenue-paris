@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { buildMultiPieceWhatsAppMessage } from "@/lib/selection/buildMultiPieceWhatsAppMessage";
 import { useSelection } from "@/lib/selection/SelectionProvider";
@@ -130,8 +129,7 @@ type SelectionPillProps = {
 
 export function SelectionPill({ overlayMode = false }: SelectionPillProps) {
   const t = useTranslations("selection");
-  const { count } = useSelection();
-  const [open, setOpen] = useState(false);
+  const { count, isPanelOpen, openPanel, closePanel } = useSelection();
 
   if (count === 0) return null;
 
@@ -139,18 +137,18 @@ export function SelectionPill({ overlayMode = false }: SelectionPillProps) {
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={openPanel}
         className={`min-h-[44px] rounded-full border px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.14em] transition-colors ${
           overlayMode
             ? "border-white/30 bg-white/10 text-white hover:bg-white/20"
             : "border-stone-200 bg-stone-50 text-stone-700 hover:border-stone-300 hover:bg-stone-100"
         }`}
         aria-haspopup="dialog"
-        aria-expanded={open}
+        aria-expanded={isPanelOpen}
       >
         {t("pillCount", { count })}
       </button>
-      <SelectionPanel open={open} onClose={() => setOpen(false)} />
+      <SelectionPanel open={isPanelOpen} onClose={closePanel} />
     </>
   );
 }

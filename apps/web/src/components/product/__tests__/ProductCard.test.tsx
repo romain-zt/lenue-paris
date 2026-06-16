@@ -4,6 +4,21 @@ import { ProductCard } from "../ProductCard";
 import { WithIntl } from "@/test-utils/with-intl";
 import type { Product } from "@/types/product";
 
+vi.mock("@/lib/selection/SelectionProvider", () => ({
+  useSelection: () => ({
+    items: [],
+    count: 0,
+    isFull: false,
+    isInSelection: vi.fn().mockReturnValue(false),
+    addItem: vi.fn().mockReturnValue(true),
+    removeItem: vi.fn(),
+    clear: vi.fn(),
+    isPanelOpen: false,
+    openPanel: vi.fn(),
+    closePanel: vi.fn(),
+  }),
+}));
+
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: { href: string; children: React.ReactNode; [key: string]: unknown }) => (
     <a href={href} {...props}>{children}</a>
