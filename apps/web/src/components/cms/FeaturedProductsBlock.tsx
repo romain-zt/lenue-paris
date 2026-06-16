@@ -57,11 +57,13 @@ export function FeaturedProductsBlock({
   title,
   viewCollectionLabel,
   viewFullCollectionLabel,
+  collectionHref,
   products,
   locale,
   outOfStockBadge,
 }: FeaturedProductsBlockProps) {
   const priceFormatter = (price: number) => formatPrice(price, locale);
+  const collectionLink = collectionHref ?? "/catalogue";
 
   return (
     <section
@@ -81,7 +83,7 @@ export function FeaturedProductsBlock({
           </div>
           {viewCollectionLabel ? (
             <Link
-              href="/catalogue"
+              href={collectionLink}
               className="hidden text-[10px] font-medium uppercase tracking-[0.2em] text-stone-400 transition-colors hover:text-stone-800 sm:inline-flex"
             >
               {viewCollectionLabel}
@@ -104,7 +106,7 @@ export function FeaturedProductsBlock({
         <div className="mx-auto max-w-screen-xl">
           <div className="mt-14 text-center sm:hidden">
             <Link
-              href="/catalogue"
+              href={collectionLink}
               className="text-[10px] font-medium uppercase tracking-[0.25em] text-stone-500 underline-offset-4 hover:text-stone-900 hover:underline"
             >
               {viewFullCollectionLabel}

@@ -244,3 +244,43 @@ forbidden_paths_touched: none
 Storefront is editor-owned: boutique staff change home hero and featured products in admin;
 buyers never see developer placeholders; loading states match maison shell instrumentation from
 **3a**; CI rejects any PR that reintroduces hardcoded fallbacks.
+
+---
+
+## CMS-a½ — Collections + catalogue productGrid (allowlist)
+
+Only these paths may change in the **CMS-a½** commit:
+
+| Path | Purpose |
+|------|---------|
+| `apps/web/src/collections/Collections.ts` | Curated product groups (slug, title, products relation) |
+| `apps/web/src/collections/Pages.ts` | `productGrid` block + `featuredProducts.sourceType` |
+| `apps/web/src/migrations/20260616_121945_collections_product_grid.ts` | Idempotent schema migration |
+| `apps/web/src/lib/cms/queries.ts` | `getCollectionBySlug`, `getCataloguePage` |
+| `apps/web/src/lib/cms/blocks.ts` | Collection-sourced featured + productGrid mapper |
+| `apps/web/src/app/[locale]/(storefront)/collections/[slug]/page.tsx` | Collection storefront route |
+| `apps/web/src/app/[locale]/(storefront)/catalogue/page.tsx` | CMS-driven catalogue title/products |
+| `apps/web/src/seed.ts` | Seed collections + catalogue Page |
+| `apps/web/src/payload.config.ts` | Register Collections collection |
+
+### CMS-a½ hard stops
+
+1. Staff curate **Collections** in admin — never one Page per SKU.
+2. `/fr/collections/[slug]` renders ordered products from Payload relation.
+3. Catalogue reads `productGrid` block from Page slug `catalogue` (falls back to all products).
+4. Migration uses idempotent helpers (Vercel-safe after dev-push).
+
+---
+
+## CMS-a½ pass record (fill when green)
+
+```
+commit:
+collections_seeded: [ete-2026, sacs, nouveautes]
+catalogue_page_slug: catalogue
+featured_source_type: manual
+migration_idempotent: true
+blocks_test: 3/3
+tsc: pass
+forbidden_paths_touched: none
+```

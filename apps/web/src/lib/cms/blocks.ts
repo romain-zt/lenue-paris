@@ -1,4 +1,4 @@
-import type { Page as PayloadPage, Product as PayloadProduct } from "@/payload-types";
+import type { Page as PayloadPage, Product as PayloadProduct, Collection as PayloadCollection } from "@/payload-types";
 import type { Product } from "@/types/product";
 import { getProductMainImageUrl } from "@/lib/productImages";
 import { resolveMediaAlt, resolveMediaUrl } from "./media";
@@ -25,6 +25,35 @@ function mapPayloadProduct(product: PayloadProduct): Product | null {
   };
 }
 
+export function mapPayloadProductToStorefront(product: PayloadProduct): Product | null {
+  return mapPayloadProduct(product);
+}
+
+function resolveProductsFromCollection(collection: PayloadCollection | number | null | undefined): Product[] {
+  if (!collection || typeof collection === "number") return [];
+  if (!collection.products?.length) return [];
+  return collection.products
+    .map((entry) => (typeof entry === "number" ? null : mapPayloadProduct(entry)))
+    .filter((p): p is Product => p != null);
+}
+
+function resolveFeaturedProducts(block: Extract<PayloadBlock, { blockType: "featuredProducts" }>): {
+  products: Product[];
+  collectionHref?: string;
+} {
+  if (block.sourceType === "collection" && block.collection) {
+    const collection = typeof block.collection === "number" ? null : block.collection;
+    const products = resolveProductsFromCollection(collection);
+    const collectionHref = collection?.slug ? `/collections/${collection.slug}` : undefined;
+    return { products, collectionHref };
+  }
+
+  const products = (block.products ?? [])
+    .map((entry) => (typeof entry === "number" ? null : mapPayloadProduct(entry)))
+    .filter((p): p is Product => p != null);
+  return { products };
+}
+
 export function mapHomePageBlocks(blocks: PayloadPage["blocks"]): MappedHomeBlock[] {
   if (!blocks?.length) return [];
 
@@ -49,9 +78,7 @@ export function mapHomePageBlocks(blocks: PayloadPage["blocks"]): MappedHomeBloc
     }
 
     if (block.blockType === "featuredProducts") {
-      const products = block.products
-        .map((entry) => (typeof entry === "number" ? null : mapPayloadProduct(entry)))
-        .filter((p): p is Product => p != null);
+      const { products, collectionHref } = resolveFeaturedProducts(block);
       if (products.length === 0) continue;
       mapped.push({
         blockType: "featuredProducts",
@@ -60,6 +87,7 @@ export function mapHomePageBlocks(blocks: PayloadPage["blocks"]): MappedHomeBloc
           title: block.title,
           viewCollectionLabel: block.viewCollectionLabel ?? "",
           viewFullCollectionLabel: "",
+          collectionHref,
           products,
           locale: "fr",
           outOfStockBadge: "",
@@ -110,6 +138,24 @@ export function enrichFeaturedBlock(
       locale,
     },
   };
+}
+
+export function mapProductGridBlock(
+  block: Extract<PayloadBlock, { blockType: "productGrid" }>,
+): { title: string; products: Product[] } | null {
+  if (block.sourceType === "collection" && block.collection) {
+    const collection = typeof block.collection === "number" ? null : block.collection;
+    const products = resolveProductsFromCollection(collection);
+    if (products.length === 0) return null;
+    return { title: block.title, products };
+  }
+
+  return { title: block.title, products: [] };
+}
+
+export function findProductGridBlock(blocks: PayloadPage["blocks"]): Extract<PayloadBlock, { blockType: "productGrid" }> | null {
+  const block = blocks?.find((b) => b.blockType === "productGrid");
+  return block?.blockType === "productGrid" ? block : null;
 }
 
 export function findHeroTagline(blocks: MappedHomeBlock[]): string | null {

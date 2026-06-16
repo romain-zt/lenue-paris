@@ -51,6 +51,7 @@ describe("mapHomePageBlocks", () => {
       {
         blockType: "featuredProducts",
         title: "Notre sélection",
+        sourceType: "manual",
         viewCollectionLabel: "Voir la collection →",
         products: [sampleProduct],
       },

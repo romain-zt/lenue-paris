@@ -16,6 +16,8 @@ export interface FeaturedProductsBlockProps {
   title: string;
   viewCollectionLabel: string;
   viewFullCollectionLabel: string;
+  /** When sourced from a collection block — e.g. /collections/ete-2026 */
+  collectionHref?: string;
   products: Product[];
   locale: ContentLocale;
   outOfStockBadge: string;

@@ -9,6 +9,7 @@ import { fr } from "@payloadcms/translations/languages/fr";
 
 import { Users } from "./collections/Users";
 import { Media } from "./collections/Media";
+import { Collections } from "./collections/Collections";
 import { Pages } from "./collections/Pages";
 import { Products } from "./collections/Products";
 import { Orders } from "./collections/Orders";
@@ -39,7 +40,7 @@ export default buildConfig({
     user: Users.slug,
   },
 
-  collections: [Users, Media, Pages, Products, Orders],
+  collections: [Users, Media, Collections, Pages, Products, Orders],
 
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || "",

@@ -45,6 +45,15 @@ const FeaturedProductsBlock: Block = {
   },
   fields: [
     {
+      name: "sourceType",
+      type: "select",
+      defaultValue: "manual",
+      options: [
+        { label: "Manual product picks", value: "manual" },
+        { label: "From collection", value: "collection" },
+      ],
+    },
+    {
       name: "title",
       type: "text",
       required: true,
@@ -54,11 +63,53 @@ const FeaturedProductsBlock: Block = {
       type: "text",
     },
     {
+      name: "collection",
+      type: "relationship",
+      relationTo: "collections",
+      admin: {
+        condition: (_, siblingData) => siblingData?.sourceType === "collection",
+      },
+    },
+    {
       name: "products",
       type: "relationship",
       relationTo: "products",
       hasMany: true,
+      admin: {
+        condition: (_, siblingData) => siblingData?.sourceType !== "collection",
+      },
+    },
+  ],
+};
+
+const ProductGridBlock: Block = {
+  slug: "productGrid",
+  labels: {
+    singular: "Product grid",
+    plural: "Product grids",
+  },
+  fields: [
+    {
+      name: "title",
+      type: "text",
       required: true,
+    },
+    {
+      name: "sourceType",
+      type: "select",
+      defaultValue: "all",
+      options: [
+        { label: "All products", value: "all" },
+        { label: "From collection", value: "collection" },
+      ],
+    },
+    {
+      name: "collection",
+      type: "relationship",
+      relationTo: "collections",
+      admin: {
+        condition: (_, siblingData) => siblingData?.sourceType === "collection",
+      },
     },
   ],
 };
@@ -150,7 +201,7 @@ export const Pages: CollectionConfig = {
       name: "blocks",
       type: "blocks",
       localized: true,
-      blocks: [HeroBlock, FeaturedProductsBlock, EditorialStripBlock],
+      blocks: [HeroBlock, FeaturedProductsBlock, EditorialStripBlock, ProductGridBlock],
     },
     {
       name: "body",

@@ -69,6 +69,7 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    collections: Collection;
     pages: Page;
     products: Product;
     orders: Order;
@@ -81,6 +82,7 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    collections: CollectionsSelect<false> | CollectionsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
@@ -169,52 +171,26 @@ export interface Media {
   focalY?: number | null;
 }
 /**
+ * Curated product groups — Été 2026, Sacs, Nouveautés. Never one Page per SKU.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "pages".
+ * via the `definition` "collections".
  */
-export interface Page {
+export interface Collection {
   id: number;
   title: string;
   /**
-   * URL-safe identifier. Use 'home' for the storefront homepage.
+   * URL segment for /collections/[slug]
    */
   slug: string;
-  blocks?:
-    | (
-        | {
-            heroImage: number | Media;
-            season: string;
-            tagline: string;
-            ctaLabel: string;
-            ctaLink: string;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'hero';
-          }
-        | {
-            title: string;
-            viewCollectionLabel?: string | null;
-            products: (number | Product)[];
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'featuredProducts';
-          }
-        | {
-            label: string;
-            headline: string;
-            subline: string;
-            body: string;
-            ctaLabel: string;
-            ctaLink: string;
-            image: number | Media;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'editorialStrip';
-          }
-      )[]
-    | null;
-  body?: string | null;
-  cover?: (number | null) | Media;
+  /**
+   * Optional editorial hero for the collection page.
+   */
+  hero?: (number | null) | Media;
+  /**
+   * Drag to reorder — storefront respects this order.
+   */
+  products?: (number | Product)[] | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -265,6 +241,67 @@ export interface Product {
    * Owner-only pairings (dress ↔ bag/scarf). Not shown on the site in v0.
    */
   pairings?: (number | Product)[] | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages".
+ */
+export interface Page {
+  id: number;
+  title: string;
+  /**
+   * URL-safe identifier. Use 'home' for the storefront homepage.
+   */
+  slug: string;
+  blocks?:
+    | (
+        | {
+            heroImage: number | Media;
+            season: string;
+            tagline: string;
+            ctaLabel: string;
+            ctaLink: string;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'hero';
+          }
+        | {
+            sourceType?: ('manual' | 'collection') | null;
+            title: string;
+            viewCollectionLabel?: string | null;
+            collection?: (number | null) | Collection;
+            products?: (number | Product)[] | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'featuredProducts';
+          }
+        | {
+            label: string;
+            headline: string;
+            subline: string;
+            body: string;
+            ctaLabel: string;
+            ctaLink: string;
+            image: number | Media;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'editorialStrip';
+          }
+        | {
+            title: string;
+            sourceType?: ('all' | 'collection') | null;
+            collection?: (number | null) | Collection;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'productGrid';
+          }
+      )[]
+    | null;
+  body?: string | null;
+  cover?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -331,6 +368,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'collections';
+        value: number | Collection;
       } | null)
     | ({
         relationTo: 'pages';
@@ -429,6 +470,19 @@ export interface MediaSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "collections_select".
+ */
+export interface CollectionsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  hero?: T;
+  products?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages_select".
  */
 export interface PagesSelect<T extends boolean = true> {
@@ -451,8 +505,10 @@ export interface PagesSelect<T extends boolean = true> {
         featuredProducts?:
           | T
           | {
+              sourceType?: T;
               title?: T;
               viewCollectionLabel?: T;
+              collection?: T;
               products?: T;
               id?: T;
               blockName?: T;
@@ -467,6 +523,15 @@ export interface PagesSelect<T extends boolean = true> {
               ctaLabel?: T;
               ctaLink?: T;
               image?: T;
+              id?: T;
+              blockName?: T;
+            };
+        productGrid?:
+          | T
+          | {
+              title?: T;
+              sourceType?: T;
+              collection?: T;
               id?: T;
               blockName?: T;
             };

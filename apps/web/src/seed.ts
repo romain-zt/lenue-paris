@@ -209,6 +209,43 @@ const PRODUCTS = [
 
 const PRODUCT_LOCALES = ["en", "fr", "ru"] as const;
 const HOME_PAGE_SLUG = "home";
+const CATALOGUE_PAGE_SLUG = "catalogue";
+
+const COLLECTION_DEFINITIONS = [
+  {
+    slug: "ete-2026",
+    title: {
+      fr: "Été 2026",
+      en: "Summer 2026",
+      ru: "Лето 2026",
+    },
+    productSlugs: ["robe-camille", "robe-louise", "robe-margot", "robe-heloise"],
+  },
+  {
+    slug: "sacs",
+    title: {
+      fr: "Sacs",
+      en: "Bags",
+      ru: "Сумки",
+    },
+    productSlugs: ["sac-juliette", "sac-amelie", "sac-celeste", "sac-victoire"],
+  },
+  {
+    slug: "nouveautes",
+    title: {
+      fr: "Nouveautés",
+      en: "New arrivals",
+      ru: "Новинки",
+    },
+    productSlugs: ["robe-camille", "sac-celeste", "foulard-diane", "look-elise-edition-limitee"],
+  },
+] as const;
+
+const CATALOGUE_PAGE_COPY = {
+  fr: { title: "Catalogue", gridTitle: "Toute la collection" },
+  en: { title: "Catalogue", gridTitle: "Full collection" },
+  ru: { title: "Каталог", gridTitle: "Вся коллекция" },
+} as const;
 
 /** Featured carousel slugs — mirrored from storefront until CMS-b reads blocks only. */
 const HOME_FEATURED_SLUGS = [
@@ -349,6 +386,7 @@ function buildHomeBlocks(
     {
       blockType: "featuredProducts" as const,
       title: copy.featuredTitle,
+      sourceType: "manual" as const,
       viewCollectionLabel: copy.viewCollection,
       products: featuredProductIds,
     },
@@ -445,6 +483,120 @@ async function seedHomePage(
   }
 
   return pageId;
+}
+
+async function seedCollections(
+  payload: Awaited<ReturnType<typeof getPayload>>,
+  productIdBySlug: Record<string, number | string>,
+): Promise<Record<string, number | string>> {
+  const collectionIdBySlug: Record<string, number | string> = {};
+
+  for (const def of COLLECTION_DEFINITIONS) {
+    const productIds = def.productSlugs.map((slug) => {
+      const id = productIdBySlug[slug];
+      if (!id) throw new Error(`Missing product id for collection slug: ${slug}`);
+      return id;
+    });
+
+    const existing = await payload.find({
+      collection: "collections",
+      where: { slug: { equals: def.slug } },
+      limit: 1,
+    });
+
+    let collectionId: number | string;
+
+    if (existing.docs[0]) {
+      collectionId = existing.docs[0].id;
+      console.log(`  ♻️  Reusing collection ${def.slug} → id ${collectionId}`);
+    } else {
+      const doc = await payload.create({
+        collection: "collections",
+        data: {
+          title: def.title.en,
+          slug: def.slug,
+          products: productIds,
+          _status: "published",
+        } as any,
+        locale: "en",
+        draft: false,
+      });
+      collectionId = doc.id;
+      console.log(`  ✅ Created collection ${def.slug} → id ${collectionId}`);
+    }
+
+    for (const locale of PRODUCT_LOCALES) {
+      await payload.update({
+        collection: "collections",
+        id: collectionId,
+        data: {
+          title: def.title[locale],
+          products: productIds,
+          _status: "published",
+        } as any,
+        locale,
+        draft: false,
+      });
+    }
+
+    collectionIdBySlug[def.slug] = collectionId;
+    console.log(`  ✅ Published collection ${def.slug} (${PRODUCT_LOCALES.join(", ")})`);
+  }
+
+  return collectionIdBySlug;
+}
+
+async function seedCataloguePage(payload: Awaited<ReturnType<typeof getPayload>>): Promise<void> {
+  const existing = await payload.find({
+    collection: "pages",
+    where: { slug: { equals: CATALOGUE_PAGE_SLUG } },
+    limit: 1,
+  });
+
+  const buildBlocks = (locale: (typeof PRODUCT_LOCALES)[number]) => [
+    {
+      blockType: "productGrid" as const,
+      title: CATALOGUE_PAGE_COPY[locale].gridTitle,
+      sourceType: "all" as const,
+    },
+  ];
+
+  let pageId: number | string;
+
+  if (existing.docs[0]) {
+    pageId = existing.docs[0].id;
+    console.log(`  ♻️  Reusing catalogue page → id ${pageId}`);
+  } else {
+    const doc = await payload.create({
+      collection: "pages",
+      data: {
+        title: CATALOGUE_PAGE_COPY.en.title,
+        slug: CATALOGUE_PAGE_SLUG,
+        blocks: buildBlocks("en"),
+        _status: "published",
+      } as any,
+      locale: "en",
+      draft: false,
+    });
+    pageId = doc.id;
+    console.log(`  ✅ Created catalogue page → id ${pageId}`);
+  }
+
+  for (const locale of PRODUCT_LOCALES) {
+    await payload.update({
+      collection: "pages",
+      id: pageId,
+      data: {
+        title: CATALOGUE_PAGE_COPY[locale].title,
+        blocks: buildBlocks(locale),
+        _status: "published",
+      } as any,
+      locale,
+      draft: false,
+    });
+  }
+
+  console.log(`  ✅ Published catalogue page (${PRODUCT_LOCALES.join(", ")})`);
 }
 
 export async function seed() {
@@ -570,6 +722,8 @@ export async function seed() {
   }
 
   await seedHomePage(payload, productIdBySlug, findOrUploadImage);
+  await seedCollections(payload, productIdBySlug);
+  await seedCataloguePage(payload);
 
   console.log(`\n🎉 Seed complete — ${created} created, ${updated} updated (${PRODUCT_LOCALES.join(", ")} locales)`);
 }
