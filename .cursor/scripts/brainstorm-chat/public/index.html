@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Brainstorm Chat</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <div>
+          <h1>Brainstorm</h1>
+          <p class="subtitle">You lead · Orchestrator routes specialists</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="ghost danger" id="force-stop">Force stop</button>
+          <button type="button" class="ghost" id="pause">Pause agents</button>
+          <div class="status" id="status">Connecting…</div>
+        </div>
+      </header>
+
+      <div class="goal-bar" id="goal-bar" hidden>
+        <span class="goal-label">Goal</span>
+        <span class="goal-text" id="goal-text"></span>
+      </div>
+
+      <div class="agents-strip" id="agents-strip">
+        <div class="agents-row" id="participants" aria-label="Participants"></div>
+        <div class="agents-live" id="live-bar" hidden>
+          <span class="live-pulse" aria-hidden="true"></span>
+          <span class="live-label" id="live-label">Idle</span>
+          <span class="live-elapsed" id="live-elapsed"></span>
+        </div>
+      </div>
+
+      <div class="main">
+        <aside class="sidebar">
+          <details class="accordion" id="activity-accordion" open>
+            <summary class="accordion-summary">
+              <span>Live activity</span>
+              <span class="accordion-badge" id="activity-count" hidden>0</span>
+            </summary>
+            <div class="accordion-body">
+              <div class="activity-feed" id="activity-feed" aria-live="polite"></div>
+            </div>
+          </details>
+          <details class="accordion" id="assets-accordion" hidden>
+            <summary class="accordion-summary">
+              <span>Assets</span>
+              <span class="accordion-badge" id="assets-count" hidden>0</span>
+            </summary>
+            <div class="accordion-body">
+              <ul class="assets-list" id="assets-list"></ul>
+            </div>
+          </details>
+        </aside>
+        <main class="chat" id="chat" aria-live="polite"></main>
+      </div>
+
+      <form class="composer" id="form">
+        <label class="topic-label" for="topic">Goal / topic</label>
+        <input
+          id="topic"
+          name="topic"
+          type="text"
+          placeholder="What are we trying to figure out?"
+          autocomplete="off"
+        />
+        <div class="composer-row">
+          <textarea
+            id="input"
+            name="message"
+            rows="2"
+            placeholder="Share an idea…"
+            required
+          ></textarea>
+          <button type="submit" id="send">Send</button>
+        </div>
+        <p class="hint" id="hint">
+          Failures auto-retry with a fresh agent. Force stop anytime.
+        </p>
+      </form>
+    </div>
+    <script src="/app.js"></script>
+  </body>
+</html>

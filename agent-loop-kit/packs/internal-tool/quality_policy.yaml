@@ -1,0 +1,2 @@
+deadlock_default: abort_and_replan
+copy_block_on_deadlock: true

@@ -1,0 +1,29 @@
+{
+  "name": "agent-loop-kit",
+  "version": "0.1.0",
+  "loopd": "0.1.0",
+  "runtime": {
+    "node": ">=20.0.0 <21.0.0"
+  },
+  "backend": {
+    "default": "openai/gpt-4.1-mini",
+    "env_key": "OPENAI_API_KEY",
+    "dev_only": {
+      "backend": "ollama/llama3",
+      "note": "Dev-only; no parity claim with OpenAI"
+    }
+  },
+  "ceilings": {
+    "agent_calls": 12,
+    "wall_clock_seconds": 480,
+    "estimated_cost_usd": 0.8
+  },
+  "artifacts": [
+    "idea-seed.md",
+    "vision-prd.md",
+    "first-slice-brief.md",
+    "build-log.ndjson",
+    "influence-ledger.ndjson",
+    "slice-contract.json"
+  ]
+}

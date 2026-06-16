@@ -1,0 +1,1 @@
+- learned: waitlist copy should emphasize speed

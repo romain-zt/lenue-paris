@@ -241,6 +241,87 @@ const PRODUCTS = [
 ];
 
 const PRODUCT_LOCALES = ["en", "fr", "ru"] as const;
+const HOME_PAGE_SLUG = "home";
+
+/** Featured carousel slugs — mirrored from storefront until CMS-b reads blocks only. */
+const HOME_FEATURED_SLUGS = [
+  "robe-camille",
+  "look-elise-edition-limitee",
+  "robe-margot",
+  "sac-celeste",
+  "robe-louise",
+  "robe-heloise",
+] as const;
+
+type ContentLocale = (typeof PRODUCT_LOCALES)[number];
+
+const HOME_PAGE_COPY: Record<
+  ContentLocale,
+  {
+    title: string;
+    season: string;
+    heroTagline: string;
+    heroCta: string;
+    featuredTitle: string;
+    viewCollection: string;
+    editorialLabel: string;
+    editorialHeadline: string;
+    editorialSubline: string;
+    editorialBody: string;
+    editorialCta: string;
+    heroImageAlt: string;
+    editorialImageAlt: string;
+  }
+> = {
+  fr: {
+    title: "Accueil",
+    season: "Printemps · Été 2026",
+    heroTagline: "Pour les moments que vous voulez garder.",
+    heroCta: "Découvrir la collection",
+    featuredTitle: "Notre sélection",
+    viewCollection: "Voir la collection →",
+    editorialLabel: "L'esprit Lénue",
+    editorialHeadline: "Lénue, ce n'est pas s'habiller.",
+    editorialSubline: "C'est se sentir soi-même.",
+    editorialBody:
+      "Chaque pièce est sélectionnée pour sa matière, sa coupe, et ce qu'elle dit de vous. Commandez en toute simplicité, via WhatsApp.",
+    editorialCta: "Explorer la boutique",
+    heroImageAlt: "Lénue Paris — collection Printemps Été 2026",
+    editorialImageAlt: "Femme en robe Lénue Paris au Café de Flore",
+  },
+  en: {
+    title: "Home",
+    season: "Spring · Summer 2026",
+    heroTagline: "For the moments you want to keep.",
+    heroCta: "Explore the collection",
+    featuredTitle: "Our selection",
+    viewCollection: "View collection →",
+    editorialLabel: "The Lénue spirit",
+    editorialHeadline: "Lénue isn't about dressing.",
+    editorialSubline: "It's about feeling like yourself.",
+    editorialBody:
+      "Every piece is chosen for its fabric, its cut, and what it says about you. Order simply, via WhatsApp.",
+    editorialCta: "Explore the boutique",
+    heroImageAlt: "Lénue Paris — Spring Summer 2026 collection",
+    editorialImageAlt: "Woman in a Lénue Paris dress at Café de Flore",
+  },
+  ru: {
+    title: "Главная",
+    season: "Весна · Лето 2026",
+    heroTagline: "Для моментов, которые хочется сохранить.",
+    heroCta: "Смотреть коллекцию",
+    featuredTitle: "Наша подборка",
+    viewCollection: "Смотреть коллекцию →",
+    editorialLabel: "Дух Lénue",
+    editorialHeadline: "Lénue — это не просто одежда.",
+    editorialSubline: "Это ощущение себя.",
+    editorialBody:
+      "Каждая вещь выбрана за материал, крой и то, что она говорит о вас. Заказывайте просто — через WhatsApp.",
+    editorialCta: "Открыть бутик",
+    heroImageAlt: "Lénue Paris — коллекция Весна Лето 2026",
+    editorialImageAlt: "Женщина в платье Lénue Paris в Café de Flore",
+  },
+};
 
 // ---------- Seed runner ----------
 
@@ -280,6 +361,105 @@ async function publishProductLocales(
     locale: "ru",
     draft: false,
   });
+}
+
+function buildHomeBlocks(
+  locale: ContentLocale,
+  heroImageId: number | string,
+  editorialImageId: number | string,
+  featuredProductIds: (number | string)[],
+) {
+  const copy = HOME_PAGE_COPY[locale];
+  return [
+    {
+      blockType: "hero" as const,
+      heroImage: heroImageId,
+      season: copy.season,
+      tagline: copy.heroTagline,
+      ctaLabel: copy.heroCta,
+      ctaLink: "/catalogue",
+    },
+    {
+      blockType: "featuredProducts" as const,
+      title: copy.featuredTitle,
+      viewCollectionLabel: copy.viewCollection,
+      products: featuredProductIds,
+    },
+    {
+      blockType: "editorialStrip" as const,
+      label: copy.editorialLabel,
+      headline: copy.editorialHeadline,
+      subline: copy.editorialSubline,
+      body: copy.editorialBody,
+      ctaLabel: copy.editorialCta,
+      ctaLink: "/catalogue",
+      image: editorialImageId,
+    },
+  ];
+}
+
+async function seedHomePage(
+  payload: Awaited<ReturnType<typeof getPayload>>,
+  productIdBySlug: Record<string, number | string>,
+  findOrUploadImage: (filename: string, alt: string) => Promise<number | string>,
+) {
+  console.log("\n📄 Syncing home page");
+
+  const featuredProductIds = HOME_FEATURED_SLUGS.map((slug) => {
+    const id = productIdBySlug[slug];
+    if (id == null) {
+      throw new Error(`Missing product id for featured slug: ${slug}`);
+    }
+    return id;
+  });
+
+  const heroImageId = await findOrUploadImage("hero.jpg", HOME_PAGE_COPY.fr.heroImageAlt);
+  const editorialImageId = await findOrUploadImage(
+    "cafe-de-flore.jpg",
+    HOME_PAGE_COPY.fr.editorialImageAlt,
+  );
+
+  const existing = await payload.find({
+    collection: "pages",
+    where: { slug: { equals: HOME_PAGE_SLUG } },
+    limit: 1,
+  });
+
+  let pageId: number | string;
+
+  if (existing.docs[0]) {
+    pageId = existing.docs[0].id;
+    console.log(`  ♻️  Reusing home page → id ${pageId}`);
+  } else {
+    const doc = await payload.create({
+      collection: "pages",
+      data: {
+        title: HOME_PAGE_COPY.en.title,
+        slug: HOME_PAGE_SLUG,
+        blocks: buildHomeBlocks("en", heroImageId, editorialImageId, featuredProductIds),
+      } as any,
+      locale: "en",
+      draft: false,
+    });
+    pageId = doc.id;
+    console.log(`  ✅ Created home page → id ${pageId}`);
+  }
+
+  for (const locale of PRODUCT_LOCALES) {
+    await payload.update({
+      collection: "pages",
+      id: pageId,
+      data: {
+        title: HOME_PAGE_COPY[locale].title,
+        blocks: buildHomeBlocks(locale, heroImageId, editorialImageId, featuredProductIds),
+      } as any,
+      locale,
+      draft: false,
+    });
+    console.log(`  ✅ Published home page (${locale})`);
+  }
+
+  return pageId;
 }
 
 export async function seed() {
@@ -342,6 +522,7 @@ export async function seed() {
 
   let created = 0;
   let updated = 0;
+  const productIdBySlug: Record<string, number | string> = {};
 
   for (const product of PRODUCTS) {
     console.log(`\n📦 Syncing: ${product.title.fr}`);
@@ -388,6 +569,7 @@ export async function seed() {
 
     if (existing.docs[0]) {
       await publishProductLocales(payload, existing.docs[0].id, product, data);
+      productIdBySlug[product.slug] = existing.docs[0].id;
       updated++;
       console.log(`  ✅ Published ${product.title.fr} — id ${existing.docs[0].id}`);
     } else {
@@ -398,10 +580,13 @@ export async function seed() {
         draft: false,
       });
       await publishProductLocales(payload, doc.id, product, data);
+      productIdBySlug[product.slug] = doc.id;
       created++;
       console.log(`  ✅ Created & published ${product.title.fr} — id ${doc.id}`);
     }
   }
+
+  await seedHomePage(payload, productIdBySlug, findOrUploadImage);
 
   console.log(`\n🎉 Seed complete — ${created} created, ${updated} updated (${PRODUCT_LOCALES.join(", ")} locales)`);
 }

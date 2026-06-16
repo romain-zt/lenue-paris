@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "description": "Ignition — one wired slice. Zedos pre-seeds; sync APPENDED=0, FIREABLE=1.",
+  "steps": [
+    {
+      "id": "bootstrap",
+      "dependsOn": [],
+      "workload": {
+        "kind": "slice",
+        "title": "Pipeline anchor",
+        "featureAreaFile": "docs/state/seed-anchor.md",
+        "scopeSliceFile": "docs/state/seed-anchor.md",
+        "userStoryFile": null,
+        "planFile": null
+      }
+    },
+    {
+      "id": "orch-account-session--signup-to-signed-in-dashboard",
+      "dependsOn": ["bootstrap"],
+      "workload": {
+        "kind": "slice",
+        "title": "Signup to signed-in dashboard",
+        "featureAreaFile": "docs/product/feature-areas/account-session.md",
+        "scopeSliceFile": "docs/product/scope-slices/account-session--signup-to-signed-in-dashboard.md",
+        "userStoryFile": "docs/product/user-stories/account-session--signup-to-signed-in-dashboard--US-001--signup.md",
+        "planFile": "docs/product/specs/account-session--signup-to-signed-in-dashboard--SP-001--signup-vertical.md",
+        "notes": "Zedos pre-wired — living PRD"
+      }
+    }
+  ]
+}

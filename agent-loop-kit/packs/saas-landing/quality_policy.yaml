@@ -1,0 +1,3 @@
+deadlock_default: defer_voice_guide_to_slice_two
+copy_block_on_deadlock: false
+architect_vs_copy_tiebreak: slice_critical_path_wins

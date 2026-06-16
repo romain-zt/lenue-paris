@@ -1,0 +1,16 @@
+{
+  "scribe": {
+    "audience": "early adopters",
+    "successSignal": "waitlist signup"
+  },
+  "vision": {
+    "scope": "landing + waitlist",
+    "nonGoals": [
+      "payments"
+    ]
+  },
+  "slicePlanner": {
+    "hypothesis": "landing + waitlist + analytics hook",
+    "pack": "saas-landing"
+  }
+}

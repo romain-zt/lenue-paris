@@ -1,0 +1,12 @@
+name: marketplace
+version: 0.1.0
+description: Two-sided listing + search
+derived_from:
+  core: 0.1.0
+  pack: marketplace@0.1.0
+  overlay_revision: null
+affordances:
+  - listings
+  - search
+  - seller-onboarding
+first_slice_default: listing browse + search stub

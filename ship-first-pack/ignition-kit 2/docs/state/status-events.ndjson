@@ -1,0 +1,2 @@
+{"ts":"2026-06-15T00:00:00.000Z","step":"bootstrap","status":"complete","actor":"zedos-export","note":"ignition anchor"}
+{"ts":"2026-06-15T00:00:01.000Z","step":"orch-account-session--signup-to-signed-in-dashboard","status":"todo","actor":"zedos-export","note":"queued from Zedos ignition"}

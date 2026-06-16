@@ -1,0 +1,16 @@
+{
+  "name": "@agent-loop-kit/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0 <21.0.0"
+  },
+  "bin": {
+    "loopd": "./src/loopd.mjs"
+  },
+  "scripts": {
+    "test": "node --test tests/**/*.spec.mjs",
+    "verify:offline": "node src/verify-offline.mjs"
+  }
+}

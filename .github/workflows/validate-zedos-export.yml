@@ -1,0 +1,35 @@
+name: Validate Zedos export
+
+on:
+  pull_request:
+    paths:
+      - "zedos.manifest.json"
+      - "docs/product/**"
+      - "docs/state/orchestration.*"
+      - "docs/prd/**"
+      - "docs/project.config.md"
+      - "docs/EXECUTION_LOCK.md"
+  push:
+    branches: [main]
+    paths:
+      - "zedos.manifest.json"
+      - "docs/product/**"
+      - "docs/state/orchestration.*"
+      - "docs/prd/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps
+        run: npm install --prefix .github/scripts/core
+
+      - name: Validate Zedos handoff bundle
+        run: npx --prefix .github/scripts/core tsx .github/scripts/core/validate-zedos-export.ts

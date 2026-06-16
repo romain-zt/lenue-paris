@@ -175,25 +175,49 @@ export interface Media {
 export interface Page {
   id: number;
   title: string;
+  /**
+   * URL-safe identifier. Use 'home' for the storefront homepage.
+   */
   slug: string;
-  body?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
+  blocks?:
+    | (
+        | {
+            heroImage: number | Media;
+            season: string;
+            tagline: string;
+            ctaLabel: string;
+            ctaLink: string;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'hero';
+          }
+        | {
+            title: string;
+            viewCollectionLabel?: string | null;
+            products: (number | Product)[];
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'featuredProducts';
+          }
+        | {
+            label: string;
+            headline: string;
+            subline: string;
+            body: string;
+            ctaLabel: string;
+            ctaLink: string;
+            image: number | Media;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'editorialStrip';
+          }
+      )[]
+    | null;
+  body?: string | null;
   cover?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -410,10 +434,48 @@ export interface MediaSelect<T extends boolean = true> {
 export interface PagesSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
+  blocks?:
+    | T
+    | {
+        hero?:
+          | T
+          | {
+              heroImage?: T;
+              season?: T;
+              tagline?: T;
+              ctaLabel?: T;
+              ctaLink?: T;
+              id?: T;
+              blockName?: T;
+            };
+        featuredProducts?:
+          | T
+          | {
+              title?: T;
+              viewCollectionLabel?: T;
+              products?: T;
+              id?: T;
+              blockName?: T;
+            };
+        editorialStrip?:
+          | T
+          | {
+              label?: T;
+              headline?: T;
+              subline?: T;
+              body?: T;
+              ctaLabel?: T;
+              ctaLink?: T;
+              image?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
   body?: T;
   cover?: T;
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
