@@ -67,13 +67,19 @@ npm run luxury-gate -- --diff apps/web --slice storefront-shell--global-chrome \
 green run below.
 
 ```
-# Record maintainer run:
+# Record maintainer run (Skeptic independent re-run 2026-06-16):
 pass: true
 llm_calls: 0
-blocked: [lighthouse, asset_host]
-commit: (pending — 3b implementation on disk)
+blocked: [lighthouse, asset_host, look_elise_gallery]
+parser_commit: dac1648
+storefront_commit: 0e27933
 command: npm run luxury-gate -- --diff apps/web --slice storefront-shell--global-chrome --preview-url http://localhost:3001/fr
 exit_code: 0
+catalogue_frame_rows:
+  - fr_featured_carousel:frames=7, dhash_zero_pairs=0
+  - look_elise_gallery:frames=0 (blocked)
+forbidden_paths_touched: none
+signed: Skeptic 2026-06-16
 ```
 
 ---
@@ -104,9 +110,17 @@ exit_code: 0
 
 ```
 # Record dry-run:
-tests_passed: 
+tests_passed: 4/4 (npm run test:step3)
 can_pr_ready_with_open_floor: false (required)
+commit: (fill on merge)
+forbidden_paths_touched: none
 ```
+
+**Pass record (Spark):**
+- `orchestrator-allowlist.ts` — scope-slice inline, luxury log tail, PRD injection abort, open `floor_id` → `can_pr_ready: false`
+- `phase-orchestrator.ts` — grafts allowlist into worker prompt; blocks auto `gh pr ready` when open floors exist
+- `quality/orchestrator-allowlist.test.ts` — PRD injection fails, scope-slice-only passes, seeded marketplace failure re-enters remediation verbatim
+- `apps/web/src/components/product/ProductGallery.tsx` — `data-maison="product-gallery"` for `look_elise_gallery` scorer unblock
 
 ---
 
