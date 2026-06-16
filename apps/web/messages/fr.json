@@ -97,6 +97,7 @@
     "empty": "Ajoutez jusqu'à 3 pièces depuis la collection.",
     "add": "Ajouter à ma sélection",
     "added": "Ajoutée",
+    "inSelection": "Dans ma sélection",
     "alreadyAdded": "Déjà dans votre sélection",
     "full": "Maximum 3 pièces",
     "remove": "Retirer",

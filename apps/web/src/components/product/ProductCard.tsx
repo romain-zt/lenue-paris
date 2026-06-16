@@ -23,55 +23,67 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <article className="group">
-      <Link
-        href={`/produits/${product.slug}`}
-        className="block"
-        aria-label={product.title}
-      >
       <div className="relative aspect-[3/4] overflow-hidden bg-stone-100">
-        {isOutOfStock && (
-          <span className="absolute left-2 top-2 z-10 max-w-[calc(100%-1rem)] bg-white/95 px-2.5 py-1 text-[9px] font-medium uppercase leading-snug tracking-[0.12em] text-stone-800 shadow-sm">
-            {t("outOfStockBadge")}
-          </span>
-        )}
-        {imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={product.title}
-            fill
-            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className={`object-cover transition-transform duration-700 group-hover:scale-105 ${
-              isOutOfStock ? "opacity-90 saturate-[0.85]" : ""
-            }`}
-          />
-        ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-stone-50 to-stone-200 transition-transform duration-700 group-hover:scale-[1.02]">
-            <span
-              className="select-none font-serif text-7xl font-light text-stone-300"
-              aria-hidden="true"
-            >
-              L
+        <Link
+          href={`/produits/${product.slug}`}
+          className="absolute inset-0"
+          aria-label={product.title}
+        >
+          {isOutOfStock && (
+            <span className="absolute left-2 top-2 z-10 max-w-[calc(100%-1rem)] bg-white/95 px-2.5 py-1 text-[9px] font-medium uppercase leading-snug tracking-[0.12em] text-stone-800 shadow-sm">
+              {t("outOfStockBadge")}
             </span>
-            <span
-              className="mt-1 select-none text-[8px] tracking-[0.4em] text-stone-400"
-              aria-hidden="true"
-            >
-              LÉNUE
-            </span>
+          )}
+          {imageUrl ? (
+            <Image
+              src={imageUrl}
+              alt={product.title}
+              fill
+              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className={`object-cover transition-transform duration-700 group-hover:scale-105 ${
+                isOutOfStock ? "opacity-90 saturate-[0.85]" : ""
+              }`}
+            />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-stone-50 to-stone-200 transition-transform duration-700 group-hover:scale-[1.02]">
+              <span
+                className="select-none font-serif text-7xl font-light text-stone-300"
+                aria-hidden="true"
+              >
+                L
+              </span>
+              <span
+                className="mt-1 select-none text-[8px] tracking-[0.4em] text-stone-400"
+                aria-hidden="true"
+              >
+                LÉNUE
+              </span>
+            </div>
+          )}
+        </Link>
+        {!isOutOfStock && (
+          <div
+            data-testid="add-to-selection-overlay"
+            className="absolute inset-x-0 bottom-0 z-10 opacity-100 transition-opacity duration-300 xl:opacity-0 xl:group-hover:opacity-100"
+          >
+            <AddToSelectionButton
+              item={{ slug: product.slug, title: product.title, price: product.price }}
+              variant="overlay"
+            />
           </div>
         )}
       </div>
-      <div className="mt-3 space-y-1 px-0.5">
-        <p className="text-sm font-medium leading-snug text-stone-900">{product.title}</p>
-        <p className="text-sm font-light text-stone-400">{formattedPrice}</p>
-      </div>
+      <Link
+        href={`/produits/${product.slug}`}
+        className="block"
+        tabIndex={-1}
+        aria-hidden="true"
+      >
+        <div className="mt-3 space-y-1 px-0.5">
+          <p className="text-sm font-medium leading-snug text-stone-900">{product.title}</p>
+          <p className="text-sm font-light text-stone-400">{formattedPrice}</p>
+        </div>
       </Link>
-      {!isOutOfStock && (
-        <AddToSelectionButton
-          item={{ slug: product.slug, title: product.title, price: product.price }}
-          className="mt-2 px-0.5"
-        />
-      )}
     </article>
   );
 }
