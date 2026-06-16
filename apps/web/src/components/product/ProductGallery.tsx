@@ -45,7 +45,7 @@ export function ProductGallery({ slug, mainImage, gallery, title }: ProductGalle
   const activeUrl = allUrls[activeIndex] ?? null;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-maison="product-gallery">
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-stone-100">
         {activeUrl ? (
           <Image

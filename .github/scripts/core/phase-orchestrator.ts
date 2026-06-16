@@ -39,6 +39,12 @@ import {
 import fs from "node:fs";
 import path from "node:path";
 import { execSync, execFileSync } from "node:child_process";
+import {
+  canPrReady,
+  compileManagerAllowlist,
+  getOpenLuxuryFloors,
+  LUXURY_LOG_REL,
+} from "./orchestrator-allowlist";
 
 // ---------------------------------------------------------------------------
 // Environment
@@ -786,12 +792,33 @@ Automation is re-invoking you to **continue** until the work merges or you block
 `
     : "";
 
-  return `${remediation}${ORCHESTRATOR_BRANCH_RULES}${body}`
+  const base = `${remediation}${ORCHESTRATOR_BRANCH_RULES}${body}`
     .replace(/\{TRACKING_PR_NUMBER\}/g, String(trackingPR.number))
     .replace(/\{TRACKING_PR_BRANCH\}/g, trackingPR.branch)
     .replace(/\{REPO\}/g, repo!)
     .replace(/\{TRACKING_BASE\}/g, trackingBase)
     .replace(/\{STEP_ID\}/g, id);
+
+  const compiled = compileManagerAllowlist({
+    repoRoot: process.cwd(),
+    scopeSliceFile: stepRow.workload.scopeSliceFile,
+    featureAreaFile: stepRow.workload.featureAreaFile,
+    basePrompt: base,
+    remediation,
+  });
+
+  if (!compiled.ok) {
+    console.error(`❌ Luxury allowlist compile failed: ${compiled.reason}`);
+    process.exit(1);
+  }
+
+  return compiled.prompt;
+}
+
+function readOpenLuxuryFloorsFromDisk(): ReturnType<typeof getOpenLuxuryFloors> {
+  const logPath = path.join(process.cwd(), LUXURY_LOG_REL);
+  if (!fs.existsSync(logPath)) return [];
+  return getOpenLuxuryFloors(fs.readFileSync(logPath, "utf8"));
 }
 
 /**
@@ -887,7 +914,12 @@ async function executeAgentRun(step: string, trackingPR: TrackingPR, remediate: 
 
       // Work is done on the branch. If the agent forgot to flip the PR ready,
       // do it for them (idempotent) so pr-ready.yml / cleanup can merge it.
-      if (trackingPRIsDraft) {
+      const openFloors = readOpenLuxuryFloorsFromDisk();
+      if (!canPrReady(openFloors)) {
+        console.warn(
+          `⚠️  Open maison floor_id rows block gh pr ready: ${openFloors.map((r) => r.floor_id).join(", ")}`,
+        );
+      } else if (trackingPRIsDraft) {
         try {
           gh(`pr ready ${trackingPR.number} --repo "${repo}"`);
           console.log(`🟢 Marked tracking PR #${trackingPR.number} ready for review (agent reported complete).`);
