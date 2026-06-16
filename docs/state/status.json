@@ -10,7 +10,7 @@
       "orch-cms-products--order-viewing": "complete",
       "orch-editorial--brand-page": "complete",
       "orch-i18n--localized-storefront": "complete",
-      "orch-selection-ux--p0-primary-cta": "not-started",
+      "orch-selection-ux--p0-primary-cta": "in-progress",
       "orch-selection-ux--p0-list-overlay": "todo",
       "orch-selection-ux--p0-drawer-motion": "todo"
     },
