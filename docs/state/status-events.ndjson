@@ -107,3 +107,7 @@
 {"ts":"2026-06-16T20:54:49.556Z","step":"orch-selection-ux--p0-primary-cta","status":"complete","note":"All checks green, luxury-gate can_pr_ready=true","actor":"agent"}
 {"ts":"2026-06-16T20:46:37.208Z","step":"orch-selection-ux--p0-primary-cta","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-16T21:00:03.458Z","step":"orch-selection-ux--p0-primary-cta","status":"complete","note":"re-affirm: all checks green (90 web tests, typecheck clean), PR #81 already open, remediation pass","actor":"agent"}
+{"ts":"2026-06-16T22:07:44.119Z","step":"orch-selection-ux--p0-primary-cta","status":"complete","note":"remediation pass: 90 web tests green, typecheck clean, luxury-gate (check-cms + check-assets + fixture) all pass","actor":"agent"}
+{"ts":"2026-06-16T22:12:17.455Z","step":"orch-selection-ux--p0-list-overlay","status":"in-progress","actor":"orchestrator"}
+{"ts":"2026-06-16T22:12:33.264Z","step":"orch-selection-ux--p0-list-overlay","status":"not-started","note":"orphan reset (agent failed)","actor":"orchestrator"}
+{"ts":"2026-06-16T22:12:36.916Z","step":"orch-selection-ux--p0-list-overlay","status":"in-progress","actor":"orchestrator"}

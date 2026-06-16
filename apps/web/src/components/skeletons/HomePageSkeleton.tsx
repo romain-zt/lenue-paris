@@ -3,10 +3,10 @@ export function HomePageSkeleton() {
   return (
     <main aria-busy="true" aria-label="Chargement">
       <section
-        data-maison="hero"
+        data-maison="hero-skeleton"
         className="relative -mt-16 h-[100svh] min-h-[100dvh] overflow-hidden bg-stone-800 md:-mt-[72px]"
       >
-        <div className="absolute inset-0 animate-pulse bg-stone-700" data-maison="hero-image" />
+        <div className="absolute inset-0 animate-pulse bg-stone-700" data-maison="hero-skeleton-image" />
         <div className="absolute bottom-0 left-0 space-y-4 px-6 py-10 sm:px-10 sm:py-14">
           <div className="h-3 w-28 animate-pulse rounded bg-white/20" />
           <div className="h-12 w-48 animate-pulse rounded bg-white/15 sm:h-14 sm:w-56" />

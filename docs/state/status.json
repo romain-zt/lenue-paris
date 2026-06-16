@@ -11,7 +11,7 @@
       "orch-editorial--brand-page": "complete",
       "orch-i18n--localized-storefront": "complete",
       "orch-selection-ux--p0-primary-cta": "complete",
-      "orch-selection-ux--p0-list-overlay": "todo",
+      "orch-selection-ux--p0-list-overlay": "in-progress",
       "orch-selection-ux--p0-drawer-motion": "todo"
     },
     "remediation_counts": {
@@ -20,7 +20,7 @@
       "orch-cms-products--order-viewing": 1,
       "orch-editorial--brand-page": 4,
       "orch-i18n--localized-storefront": 1,
-      "orch-selection-ux--p0-primary-cta": 2
+      "orch-selection-ux--p0-primary-cta": 4
     }
   }
 }

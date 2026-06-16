@@ -39,7 +39,8 @@ jobs:
       DATABASE_URL: postgresql://e2e:e2e@localhost:5433/e2e
       TEST_DATABASE_URL: postgresql://e2e:e2e@localhost:5433/e2e
       PAYLOAD_SECRET: ci-placeholder-secret-for-migrations
-      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3001
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
 
     steps:
       - uses: actions/checkout@v4
@@ -69,11 +70,26 @@ jobs:
         if: steps.detect.outputs.has_e2e == 'true'
         run: pnpm install --no-frozen-lockfile
 
+      - name: Install Playwright browsers
+        if: steps.detect.outputs.has_e2e == 'true'
+        run: pnpm --filter web exec playwright install --with-deps chromium
+
+      - name: Create .env for seed script
+        if: steps.detect.outputs.has_e2e == 'true'
+        run: |
+          echo "DATABASE_URL=postgresql://e2e:e2e@localhost:5433/e2e" >> .env
+          echo "PAYLOAD_SECRET=ci-placeholder-secret-for-e2e" >> .env
+
       - name: Build storefront for E2E
         if: steps.detect.outputs.has_e2e == 'true'
         run: |
           pnpm --filter web exec payload migrate
           pnpm --filter web build
+
+      - name: Seed storefront content
+        if: steps.detect.outputs.has_e2e == 'true'
+        working-directory: apps/web
+        run: pnpm exec tsx src/seed.ts
 
       - name: Run E2E tests
         if: steps.detect.outputs.has_e2e == 'true'

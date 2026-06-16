@@ -4,11 +4,12 @@ import { HomePageSkeleton } from "../HomePageSkeleton";
 import { CatalogueGridSkeleton } from "../CatalogueGridSkeleton";
 
 describe("loading skeletons", () => {
-  it("HomePageSkeleton exposes data-maison hero and catalogue-grid hooks", () => {
+  it("HomePageSkeleton exposes skeleton hooks distinct from live hero instrumentation", () => {
     const { container } = render(<HomePageSkeleton />);
-    expect(container.querySelector('[data-maison="hero"]')).not.toBeNull();
-    expect(container.querySelector('[data-maison="hero-image"]')).not.toBeNull();
+    expect(container.querySelector('[data-maison="hero-skeleton"]')).not.toBeNull();
+    expect(container.querySelector('[data-maison="hero-skeleton-image"]')).not.toBeNull();
     expect(container.querySelector('[data-maison="catalogue-grid"]')).not.toBeNull();
+    expect(container.querySelector('[data-maison="hero"]')).toBeNull();
   });
 
   it("CatalogueGridSkeleton exposes data-maison catalogue-grid with two-column layout", () => {
