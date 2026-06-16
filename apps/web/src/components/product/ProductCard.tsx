@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { AddToSelectionButton } from "@/components/selection/AddToSelectionButton";
 import { getProductMainImageUrl } from "@/lib/productImages";
 import type { Product } from "@/types/product";
 
@@ -21,11 +22,12 @@ export function ProductCard({ product }: ProductCardProps) {
   }).format(product.price);
 
   return (
-    <Link
-      href={`/produits/${product.slug}`}
-      className="group block"
-      aria-label={product.title}
-    >
+    <article className="group">
+      <Link
+        href={`/produits/${product.slug}`}
+        className="block"
+        aria-label={product.title}
+      >
       <div className="relative aspect-[3/4] overflow-hidden bg-stone-100">
         {isOutOfStock && (
           <span className="absolute left-2 top-2 z-10 max-w-[calc(100%-1rem)] bg-white/95 px-2.5 py-1 text-[9px] font-medium uppercase leading-snug tracking-[0.12em] text-stone-800 shadow-sm">
@@ -63,6 +65,13 @@ export function ProductCard({ product }: ProductCardProps) {
         <p className="text-sm font-medium leading-snug text-stone-900">{product.title}</p>
         <p className="text-sm font-light text-stone-400">{formattedPrice}</p>
       </div>
-    </Link>
+      </Link>
+      {!isOutOfStock && (
+        <AddToSelectionButton
+          item={{ slug: product.slug, title: product.title, price: product.price }}
+          className="mt-2 px-0.5"
+        />
+      )}
+    </article>
   );
 }

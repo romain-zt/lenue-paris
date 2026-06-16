@@ -89,5 +89,21 @@
     "boutique": "Бутик",
     "catalogue": "Коллекция",
     "about": "О нас"
+  },
+  "selection": {
+    "pillCount": "Мой выбор · {count}",
+    "panelTitle": "Мой выбор",
+    "closePanel": "Закрыть",
+    "empty": "Добавьте до 3 вещей из коллекции.",
+    "add": "Добавить в мой выбор",
+    "added": "Добавлено",
+    "alreadyAdded": "Уже в вашем выборе",
+    "full": "Максимум 3 вещи",
+    "remove": "Убрать",
+    "clearAll": "Очистить всё",
+    "continueWhatsApp": "Продолжить в WhatsApp",
+    "whatsappIntro": "Здравствуйте — меня интересуют эти вещи Lénue:",
+    "whatsappPieceLine": "• {title} — {url} ({price})",
+    "whatsappPieceLineWithDetails": "• {title} — {url} ({details}, {price})"
   }
 }

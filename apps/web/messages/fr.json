@@ -89,5 +89,21 @@
     "boutique": "Boutique",
     "catalogue": "Catalogue",
     "about": "À propos"
+  },
+  "selection": {
+    "pillCount": "Ma sélection · {count}",
+    "panelTitle": "Ma sélection",
+    "closePanel": "Fermer",
+    "empty": "Ajoutez jusqu'à 3 pièces depuis la collection.",
+    "add": "Ajouter à ma sélection",
+    "added": "Ajoutée",
+    "alreadyAdded": "Déjà dans votre sélection",
+    "full": "Maximum 3 pièces",
+    "remove": "Retirer",
+    "clearAll": "Tout effacer",
+    "continueWhatsApp": "Continuer sur WhatsApp",
+    "whatsappIntro": "Bonjour — je souhaite ces pièces Lénue :",
+    "whatsappPieceLine": "• {title} — {url} ({price})",
+    "whatsappPieceLineWithDetails": "• {title} — {url} ({details}, {price})"
   }
 }

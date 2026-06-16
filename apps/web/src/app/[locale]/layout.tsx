@@ -11,6 +11,7 @@ import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { Header } from "@/components/Header";
 import { LivePreviewListener } from "@/components/cms/LivePreviewListener";
+import { SelectionProvider } from "@/lib/selection/SelectionProvider";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 
 const cormorant = Cormorant_Garamond({
@@ -70,9 +71,10 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     <html lang={locale} className={`${cormorant.variable} ${jost.variable}`}>
       <body className="bg-white font-sans text-stone-900 antialiased">
         <NextIntlClientProvider messages={messages}>
-          {isDraft && <LivePreviewListener />}
-          <Header />
-          {children}
+          <SelectionProvider>
+            {isDraft && <LivePreviewListener />}
+            <Header />
+            {children}
           <footer data-maison="footer" className="mt-12 border-t border-stone-200 py-6">
             <nav className="mx-auto flex max-w-screen-xl flex-wrap gap-4 px-4 text-sm text-stone-500 sm:px-6">
               <Link href="/" className="transition-colors hover:text-stone-900">
@@ -86,6 +88,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
               </Link>
             </nav>
           </footer>
+          </SelectionProvider>
         </NextIntlClientProvider>
       </body>
     </html>

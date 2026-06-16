@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter, usePathname } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import { SelectionPill } from "@/components/selection/SelectionPill";
 
 export function Header() {
   const t = useTranslations("nav");
@@ -110,7 +111,8 @@ export function Header() {
               </span>
             </Link>
 
-            <nav className="hidden flex-1 items-center justify-end gap-7 md:flex" aria-label={t("rightNav")}>
+            <nav className="hidden flex-1 items-center justify-end gap-5 md:flex" aria-label={t("rightNav")}>
+              <SelectionPill overlayMode={overlayMode} />
               {navRight.map((link) => (
                 <Link key={link.href} href={link.href} className={linkClass}>
                   {link.label}
@@ -144,8 +146,10 @@ export function Header() {
               </div>
             </nav>
 
+            <div className="flex items-center gap-2 md:hidden">
+            <SelectionPill overlayMode={overlayMode} />
             <button
-              className={`flex min-h-[44px] min-w-[44px] items-center justify-center transition-colors duration-[400ms] ${softEase} md:hidden ${
+              className={`flex min-h-[44px] min-w-[44px] items-center justify-center transition-colors duration-[400ms] ${softEase} ${
                 overlayMode ? "text-white hover:text-white/80" : "text-stone-800 hover:text-stone-600"
               }`}
               onClick={() => setOpen((v) => !v)}
@@ -171,6 +175,7 @@ export function Header() {
                 />
               </span>
             </button>
+            </div>
           </div>
         </div>
       </header>

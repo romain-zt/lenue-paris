@@ -13,7 +13,7 @@ interface OrderCTAProps {
   product: Product;
 }
 
-const WHATSAPP_PHONE = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "79117126262";
+import { buildWhatsAppUrl as toWhatsAppUrl } from "@/lib/whatsapp/config";
 
 export function OrderCTA({ product }: OrderCTAProps) {
   const t = useTranslations("order");
@@ -51,7 +51,7 @@ export function OrderCTA({ product }: OrderCTAProps) {
 
   function buildWhatsAppUrl(name: string, contact: string): string {
     const message = buildWhatsAppMessage(name, contact);
-    return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+    return toWhatsAppUrl(message);
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -93,9 +93,7 @@ export function OrderCTA({ product }: OrderCTAProps) {
   }
 
   if (isOutOfStock) {
-    const interestUrl = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(
-      t("whatsappInterest", { title: product.title }),
-    )}`;
+    const interestUrl = toWhatsAppUrl(t("whatsappInterest", { title: product.title }));
 
     return (
       <div className="space-y-4 rounded-sm border border-stone-200 bg-stone-50 p-5">

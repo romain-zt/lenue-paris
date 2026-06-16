@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { OrderCTA } from "@/components/product/OrderCTA";
+import { AddToSelectionButton } from "@/components/selection/AddToSelectionButton";
 import { mapPayloadProductDetail } from "@/lib/cms/blocks";
 import { getPreviewSiteUrl } from "@/lib/cms/generatePreviewPath";
 import type { Product as PayloadProduct } from "@/payload-types";
@@ -63,6 +64,12 @@ export function ProductPageContent({ initialProduct, locale }: ProductPageConten
 
           {product.description && (
             <p className="text-sm leading-relaxed text-stone-600">{product.description}</p>
+          )}
+
+          {product.inStock !== false && (
+            <AddToSelectionButton
+              item={{ slug: product.slug, title: product.title, price: product.price }}
+            />
           )}
 
           <OrderCTA product={product} />
