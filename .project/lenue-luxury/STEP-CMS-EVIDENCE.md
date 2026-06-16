@@ -275,7 +275,7 @@ Only these paths may change in the **CMS-a½** commit:
 ## CMS-a½ pass record (fill when green)
 
 ```
-commit:
+commit: 978915c
 collections_seeded: [ete-2026, sacs, nouveautes]
 catalogue_page_slug: catalogue
 featured_source_type: manual
@@ -283,4 +283,5 @@ migration_idempotent: true
 blocks_test: 3/3
 tsc: pass
 forbidden_paths_touched: none
+pass: true
 ```
