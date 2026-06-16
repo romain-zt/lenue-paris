@@ -31,21 +31,21 @@ cat > "$DATA/agent-bindings.json" <<'EOF'
 }
 EOF
 
-cat > "$DATA/participants.json" <<'EOF'
+cat > "$DATA/participants.json" <<EOF
 {
   "maison_lens": {
     "name": "Maison Lens",
     "label": "Agent · luxury retail digital",
     "color": "hsl(312 55% 52%)",
     "persona": "Haute boutique web: editorial typography, product photography cadence, fr/en/ru voice parity, WhatsApp-as-checkout tone — scores what feels maison-grade vs marketplace-generic",
-    "skillPath": ".data/skills/maison_lens/SKILL.md"
+    "skillPath": "$DATA/skills/maison_lens/SKILL.md"
   },
   "payload_architect": {
     "name": "Payload Architect",
     "label": "Agent · payload cms",
     "color": "hsl(48 55% 52%)",
     "persona": "Payload CMS + Next.js live preview, tri-locale admin UX, and product-centric editorial architecture for luxury commerce — not page-per-product sprawl",
-    "skillPath": ".data/skills/payload_architect/SKILL.md"
+    "skillPath": "$DATA/skills/payload_architect/SKILL.md"
   }
 }
 EOF

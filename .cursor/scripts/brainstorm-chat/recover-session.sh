@@ -1,37 +1,57 @@
 #!/usr/bin/env bash
-# Restore .data from the last APFS snapshot before the accidental wipe (~22:18).
-# Requires sudo (macOS will prompt for your password).
+# Recover brainstorm session data.
+# 1) Try APFS snapshot (needs Terminal Full Disk Access + sudo)
+# 2) Fall back to reconstructing messages from Cursor agent transcripts
 set -euo pipefail
 
-SNAP="com.apple.TimeMachine.2026-06-16-202524.local"
-MNT="/tmp/brainstorm-snap-recovery"
 DIR="/Users/romainpiveteau/Projects/AI/lenue-paris/.cursor/scripts/brainstorm-chat"
+SNAP="${RECOVER_SNAP:-com.apple.TimeMachine.2026-06-16-202524.local}"
+MNT="/tmp/brainstorm-snap-recovery"
 DATA_REL="Users/romainpiveteau/Projects/AI/lenue-paris/.cursor/scripts/brainstorm-chat/.data"
 
-echo "Mounting snapshot $SNAP …"
-sudo mkdir -p "$MNT"
-sudo mount_apfs -s "$SNAP" /System/Volumes/Data "$MNT"
+cd "$DIR"
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+[[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
 
-SRC="$MNT/$DATA_REL"
-if [[ ! -f "$SRC/messages.jsonl" ]]; then
-  echo "messages.jsonl not found in snapshot — aborting."
-  sudo umount "$MNT" || true
-  exit 1
+try_snapshot() {
+  echo "Trying APFS snapshot $SNAP …"
+  mkdir -p "$MNT"
+  if ! mount_apfs -s "$SNAP" /System/Volumes/Data "$MNT" 2>/dev/null; then
+    if ! sudo mount_apfs -s "$SNAP" /System/Volumes/Data "$MNT" 2>/dev/null; then
+      return 1
+    fi
+  fi
+
+  local src="$MNT/$DATA_REL"
+  if [[ ! -s "$src/messages.jsonl" ]]; then
+    umount "$MNT" 2>/dev/null || sudo umount "$MNT" 2>/dev/null || true
+    return 1
+  fi
+
+  local backup="$DIR/.data.wiped-$(date +%Y%m%d-%H%M%S)"
+  [[ -d "$DIR/.data" ]] && cp -a "$DIR/.data" "$backup"
+
+  mkdir -p "$DIR/.data"
+  cp -a "$src/." "$DIR/.data/"
+  [[ -f "${backup:-}/ensure-running.log" ]] && cp "$backup/ensure-running.log" "$DIR/.data/"
+
+  umount "$MNT" 2>/dev/null || sudo umount "$MNT" 2>/dev/null || true
+  echo "Restored full .data from snapshot."
+  return 0
+}
+
+echo "=== Step 1: restore session metadata ==="
+./restore-last-session.sh
+
+echo ""
+echo "=== Step 2: recover messages ==="
+if try_snapshot; then
+  echo "Snapshot recovery succeeded."
+else
+  echo "Snapshot mount blocked (common on macOS without Full Disk Access for Terminal)."
+  echo "Reconstructing messages from Cursor agent transcripts instead …"
+  node reconstruct-messages.mjs
 fi
 
-BYTES=$(wc -c < "$SRC/messages.jsonl" | tr -d ' ')
-echo "Found messages.jsonl ($BYTES bytes) in snapshot."
-
-BACKUP="$DIR/.data.wiped-$(date +%Y%m%d-%H%M%S)"
-if [[ -d "$DIR/.data" ]]; then
-  cp -a "$DIR/.data" "$BACKUP"
-  echo "Current .data backed up to $BACKUP"
-fi
-
-mkdir -p "$DIR/.data"
-cp -a "$SRC/." "$DIR/.data/"
-# keep ensure-running.log from current install
-[[ -f "$BACKUP/ensure-running.log" ]] && cp "$BACKUP/ensure-running.log" "$DIR/.data/"
-
-sudo umount "$MNT"
-echo "Restored .data from snapshot. Restart the server: npm start"
+echo ""
+echo "Done. Restart: npm start"

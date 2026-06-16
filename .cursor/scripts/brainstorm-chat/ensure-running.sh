@@ -5,7 +5,7 @@ DIR="/Users/romainpiveteau/Projects/AI/lenue-paris/.cursor/scripts/brainstorm-ch
 URL="http://localhost:3847"
 PORT=3847
 LOG="$DIR/.data/ensure-running.log"
-STARTUP_WAIT_SECS=30
+STARTUP_WAIT_SECS=120
 
 export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 if [[ -s "$NVM_DIR/nvm.sh" ]]; then
@@ -41,7 +41,11 @@ pid=$!
 
 for _ in $(seq 1 "$STARTUP_WAIT_SECS"); do
   if http_ok; then
-    log "up — pid $pid"
+    if grep -q "Agents ready" "$LOG" 2>/dev/null; then
+      log "up — pid $pid (agents ready)"
+    else
+      log "up — pid $pid"
+    fi
     exit 0
   fi
   if ! kill -0 "$pid" 2>/dev/null; then
