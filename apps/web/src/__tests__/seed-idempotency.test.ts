@@ -1,4 +1,11 @@
+/** @vitest-environment node */
+import { config as loadEnv } from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import { describe, expect, it } from "vitest";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+loadEnv({ path: path.resolve(__dirname, "../../../../.env") });
 import { getPayload } from "payload";
 import config from "@payload-config";
 import { seed } from "../seed";
@@ -36,6 +43,7 @@ describe("seed idempotency", () => {
         process.env.PAYLOAD_SECRET = "test-secret-for-seed-idempotency";
       }
 
+      process.env.SEED_SKIP_HOME_IF_PUBLISHED = "false";
       await seed();
 
       const payload = await getPayload({ config });
@@ -55,6 +63,7 @@ describe("seed idempotency", () => {
       const featuredCountFirst = countFeaturedProductsInPage(afterFirst.docs[0]);
       expect(featuredCountFirst).toBe(FEATURED_COUNT);
 
+      process.env.SEED_SKIP_HOME_IF_PUBLISHED = "true";
       await seed();
 
       const afterSecond = await payload.find({
@@ -77,6 +86,7 @@ describe("seed idempotency", () => {
           id: homeId!,
           locale,
           depth: 0,
+          draft: false,
         });
         expect(localized._status).toBe("published");
         expect(Array.isArray(localized.blocks)).toBe(true);

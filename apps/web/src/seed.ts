@@ -15,53 +15,20 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import fs from "fs";
-import { Client } from "pg";
 import { getPayload } from "payload";
 import config from "./payload.config";
-import { getPostgresPoolConfig } from "./lib/database";
 import { PRODUCT_IMAGES } from "./lib/productImages";
 
-/**
- * Drop columns whose Drizzle/Payload-desired type can no longer be
- * automatically cast from the existing PostgreSQL column type
- * (e.g. richText `body` was `text/varchar` and must become `jsonb`).
- *
- * Payload's dev schema push (drizzle-kit) does not emit a `USING …` clause,
- * so we surgically drop these columns first and let Payload recreate them
- * with the correct type on init.
- */
-async function preInitSchemaCleanup() {
-  const { connectionString, ssl } = getPostgresPoolConfig();
-  if (!connectionString) return;
+function envFlag(name: string, defaultValue: boolean): boolean {
+  const raw = process.env[name];
+  if (raw === undefined) return defaultValue;
+  return raw === "1" || raw.toLowerCase() === "true";
+}
 
-  const client = new Client({ connectionString, ssl });
-  await client.connect();
-  try {
-    // Columns that need to become jsonb but were previously text-like.
-    const targets: { table: string; column: string }[] = [
-      { table: "pages_locales", column: "body" },
-    ];
-
-    for (const { table, column } of targets) {
-      const { rows } = await client.query<{ data_type: string }>(
-        `SELECT data_type FROM information_schema.columns
-         WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2`,
-        [table, column],
-      );
-      const existing = rows[0]?.data_type;
-      if (!existing) continue; // table/column doesn't exist yet — nothing to do
-      if (existing === "jsonb") continue; // already correct
-
-      console.log(
-        `🧹 Dropping ${table}.${column} (was ${existing}) so Payload can recreate it as jsonb`,
-      );
-      await client.query(
-        `ALTER TABLE "${table}" DROP COLUMN IF EXISTS "${column}";`,
-      );
-    }
-  } finally {
-    await client.end();
-  }
+/** When true (default), skip overwriting a published home Page unless SEED_FORCE_HOME=1. */
+export function shouldSkipHomeSeed(): boolean {
+  if (envFlag("SEED_FORCE_HOME", false)) return false;
+  return envFlag("SEED_SKIP_HOME_IF_PUBLISHED", true);
 }
 
 const IMAGES_DIR = path.resolve(__dirname, "../public/images");
@@ -425,6 +392,22 @@ async function seedHomePage(
     limit: 1,
   });
 
+  if (existing.docs[0] && shouldSkipHomeSeed()) {
+    const published = await payload.findByID({
+      collection: "pages",
+      id: existing.docs[0].id,
+      locale: "fr",
+      depth: 0,
+      draft: false,
+    });
+    if (published._status === "published") {
+      console.log(
+        "  ⏭️  Skipping home page sync (published home exists — set SEED_FORCE_HOME=1 to overwrite)",
+      );
+      return existing.docs[0].id;
+    }
+  }
+
   let pageId: number | string;
 
   if (existing.docs[0]) {
@@ -437,6 +420,7 @@ async function seedHomePage(
         title: HOME_PAGE_COPY.en.title,
         slug: HOME_PAGE_SLUG,
         blocks: buildHomeBlocks("en", heroImageId, editorialImageId, featuredProductIds),
+        _status: "published",
       } as any,
       locale: "en",
       draft: false,
@@ -452,6 +436,7 @@ async function seedHomePage(
       data: {
         title: HOME_PAGE_COPY[locale].title,
         blocks: buildHomeBlocks(locale, heroImageId, editorialImageId, featuredProductIds),
+        _status: "published",
       } as any,
       locale,
       draft: false,
@@ -463,8 +448,6 @@ async function seedHomePage(
 }
 
 export async function seed() {
-  await preInitSchemaCleanup();
-
   const payload = await getPayload({ config });
 
   console.log("⚙  Payload initialized");

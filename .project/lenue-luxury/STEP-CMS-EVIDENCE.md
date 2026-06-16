@@ -180,9 +180,10 @@ These slices open only after **CMS-e** or in parallel if they do not touch CMS a
 ## CMS-a pass record (fill when green)
 
 ```
-commit:
+commit: d739fee
 seed_twice_pages_home_count: 1
 seed_twice_featured_count_unchanged: true
+SEED_SKIP_HOME_IF_PUBLISHED: true (default)
 forbidden_paths_touched: none
 ```
 
