@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { buildMultiPieceWhatsAppMessage } from "@/lib/selection/buildMultiPieceWhatsAppMessage";
 import { useSelection } from "@/lib/selection/SelectionProvider";
@@ -10,12 +11,30 @@ type SelectionPanelProps = {
   onClose: () => void;
 };
 
+const panelEase = "ease-[cubic-bezier(0.25,0.8,0.25,1)]";
+
 export function SelectionPanel({ open, onClose }: SelectionPanelProps) {
   const t = useTranslations("selection");
   const tOrder = useTranslations("order");
   const tProduct = useTranslations("product");
   const locale = useLocale();
   const { items, removeItem, clear } = useSelection();
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      const raf = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setVisible(true));
+      });
+      return () => cancelAnimationFrame(raf);
+    }
+
+    setVisible(false);
+    const timer = setTimeout(() => setMounted(false), 350);
+    return () => clearTimeout(timer);
+  }, [open]);
 
   const whatsAppUrl =
     items.length > 0
@@ -41,21 +60,27 @@ export function SelectionPanel({ open, onClose }: SelectionPanelProps) {
         )
       : null;
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   return (
     <>
       <button
         type="button"
         aria-label={t("closePanel")}
-        className="fixed inset-0 z-[60] bg-stone-900/20"
+        className={`fixed inset-0 z-[60] bg-stone-900/20 transition-opacity duration-200 ${panelEase} motion-reduce:!transition-none ${
+          visible ? "opacity-100" : "opacity-0"
+        }`}
         onClick={onClose}
       />
       <aside
         role="dialog"
         aria-modal="true"
         aria-labelledby="selection-panel-title"
-        className="fixed bottom-0 left-0 right-0 z-[70] max-h-[85vh] overflow-y-auto rounded-t-lg border border-stone-200 bg-white shadow-[0_-8px_32px_rgba(0,0,0,0.08)] sm:bottom-auto sm:left-auto sm:right-4 sm:top-20 sm:max-h-[calc(100vh-6rem)] sm:w-[min(100%,22rem)] sm:rounded-lg"
+        className={`fixed bottom-0 left-0 right-0 z-[70] max-h-[85vh] overflow-y-auto rounded-t-lg border border-stone-200 bg-white shadow-[0_-8px_32px_rgba(0,0,0,0.08)] transition-transform duration-300 ${panelEase} motion-reduce:!transition-none sm:bottom-auto sm:left-auto sm:right-4 sm:top-20 sm:max-h-[calc(100vh-6rem)] sm:w-[min(100%,22rem)] sm:rounded-lg sm:transition-[opacity,transform] sm:duration-[250ms] sm:ease-[cubic-bezier(0.25,0.8,0.25,1)] ${
+          visible
+            ? "translate-y-0 sm:opacity-100 sm:translate-y-0"
+            : "translate-y-full sm:opacity-0 sm:-translate-y-1.5"
+        }`}
       >
         <div className="flex items-center justify-between border-b border-stone-100 px-4 py-4 sm:px-5">
           <h2 id="selection-panel-title" className="text-sm font-medium tracking-wide text-stone-900">
