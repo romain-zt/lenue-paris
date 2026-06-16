@@ -21,6 +21,8 @@ const hintEl = document.getElementById("hint");
 
 /** @type {Record<string, { name: string; label: string; color: string }>} */
 let participants = {};
+/** @type {Record<string, string>} */
+let agentBindings = {};
 /** @type {Set<string>} */
 const typing = new Set();
 /** @type {Array<{ author: string; phase: string; detail: string; ts: number; tool?: string }>} */
@@ -56,6 +58,11 @@ function formatElapsed(ms) {
   return `${m}m ${s % 60}s`;
 }
 
+function cursorAgentUrl(agentId) {
+  if (!agentId) return null;
+  return `https://cursor.com/agents/${encodeURIComponent(agentId)}`;
+}
+
 function phaseLabel(phase) {
   const map = {
     thinking: "Thinking",
@@ -76,16 +83,25 @@ function renderParticipants() {
   for (const [id, p] of Object.entries(participants)) {
     const row = document.createElement("div");
     const isActive = activeAuthor === id;
+    const agentId = agentBindings[id];
+    const dashboardUrl = id !== "human" ? cursorAgentUrl(agentId) : null;
     row.className =
       "participant" +
       (typing.has(id) ? " typing" : "") +
-      (isActive ? " active-agent" : "");
+      (isActive ? " active-agent" : "") +
+      (dashboardUrl ? " has-dashboard" : "");
     row.innerHTML = `
       <span class="dot" style="background:${p.color}"></span>
       <div class="meta">
         <div class="name">${escapeHtml(p.name)}</div>
         <div class="label">${escapeHtml(p.label)}</div>
-      </div>`;
+      </div>${
+        dashboardUrl
+          ? `<div class="participant-popover" role="tooltip">
+        <a class="participant-link" href="${escapeHtml(dashboardUrl)}" target="_blank" rel="noopener noreferrer">Open in Cursor ↗</a>
+      </div>`
+          : ""
+      }`;
     participantsEl.appendChild(row);
   }
 }
@@ -278,6 +294,7 @@ function handleServerMessage(data) {
   switch (data.type) {
     case "init":
       participants = data.participants;
+      agentBindings = data.agentBindings || {};
       brainstormActive = data.brainstormActive;
       agentsPaused = data.agentsPaused;
       waitingForHuman = data.waitingForHuman;
@@ -296,6 +313,11 @@ function handleServerMessage(data) {
       break;
     case "participants_update":
       participants = data.participants;
+      if (data.agentBindings) agentBindings = data.agentBindings;
+      renderParticipants();
+      break;
+    case "agent_bindings_update":
+      agentBindings = data.agentBindings || {};
       renderParticipants();
       break;
     case "message":

@@ -181,7 +181,19 @@ function broadcastGoal(wss) {
 
 /** @param {WebSocketServer} wss */
 function broadcastParticipants(wss) {
-  broadcast(wss, { type: "participants_update", participants: allParticipants() });
+  broadcast(wss, {
+    type: "participants_update",
+    participants: allParticipants(),
+    agentBindings: { ...agentBindings },
+  });
+}
+
+/** @param {WebSocketServer} wss */
+function broadcastAgentBindings(wss) {
+  broadcast(wss, {
+    type: "agent_bindings_update",
+    agentBindings: { ...agentBindings },
+  });
 }
 
 /** @param {WebSocketServer} wss */
@@ -539,7 +551,7 @@ function baseAgentOptions(name) {
   return {
     apiKey,
     name,
-    model: { id: "composer-2.5" },
+    model: { id: "default" },
     local: { cwd: REPO_ROOT, settingSources: [] },
   };
 }
@@ -566,6 +578,7 @@ async function createFreshAgent(author, displayName) {
   agentInstances[author] = agent;
   agentBindings[author] = agent.agentId;
   store.saveAgentBindings(agentBindings);
+  broadcastAgentBindings(wss);
   console.log(`Created ${displayName} (${agent.agentId})`);
   return agent;
 }
@@ -1176,6 +1189,7 @@ wss.on("connection", (socket) => {
       type: "init",
       sessionId: sessionState.sessionId,
       participants: allParticipants(),
+      agentBindings: { ...agentBindings },
       messages,
       assets: sessionAssets,
       brainstormActive: loopRunning,
