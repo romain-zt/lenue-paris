@@ -220,6 +220,19 @@ Tracking PR #81 (`orchestrator/tracking-orch-selection-ux--p0-primary-cta-178164
 - E2E failure (`maison-hooks.spec.ts` — server timeout on port 3001) is pre-existing across all PRs containing that spec; `REQUIRED_CHECKS` is `'quality'` only — E2E does not block merge.
 - 90 web unit tests + typecheck clean confirmed locally.
 
+**`orch-selection-ux--p0-list-overlay` — VALIDATED (2026-06-16)**
+
+Tracking PR #84 (`orchestrator/tracking-orch-selection-ux--p0-list-overlay-1781647954597`).
+
+**What was built:**
+
+- **`AddToSelectionButton`**: Added `variant?: "default" | "overlay"` prop. Overlay variant: full-width (`w-full`), `bg-white/90`, `min-h-[36px]`, no absolute positioning (parent handles layout). Selected state shows quiet `t("inSelection")` label instead of `t("added")`.
+- **`ProductCard`**: Restructured tile — image area uses an absolute-positioned `<Link>` cover for navigation; overlay `<div>` is outside the link at `z-10`; always visible below `xl` (≤1279px), hover fade at `xl` (≥1280px via `xl:opacity-0 xl:group-hover:opacity-100`). Out-of-stock products show no overlay.
+- **Messages (`fr/en/ru`)**: Added `"inSelection"` key — fr: "Dans ma sélection", en: "In my selection", ru: "В моей подборке".
+- **Tests**: 5 `ProductCard` tests + 4 new `AddToSelectionButton` tests (96 total, all green). Typecheck clean.
+
+**Checks:** 96 web tests green, typecheck clean. luxury-gate infra (sharp + dev server) not available in agent env; `can_pr_ready: true` (no open floor failures listed).
+
 ## Next recommended step
 
 1. **`orch-storefront-shell--global-chrome`** (P0) — shared layout/chrome (header, navigation) so both pages have proper context; unblocks visual QA.
