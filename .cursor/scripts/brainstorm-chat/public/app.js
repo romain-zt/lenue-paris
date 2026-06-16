@@ -47,7 +47,6 @@ let reconnectTimer = null;
 
 const wsProto = location.protocol === "https:" ? "wss" : "ws";
 let ws = null;
-let wantsFreshStart = true;
 
 function escapeHtml(s) {
   return s
@@ -513,10 +512,7 @@ function connectWebSocket() {
       clearInterval(reconnectTimer);
       reconnectTimer = null;
     }
-    ws.send(
-      JSON.stringify({ type: wantsFreshStart ? "fresh_start" : "sync" }),
-    );
-    wantsFreshStart = false;
+    ws.send(JSON.stringify({ type: "sync" }));
     updateStatus();
     updateComposerState();
     startHeartbeatTicker();
