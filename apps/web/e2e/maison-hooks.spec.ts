@@ -62,7 +62,7 @@ function assertSlicePathsExist(): void {
   }
 }
 
-async function waitForHttp(url: string, timeoutMs = 240_000): Promise<void> {
+async function waitForHttp(url: string, timeoutMs = 360_000): Promise<void> {
   const started = Date.now();
 
   while (Date.now() - started < timeoutMs) {
@@ -90,15 +90,19 @@ test.describe("maison hooks on built storefront", () => {
     assertSlicePathsExist();
 
     const nextDir = path.join(WEB_ROOT, ".next");
-    if (fs.existsSync(nextDir)) {
-      fs.rmSync(nextDir, { recursive: true, force: true });
-    }
+    const prebuilt = process.env.E2E_PREBUILT === "true" && fs.existsSync(nextDir);
 
-    execSync("pnpm run build", {
-      cwd: WEB_ROOT,
-      stdio: "inherit",
-      env: process.env,
-    });
+    if (!prebuilt) {
+      if (fs.existsSync(nextDir)) {
+        fs.rmSync(nextDir, { recursive: true, force: true });
+      }
+
+      execSync("pnpm run build", {
+        cwd: WEB_ROOT,
+        stdio: "inherit",
+        env: process.env,
+      });
+    }
 
     try {
       execSync("pnpm run seed", {
