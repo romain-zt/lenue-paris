@@ -219,7 +219,7 @@ forbidden_paths_touched: none
 ## CMS-d pass record (fill when green)
 
 ```
-commit: (fill on push)
+commit: de03169
 admin_supported_languages: [en, fr, ru]
 fields_with_human_labels: Pages, Products, Media, Collections, Orders
 admin_groups: [Boutique, Contenu éditorial, Médias, Commandes]
