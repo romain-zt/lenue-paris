@@ -52,4 +52,19 @@ describe("ProductCard", () => {
     const link = screen.getByRole("link");
     expect(link.getAttribute("href")).toBe("/produits/robe-blanche");
   });
+
+  it("renders overlay AddToSelectionButton inside image container when in stock", () => {
+    render(<WithIntl><ProductCard product={mockProduct} /></WithIntl>);
+    const overlay = screen.getByTestId("add-to-selection-overlay");
+    expect(overlay).toBeDefined();
+    expect(screen.getByTestId("add-to-selection-button")).toBeDefined();
+    expect(screen.getByText("Ajouter à ma sélection")).toBeDefined();
+  });
+
+  it("does not render AddToSelectionButton overlay when out of stock", () => {
+    const outOfStockProduct = { ...mockProduct, inStock: false };
+    render(<WithIntl><ProductCard product={outOfStockProduct} /></WithIntl>);
+    expect(screen.queryByTestId("add-to-selection-overlay")).toBeNull();
+    expect(screen.queryByTestId("add-to-selection-button")).toBeNull();
+  });
 });

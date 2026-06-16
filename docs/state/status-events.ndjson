@@ -110,3 +110,4 @@
 {"ts":"2026-06-16T22:07:44.119Z","step":"orch-selection-ux--p0-primary-cta","status":"complete","note":"remediation pass: 90 web tests green, typecheck clean, luxury-gate (check-cms + check-assets + fixture) all pass","actor":"agent"}
 {"ts":"2026-06-16T22:12:17.455Z","step":"orch-selection-ux--p0-list-overlay","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-16T22:12:33.264Z","step":"orch-selection-ux--p0-list-overlay","status":"not-started","note":"orphan reset (agent failed)","actor":"orchestrator"}
+{"ts":"2026-06-16T22:14:13.084Z","step":"orch-selection-ux--p0-list-overlay","status":"in-progress","note":"Starting overlay UI implementation","actor":"agent"}

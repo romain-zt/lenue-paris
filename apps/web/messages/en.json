@@ -97,6 +97,7 @@
     "empty": "Add up to 3 pieces from the collection.",
     "add": "Add to my selection",
     "added": "Added",
+    "inSelection": "In my selection",
     "alreadyAdded": "Already in your selection",
     "full": "Maximum 3 pieces",
     "remove": "Remove",
