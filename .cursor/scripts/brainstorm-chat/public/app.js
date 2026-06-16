@@ -47,6 +47,7 @@ let reconnectTimer = null;
 
 const wsProto = location.protocol === "https:" ? "wss" : "ws";
 let ws = null;
+let wantsFreshStart = true;
 
 function escapeHtml(s) {
   return s
@@ -371,6 +372,10 @@ function startHeartbeatTicker() {
 function handleServerMessage(data) {
   switch (data.type) {
     case "init":
+      activityLog.length = 0;
+      openActivityIds.clear();
+      activityIdCounter = 0;
+      loopPhase = "idle";
       participants = data.participants;
       agentBindings = data.agentBindings || {};
       brainstormActive = data.brainstormActive;
@@ -380,9 +385,10 @@ function handleServerMessage(data) {
       autoRetryInSec = data.autoRetryInSec || 0;
       activeAuthor = data.activeAuthor || null;
       activeElapsedMs = data.activeElapsedMs || 0;
-      if (data.sessionTopic) topicInput.value = data.sessionTopic;
-      showGoal(data.conversationGoal || data.sessionTopic);
+      topicInput.value = data.sessionTopic || "";
+      showGoal(data.conversationGoal || "");
       renderParticipants();
+      renderActivity();
       renderAssets(data.assets || []);
       chatEl.innerHTML = "";
       for (const msg of data.messages) appendMessage(msg);
@@ -507,6 +513,10 @@ function connectWebSocket() {
       clearInterval(reconnectTimer);
       reconnectTimer = null;
     }
+    ws.send(
+      JSON.stringify({ type: wantsFreshStart ? "fresh_start" : "sync" }),
+    );
+    wantsFreshStart = false;
     updateStatus();
     updateComposerState();
     startHeartbeatTicker();

@@ -156,6 +156,23 @@ export function createPersistence(dataDir) {
     return readFileSync(skillPath, "utf8");
   }
 
+  /** @param {string} sessionId */
+  function clearSession(sessionId) {
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
+    writeJsonAtomic(statePath, {
+      ...DEFAULT_STATE,
+      sessionId,
+      updatedAt: Date.now(),
+    });
+    rewriteMessages([]);
+    writeJsonAtomic(participantsPath, {});
+    writeJsonAtomic(agentBindingsPath, {});
+    writeJsonAtomic(assetsPath, []);
+  }
+
   return {
     dataDir,
     loadState,
@@ -172,5 +189,6 @@ export function createPersistence(dataDir) {
     recordAsset,
     writeSkillFile,
     readSkillFile,
+    clearSession,
   };
 }
