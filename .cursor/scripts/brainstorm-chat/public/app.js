@@ -25,9 +25,14 @@ let participants = {};
 let agentBindings = {};
 /** @type {Set<string>} */
 const typing = new Set();
-/** @type {Array<{ author: string; phase: string; detail: string; ts: number; tool?: string }>} */
+/** @type {Array<{ id: string; author: string; phase: string; detail: string; ts: number; tool?: string }>} */
 const activityLog = [];
 const MAX_ACTIVITY = 40;
+const STREAMING_PHASES = new Set(["writing", "thinking"]);
+const ACTIVITY_PREVIEW_LEN = 96;
+/** @type {Set<string>} */
+const openActivityIds = new Set();
+let activityIdCounter = 0;
 
 let brainstormActive = false;
 let agentsPaused = false;
@@ -61,6 +66,22 @@ function formatElapsed(ms) {
 function cursorAgentUrl(agentId) {
   if (!agentId) return null;
   return `https://cursor.com/agents/${encodeURIComponent(agentId)}`;
+}
+
+function formatActivityTime(ts) {
+  if (!ts) return "";
+  return new Date(ts).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+function activityPreview(detail) {
+  const text = (detail || "").trim();
+  if (!text) return "(empty)";
+  if (text.length <= ACTIVITY_PREVIEW_LEN) return text;
+  return `…${text.slice(-ACTIVITY_PREVIEW_LEN)}`;
 }
 
 function phaseLabel(phase) {
@@ -116,26 +137,83 @@ function renderActivity() {
   }
   activityCountEl.textContent = String(items.length);
   activityCountEl.hidden = false;
+  const newest = activityLog.at(-1);
+
   for (const item of items) {
-    const row = document.createElement("div");
-    row.className = `activity-item phase-${item.phase}`;
+    const detail = item.detail || "";
+    const isLiveStream =
+      item === newest &&
+      activeAuthor === item.author &&
+      STREAMING_PHASES.has(item.phase);
     const who = participants[item.author]?.name || item.author;
-    row.innerHTML = `
-      <div class="activity-head">
-        <span class="activity-who" style="color:${participants[item.author]?.color || "#888"}">${escapeHtml(who)}</span>
+    const color = participants[item.author]?.color || "#888";
+    const expandable = detail.length > ACTIVITY_PREVIEW_LEN;
+
+    const details = document.createElement("details");
+    details.className =
+      `activity-item phase-${item.phase}` +
+      (isLiveStream ? " activity-streaming" : "") +
+      (expandable ? " activity-expandable" : "");
+    details.dataset.id = item.id;
+    if (openActivityIds.has(item.id) || isLiveStream) details.open = true;
+
+    details.addEventListener("toggle", () => {
+      if (details.open) openActivityIds.add(item.id);
+      else openActivityIds.delete(item.id);
+    });
+
+    const summary = document.createElement("summary");
+    summary.className = "activity-summary";
+    summary.innerHTML = `
+      <span class="activity-summary-main">
+        <span class="activity-who" style="color:${color}">${escapeHtml(who)}</span>
         <span class="activity-phase">${escapeHtml(phaseLabel(item.phase))}</span>
-      </div>
-      <div class="activity-detail">${escapeHtml(item.detail || "")}</div>`;
-    activityFeedEl.appendChild(row);
+      </span>
+      <time class="activity-time" datetime="${new Date(item.ts).toISOString()}">${escapeHtml(formatActivityTime(item.ts))}</time>
+      <span class="activity-preview">${escapeHtml(activityPreview(detail))}</span>`;
+
+    details.appendChild(summary);
+
+    if (expandable) {
+      const body = document.createElement("div");
+      body.className = "activity-body";
+      body.textContent = detail || "(empty)";
+      details.appendChild(body);
+    }
+
+    activityFeedEl.appendChild(details);
   }
 }
 
-function pushActivity(item) {
-  activityLog.push(item);
-  if (activityLog.length > MAX_ACTIVITY * 2) {
-    activityLog.splice(0, activityLog.length - MAX_ACTIVITY);
+function recordActivity(item) {
+  const last = activityLog.at(-1);
+  const canMerge =
+    last &&
+    last.author === item.author &&
+    last.phase === item.phase &&
+    (item.phase === "tool"
+      ? last.tool === item.tool
+      : STREAMING_PHASES.has(item.phase));
+
+  if (canMerge) {
+    last.detail = item.detail ?? last.detail;
+    last.ts = item.ts;
+    if (item.tool) last.tool = item.tool;
+  } else {
+    activityLog.push({
+      ...item,
+      id: `act-${++activityIdCounter}`,
+    });
+    if (activityLog.length > MAX_ACTIVITY * 2) {
+      const removed = activityLog.splice(0, activityLog.length - MAX_ACTIVITY);
+      for (const r of removed) openActivityIds.delete(r.id);
+    }
   }
   renderActivity();
+}
+
+function pushActivity(item) {
+  recordActivity(item);
 }
 
 function renderAssets(assets) {
@@ -375,7 +453,7 @@ function handleServerMessage(data) {
       updateComposerState();
       break;
     case "activity":
-      pushActivity({
+      recordActivity({
         author: data.author,
         phase: data.phase,
         detail: data.detail,

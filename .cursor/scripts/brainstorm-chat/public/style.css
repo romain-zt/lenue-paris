@@ -352,18 +352,86 @@ body {
 }
 
 .activity-item {
-  padding: 0.4rem 0.5rem;
   border-radius: 8px;
   background: var(--bg);
   border: 1px solid var(--border);
   font-size: 0.72rem;
 }
 
-.activity-head {
+.activity-summary {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 0.2rem 0.5rem;
+  padding: 0.4rem 0.5rem;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.activity-summary::-webkit-details-marker {
+  display: none;
+}
+
+.activity-summary::before {
+  content: "▸";
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-self: start;
+  margin-top: 0.1rem;
+  font-size: 0.65rem;
+  color: var(--muted);
+  transition: transform 0.15s ease;
+}
+
+.activity-item[open] > .activity-summary::before {
+  transform: rotate(90deg);
+}
+
+.activity-summary-main {
+  grid-column: 2;
+  grid-row: 1;
   display: flex;
-  justify-content: space-between;
-  gap: 0.35rem;
-  margin-bottom: 0.15rem;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.activity-time {
+  grid-column: 3;
+  grid-row: 1;
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.activity-preview {
+  grid-column: 2 / -1;
+  grid-row: 2;
+  color: var(--muted);
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-item[open] .activity-preview {
+  display: none;
+}
+
+.activity-body {
+  margin: 0 0.5rem 0.5rem 1.1rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow-y: auto;
 }
 
 .activity-who {
@@ -375,10 +443,12 @@ body {
   flex-shrink: 0;
 }
 
-.activity-detail {
-  color: var(--muted);
-  line-height: 1.35;
-  word-break: break-word;
+.activity-item:not(.activity-expandable) .activity-summary {
+  cursor: default;
+}
+
+.activity-item:not(.activity-expandable) .activity-summary::before {
+  visibility: hidden;
 }
 
 .activity-item.phase-thinking {
@@ -391,6 +461,22 @@ body {
 
 .activity-item.phase-writing {
   border-color: #14532d;
+}
+
+.activity-item.activity-streaming .activity-preview {
+  color: var(--text);
+}
+
+.activity-item.activity-streaming .activity-phase::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 0.35rem;
+  border-radius: 50%;
+  background: #4ade80;
+  vertical-align: middle;
+  animation: pulse 1.4s ease-in-out infinite;
 }
 
 .assets-list {

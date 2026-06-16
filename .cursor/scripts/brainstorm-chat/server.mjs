@@ -674,14 +674,32 @@ function extractAssetPath(args) {
   return null;
 }
 
+function appendStreamChunk(prev, chunk) {
+  if (!chunk) return prev;
+  if (!prev) return chunk;
+  if (chunk.startsWith(prev)) return chunk;
+  if (prev.endsWith(chunk)) return prev;
+  for (let overlap = Math.min(prev.length, chunk.length); overlap > 0; overlap--) {
+    if (prev.endsWith(chunk.slice(0, overlap))) {
+      return prev + chunk.slice(overlap);
+    }
+  }
+  return prev + chunk;
+}
+
 /**
  * @param {import('@cursor/sdk').SDKMessage} event
  * @param {string} author
  * @param {WebSocketServer} wss
+ * @param {{ writing: string; thinking: string }} streamState
  */
-function handleStreamEvent(event, author, wss) {
+function handleStreamEvent(event, author, wss, streamState) {
   if (event.type === "thinking") {
-    const snippet = event.text?.slice(0, 120) || "Thinking…";
+    streamState.thinking = appendStreamChunk(
+      streamState.thinking,
+      event.text || "",
+    );
+    const snippet = streamState.thinking || "Thinking…";
     broadcast(wss, {
       type: "activity",
       author,
@@ -740,11 +758,12 @@ function handleStreamEvent(event, author, wss) {
       .map((b) => b.text)
       .join("");
     if (textBlocks) {
+      streamState.writing = appendStreamChunk(streamState.writing, textBlocks);
       broadcast(wss, {
         type: "activity",
         author,
         phase: "writing",
-        detail: textBlocks.slice(-80),
+        detail: streamState.writing,
         ts: Date.now(),
       });
     }
@@ -769,9 +788,10 @@ function handleStreamEvent(event, author, wss) {
  */
 async function collectRunText(run, author, wss) {
   let streamedChars = 0;
+  const streamState = { writing: "", thinking: "" };
   for await (const event of run.stream()) {
     if (forceStopRequested) break;
-    handleStreamEvent(event, author, wss);
+    handleStreamEvent(event, author, wss, streamState);
     if (event.type === "assistant") {
       for (const block of event.message.content) {
         if (block.type === "text") streamedChars += block.text.length;
