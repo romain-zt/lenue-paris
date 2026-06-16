@@ -205,7 +205,7 @@ forbidden_paths_touched: none
 ## CMS-c pass record (fill when green)
 
 ```
-commit: 26944df
+commit: 38663ef
 loading_tsx_locale: present
 loading_tsx_catalogue: present
 catalogue_suspense_fallback_null: 0
