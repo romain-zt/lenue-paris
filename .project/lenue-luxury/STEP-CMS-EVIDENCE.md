@@ -192,10 +192,11 @@ forbidden_paths_touched: none
 ## CMS-b pass record (fill when green)
 
 ```
-commit:
+commit: (pending push)
 grep_PLACEHOLDER_BY_SLUG: 0
 grep_FEATURED_SLUGS: 0
 grep_image_paths_in_page_tsx: 0
+lib_cms_blocks_test: 3/3
 forbidden_paths_touched: none
 ```
 

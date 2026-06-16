@@ -1,0 +1,123 @@
+import type { Page as PayloadPage, Product as PayloadProduct } from "@/payload-types";
+import type { Product } from "@/types/product";
+import { getProductMainImageUrl } from "@/lib/productImages";
+import { resolveMediaAlt, resolveMediaUrl } from "./media";
+import type { ContentLocale, MappedHomeBlock } from "./types";
+
+type PayloadBlock = NonNullable<PayloadPage["blocks"]>[number];
+
+function mapPayloadProduct(product: PayloadProduct): Product | null {
+  if (typeof product === "number") return null;
+  const mainImageUrl = resolveMediaUrl(product.mainImage);
+  return {
+    id: String(product.id),
+    title: product.title,
+    slug: product.slug,
+    category: product.category,
+    price: product.price,
+    inStock: product.inStock,
+    mainImage: {
+      id: String(typeof product.mainImage === "number" ? product.mainImage : product.mainImage.id),
+      alt: resolveMediaAlt(product.mainImage, product.title),
+      url: mainImageUrl ?? getProductMainImageUrl(product.slug),
+    },
+    _status: product._status ?? undefined,
+  };
+}
+
+export function mapHomePageBlocks(blocks: PayloadPage["blocks"]): MappedHomeBlock[] {
+  if (!blocks?.length) return [];
+
+  const mapped: MappedHomeBlock[] = [];
+
+  for (const block of blocks) {
+    if (block.blockType === "hero") {
+      const heroImageUrl = resolveMediaUrl(block.heroImage);
+      if (!heroImageUrl) continue;
+      mapped.push({
+        blockType: "hero",
+        props: {
+          season: block.season,
+          tagline: block.tagline,
+          ctaLabel: block.ctaLabel,
+          ctaLink: block.ctaLink,
+          heroImageUrl,
+          heroImageAlt: resolveMediaAlt(block.heroImage, "Lénue Paris"),
+        },
+      });
+      continue;
+    }
+
+    if (block.blockType === "featuredProducts") {
+      const products = block.products
+        .map((entry) => (typeof entry === "number" ? null : mapPayloadProduct(entry)))
+        .filter((p): p is Product => p != null);
+      if (products.length === 0) continue;
+      mapped.push({
+        blockType: "featuredProducts",
+        props: {
+          season: "",
+          title: block.title,
+          viewCollectionLabel: block.viewCollectionLabel ?? "",
+          viewFullCollectionLabel: "",
+          products,
+          locale: "fr",
+          outOfStockBadge: "",
+        },
+      });
+      continue;
+    }
+
+    if (block.blockType === "editorialStrip") {
+      const imageUrl = resolveMediaUrl(block.image);
+      if (!imageUrl) continue;
+      mapped.push({
+        blockType: "editorialStrip",
+        props: {
+          label: block.label,
+          headline: block.headline,
+          subline: block.subline,
+          body: block.body,
+          ctaLabel: block.ctaLabel,
+          ctaLink: block.ctaLink,
+          imageUrl,
+          imageAlt: resolveMediaAlt(block.image, block.headline),
+        },
+      });
+    }
+  }
+
+  return mapped;
+}
+
+/** Inject locale-specific chrome labels into featured block props after mapping. */
+export function enrichFeaturedBlock(
+  block: Extract<MappedHomeBlock, { blockType: "featuredProducts" }>,
+  locale: ContentLocale,
+  labels: {
+    season: string;
+    viewFullCollectionLabel: string;
+    outOfStockBadge: string;
+  },
+): Extract<MappedHomeBlock, { blockType: "featuredProducts" }> {
+  return {
+    blockType: "featuredProducts",
+    props: {
+      ...block.props,
+      season: labels.season,
+      viewFullCollectionLabel: labels.viewFullCollectionLabel,
+      outOfStockBadge: labels.outOfStockBadge,
+      locale,
+    },
+  };
+}
+
+export function findHeroTagline(blocks: MappedHomeBlock[]): string | null {
+  const hero = blocks.find((b) => b.blockType === "hero");
+  return hero?.blockType === "hero" ? hero.props.tagline : null;
+}
+
+/** @internal test helper */
+export function mapPayloadBlockForTest(block: PayloadBlock): MappedHomeBlock | null {
+  return mapHomePageBlocks([block])[0] ?? null;
+}

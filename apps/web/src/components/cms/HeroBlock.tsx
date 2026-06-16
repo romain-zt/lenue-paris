@@ -1,0 +1,57 @@
+import Image from "next/image";
+import { Link } from "@/i18n/navigation";
+import type { HeroBlockProps } from "@/lib/cms/types";
+
+export function HeroBlock({
+  season,
+  tagline,
+  ctaLabel,
+  ctaLink,
+  heroImageUrl,
+  heroImageAlt,
+}: HeroBlockProps) {
+  return (
+    <section
+      data-maison="hero"
+      aria-labelledby="hero-heading"
+      className="relative -mt-16 h-[100svh] min-h-[100dvh] overflow-hidden bg-stone-800 md:-mt-[72px]"
+    >
+      <div className="absolute inset-0" data-maison="hero-image">
+        <Image
+          src={heroImageUrl}
+          alt={heroImageAlt}
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[50%_40%] sm:object-[50%_32%] lg:object-[50%_24%]"
+        />
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" aria-hidden="true" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-transparent" aria-hidden="true" />
+
+      <div className="absolute bottom-0 left-0 px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16">
+        <p className="mb-5 text-[10px] font-medium uppercase tracking-[0.35em] text-white/50">{season}</p>
+        <h1
+          id="hero-heading"
+          className="font-serif text-5xl font-light leading-[0.95] tracking-wide text-white sm:text-6xl lg:text-7xl"
+        >
+          LÉNUE
+          <br />
+          <span className="text-3xl tracking-[0.35em] text-white/80 sm:text-4xl lg:text-5xl">PARIS</span>
+        </h1>
+        <p className="mt-5 max-w-xs text-sm font-light leading-relaxed text-white/60 sm:text-[15px]">{tagline}</p>
+        <div className="mt-8">
+          <Link
+            href={ctaLink}
+            className="group inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.25em] text-white/80 transition-colors hover:text-white"
+          >
+            <span className="border-b border-white/40 pb-px transition-colors group-hover:border-white/90">
+              {ctaLabel}
+            </span>
+            <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}

@@ -1,0 +1,44 @@
+import type { Product } from "@/types/product";
+
+export type ContentLocale = "fr" | "en" | "ru";
+
+export interface HeroBlockProps {
+  season: string;
+  tagline: string;
+  ctaLabel: string;
+  ctaLink: string;
+  heroImageUrl: string;
+  heroImageAlt: string;
+}
+
+export interface FeaturedProductsBlockProps {
+  season: string;
+  title: string;
+  viewCollectionLabel: string;
+  viewFullCollectionLabel: string;
+  products: Product[];
+  locale: ContentLocale;
+  outOfStockBadge: string;
+}
+
+export interface EditorialStripBlockProps {
+  label: string;
+  headline: string;
+  subline: string;
+  body: string;
+  ctaLabel: string;
+  ctaLink: string;
+  imageUrl: string;
+  imageAlt: string;
+}
+
+export type MappedHomeBlock =
+  | { blockType: "hero"; props: HeroBlockProps }
+  | { blockType: "featuredProducts"; props: FeaturedProductsBlockProps }
+  | { blockType: "editorialStrip"; props: EditorialStripBlockProps };
+
+export interface HomePageDto {
+  id: number;
+  slug: string;
+  blocks: MappedHomeBlock[];
+}
