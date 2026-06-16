@@ -1,0 +1,170 @@
+name: PR Stuck Checker
+
+# Cron safety net for regular (non-orchestrator) PRs.
+#
+# Runs every 15 minutes and looks for open, non-draft PRs to `main` whose
+# required checks have all passed but that haven't been merged yet — i.e. PRs
+# where `pr-automation.yml` was never triggered (transient GitHub delivery
+# failure) or where the automation job itself failed or timed out.
+#
+# For each stuck PR it re-runs the same `pr-automation.ts` agent that
+# `pr-automation.yml` would have invoked, so the PR gets reviewed and
+# squash-merged without any human intervention required.
+#
+# Excluded from the sweep:
+#   - Draft PRs (not ready for merge)
+#   - Fork PRs (pr-automation skips forks anyway)
+#   - Orchestrator tracking PRs (handled by orchestrator-cleanup.yml)
+#   - PRs that already have auto-merge pending
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: pr-stuck-checker-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  unlock-stuck-prs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps
+        run: npm install --prefix .github/scripts/core
+
+      - name: Find and unlock stuck PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          CURSOR_MODEL_VISION_ID: ${{ vars.CURSOR_MODEL_VISION_ID }}
+          CURSOR_MODEL_MANAGER_ID: ${{ vars.CURSOR_MODEL_MANAGER_ID }}
+          CURSOR_MODEL_EXECUTOR_ID: ${{ vars.CURSOR_MODEL_EXECUTOR_ID }}
+          REPO: ${{ github.repository }}
+          REQUIRED_CHECKS: ${{ vars.REQUIRED_CHECKS || 'quality' }}
+        run: |
+          set -euo pipefail
+
+          # Collect open non-draft PRs to main, excluding tracking and fork PRs,
+          # and PRs that already have auto-merge queued.
+          OPEN_PRS_JSON=$(gh pr list \
+            --repo "$REPO" \
+            --base main \
+            --state open \
+            --json number,isDraft,title,headRefName,headRepositoryOwner,autoMergeRequest \
+            --jq '[.[] | select(
+              .isDraft == false
+              and (.title | startswith("chore(orchestrator): [tracking]") | not)
+              and (.headRefName | startswith("orchestrator/tracking-") | not)
+              and .autoMergeRequest == null
+            )]')
+
+          COUNT=$(echo "$OPEN_PRS_JSON" | jq length)
+          echo "📋 Open non-draft PRs to check: $COUNT"
+
+          if [ "$COUNT" = "0" ]; then
+            echo "✅ No stuck PRs found."
+            exit 0
+          fi
+
+          # Write to temp file to avoid subshell issues with pipe + while
+          TMPFILE=$(mktemp)
+          echo "$OPEN_PRS_JSON" | jq -r '.[].number' > "$TMPFILE"
+
+          FOUND_STUCK=0
+
+          while IFS= read -r PR_NUMBER; do
+            echo ""
+            echo "--- PR #${PR_NUMBER}"
+
+            PR_DATA=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" 2>/dev/null || true)
+            if [ -z "$PR_DATA" ]; then
+              echo "  ⚠️  Could not fetch PR — skipping"
+              continue
+            fi
+
+            # Skip fork PRs (head owner != repo owner)
+            HEAD_OWNER=$(echo "$PR_DATA" | jq -r '.head.repo.owner.login // empty')
+            REPO_OWNER=$(echo "$REPO" | cut -d/ -f1)
+            if [ "$HEAD_OWNER" != "$REPO_OWNER" ]; then
+              echo "  ⤴  Fork PR — skipping"
+              continue
+            fi
+
+            PR_SHA=$(echo "$PR_DATA" | jq -r '.head.sha')
+            BASE_BRANCH=$(echo "$PR_DATA" | jq -r '.base.ref')
+            HEAD_BRANCH=$(echo "$PR_DATA" | jq -r '.head.ref')
+
+            # Check every required check on the PR head commit
+            CHECKS=$(gh api \
+              "repos/${REPO}/commits/${PR_SHA}/check-runs?per_page=100" \
+              --jq '[.check_runs[] | {name, status, conclusion}]' 2>/dev/null || echo '[]')
+
+            ALL_PASS=true
+            IFS=',' read -ra REQUIRED_ARR <<< "$REQUIRED_CHECKS"
+            for req in "${REQUIRED_ARR[@]}"; do
+              req="$(echo "$req" | xargs)"
+              [ -z "$req" ] && continue
+
+              match=$(echo "$CHECKS" | jq -c --arg req "$req" '
+                [.[] | select(
+                  (.name | ascii_downcase) == ($req | ascii_downcase)
+                  or (.name | ascii_downcase | endswith("/" + ($req | ascii_downcase)))
+                )] | .[0] // empty
+              ')
+
+              if [ -z "$match" ] || [ "$match" = "null" ]; then
+                echo "  ⏳ '$req' not registered yet — skipping"
+                ALL_PASS=false
+                break
+              fi
+
+              status=$(echo "$match" | jq -r '.status')
+              conclusion=$(echo "$match" | jq -r '.conclusion // empty')
+
+              if [ "$status" != "completed" ]; then
+                echo "  ⏳ '$req' still running ($status) — skipping"
+                ALL_PASS=false
+                break
+              fi
+
+              if [ "$conclusion" != "success" ] && [ "$conclusion" != "skipped" ]; then
+                echo "  ❌ '$req' not passing ($conclusion) — skipping"
+                ALL_PASS=false
+                break
+              fi
+            done
+
+            if [ "$ALL_PASS" = "true" ]; then
+              echo "  🔓 Required checks all pass — unlocking PR #${PR_NUMBER}"
+              FOUND_STUCK=$((FOUND_STUCK + 1))
+
+              export PR_NUMBER PR_SHA REPO BASE_BRANCH HEAD_BRANCH REQUIRED_CHECKS
+              export PR_DRAFT="false"
+
+              npx --prefix .github/scripts/core tsx .github/scripts/core/pr-automation.ts \
+                || echo "  ⚠️  Automation exited non-zero for PR #${PR_NUMBER} — continuing sweep"
+            fi
+          done < "$TMPFILE"
+
+          rm -f "$TMPFILE"
+
+          echo ""
+          if [ "$FOUND_STUCK" -gt 0 ]; then
+            echo "✅ Unlocked $FOUND_STUCK stuck PR(s)."
+          else
+            echo "✅ No PRs were stuck (checks pending or failing on all open PRs)."
+          fi
