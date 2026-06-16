@@ -11,8 +11,8 @@
       "orch-editorial--brand-page": "complete",
       "orch-i18n--localized-storefront": "complete",
       "orch-selection-ux--p0-primary-cta": "complete",
-      "orch-selection-ux--p0-list-overlay": "in-progress",
-      "orch-selection-ux--p0-drawer-motion": "todo"
+      "orch-selection-ux--p0-list-overlay": "complete",
+      "orch-selection-ux--p0-drawer-motion": "in-progress"
     },
     "remediation_counts": {
       "orch-product-detail--gallery-and-variants": 2,
