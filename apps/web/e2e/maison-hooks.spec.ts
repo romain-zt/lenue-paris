@@ -84,6 +84,7 @@ test.describe.configure({ mode: "serial", timeout: 300_000 });
 
 test.describe("maison hooks on built storefront", () => {
   test.beforeAll(async () => {
+    test.setTimeout(360_000);
     loadRepoEnv();
     requireDatabaseUrl();
     assertSlicePathsExist();
@@ -128,7 +129,7 @@ test.describe("maison hooks on built storefront", () => {
     });
 
     await waitForHttp(HOME_URL);
-  }, { timeout: 360_000 });
+  });
 
   test.afterAll(async () => {
     if (serverProc && !serverProc.killed) {
@@ -159,7 +160,7 @@ test.describe("maison hooks on built storefront", () => {
     await expect(heroWordmark).toBeVisible();
     await expect(page.locator('[data-maison="wordmark"]')).not.toHaveAttribute(
       "id",
-      await heroWordmark.getAttribute("id"),
+      await heroWordmark.getAttribute("id") ?? "",
     );
   });
 });
