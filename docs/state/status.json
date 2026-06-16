@@ -12,7 +12,7 @@
       "orch-i18n--localized-storefront": "complete",
       "orch-selection-ux--p0-primary-cta": "complete",
       "orch-selection-ux--p0-list-overlay": "complete",
-      "orch-selection-ux--p0-drawer-motion": "not-started"
+      "orch-selection-ux--p0-drawer-motion": "in-progress"
     },
     "remediation_counts": {
       "orch-product-detail--gallery-and-variants": 2,
