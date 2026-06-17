@@ -47,4 +47,16 @@ describe("productImages", () => {
       expect(getProductMainImageUrl(slug)).toMatch(/^\/images\//);
     }
   });
+
+  it("signature dresses each have 2-3 unique PHOTO-* gallery entries (slice AC)", () => {
+    const signatureSlugs = ["robe-camille", "robe-louise", "robe-margot"] as const;
+    for (const slug of signatureSlugs) {
+      const gallery = PRODUCT_IMAGES[slug]?.gallery ?? [];
+      expect(gallery.length, `${slug} gallery length`).toBeGreaterThanOrEqual(2);
+      expect(gallery.length, `${slug} gallery length`).toBeLessThanOrEqual(3);
+      for (const filename of gallery) {
+        expect(filename, `${slug} gallery entry should be a PHOTO-* file`).toMatch(/^PHOTO-/);
+      }
+    }
+  });
 });

@@ -4,15 +4,15 @@ import { CategoryFilter } from "../CategoryFilter";
 import { WithIntl } from "@/test-utils/with-intl";
 
 describe("CategoryFilter", () => {
-  it("renders all category options", () => {
+  it("renders only dress filter options — no bags or scarfs (AC-6)", () => {
     render(<WithIntl><CategoryFilter selected={null} onSelect={vi.fn()} /></WithIntl>);
     expect(screen.getByText("Tout")).toBeDefined();
     expect(screen.getByText("Robes")).toBeDefined();
-    expect(screen.getByText("Sacs")).toBeDefined();
-    expect(screen.getByText("Foulards")).toBeDefined();
+    expect(screen.queryByText("Sacs")).toBeNull();
+    expect(screen.queryByText("Foulards")).toBeNull();
   });
 
-  it("calls onSelect with correct value when category clicked", () => {
+  it("calls onSelect with 'dresses' when Robes clicked", () => {
     const onSelect = vi.fn();
     render(<WithIntl><CategoryFilter selected={null} onSelect={onSelect} /></WithIntl>);
     fireEvent.click(screen.getByText("Robes"));
@@ -26,9 +26,9 @@ describe("CategoryFilter", () => {
     expect(onSelect).toHaveBeenCalledWith(null);
   });
 
-  it("marks selected category as active", () => {
-    render(<WithIntl><CategoryFilter selected={"bags"} onSelect={vi.fn()} /></WithIntl>);
-    const bagsBtn = screen.getByText("Sacs");
-    expect(bagsBtn.getAttribute("aria-pressed")).toBe("true");
+  it("marks selected dress category as active", () => {
+    render(<WithIntl><CategoryFilter selected={"dresses"} onSelect={vi.fn()} /></WithIntl>);
+    const robesBtn = screen.getByText("Robes");
+    expect(robesBtn.getAttribute("aria-pressed")).toBe("true");
   });
 });
