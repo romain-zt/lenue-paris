@@ -19,9 +19,10 @@ and the v0 boundary.
 
 ## Active work
 
-**`orch-ci--brainstorm-round-graft` — COMPLETE (2026-06-17)**
+**`orch-ci--brainstorm-round-graft` — COMPLETE (2026-06-17, PR #89 smoke pass)**
 
 Tracking PR #87 (`orchestrator/tracking-orch-ci--brainstorm-round-graft-1781674672573`) — **MERGED**.
+Tracking PR #89 (`orchestrator/tracking-orch-ci--brainstorm-round-graft-1781678667273`) — **smoke verified**: BRAINSTORM_ROUND_ENABLED=false (check-gate only); all AC confirmed; 106 web tests green; typecheck clean.
 
 All acceptance criteria satisfied and CI green:
 - AC1: `runBrainstormRound` imported (line 49) and called (line 1002) in `phase-orchestrator.ts`
