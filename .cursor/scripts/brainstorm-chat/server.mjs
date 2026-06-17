@@ -99,12 +99,12 @@ const BUILTIN_SPECIALISTS = ["spark", "skeptic"];
 
 /** @type {import('@cursor/sdk').ModelSelection} */
 const MODEL_ORCHESTRATOR = {
-  id: process.env.CURSOR_MODEL_VISION_ID?.trim() || "claude-opus-4-8",
+  id: process.env.CURSOR_MODEL_VISION_ID?.trim() || "claude-sonnet-4-6",
   params: [
     { id: "cyber", value: "false" },
     { id: "thinking", value: "true" },
     { id: "context", value: "1m" },
-    { id: "effort", value: "high" },
+    { id: "effort", value: "medium" },
     { id: "fast", value: "false" },
   ],
 };
