@@ -17,7 +17,8 @@
       "orch-ci--brainstorm-round-graft": "in-progress"
     },
     "remediation_counts": {
-      "orch-catalogue--dress-only-public": 2
+      "orch-catalogue--dress-only-public": 2,
+      "orch-ci--brainstorm-round-graft": 1
     }
   }
 }
