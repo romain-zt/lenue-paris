@@ -247,25 +247,30 @@ Tracking PR #86 (`orchestrator/tracking-orch-selection-ux--p0-drawer-motion-1781
 - **`prefers-reduced-motion`:** `motion-reduce:!transition-none` on both backdrop and sheet — instant show/hide.
 - **Tests** (`apps/web/src/components/selection/__tests__/SelectionPill.test.tsx`): 7 new tests written test-first. All 103 web tests pass, typecheck clean.
 
-**`orch-catalogue--dress-only-public` — IN-REVIEW (2026-06-17)**
+**`orch-catalogue--dress-only-public` — COMPLETE (2026-06-17)**
 
 Tracking PR #88 (`orchestrator/tracking-orch-catalogue--dress-only-public-1781674681732`).
 
 **What was built:**
 
-The implementation was already in place across all allowlist files (prior runs had laid the groundwork). This run finalized the slice:
+The implementation was already in place across all allowlist files (prior runs had laid the groundwork). This remediation run fixed the remaining gap:
 
 - **`storefrontCatalogue.ts`** (existing): `PUBLIC_DRESS_SLUGS = ["robe-camille","robe-louise","robe-margot"]`, `filterStorefrontProducts` filters by `category === 'dresses'`, `isPublicStorefrontSlug` gates draft/published in seed.
 - **`queries.ts`** (existing): `getCataloguePage` queries only published dresses; `getCollectionBySlug` uses `filterStorefrontProducts`.
 - **`seed.ts`** (existing): signature trio seeded as `published`; bags, scarfs, and non-signature dresses seeded as `draft`. `HOME_FEATURED_SLUGS = PUBLIC_DRESS_SLUGS`.
-- **`productImages.ts`** (existing): each signature dress has 2–3 unique `PHOTO-*` gallery entries.
+- **`productImages.ts`** (remediated): Fixed gallery collision — `robe-margot` shared `PHOTO-2026-06-12-17-30-33.jpg` with `robe-camille`; replaced with unique `PHOTO-2026-06-12-17-32-34.jpg`. Each signature dress now has 2–3 unique `PHOTO-*` gallery entries.
+- **`scripts/check-assets.ts`** (new): Scans `PUBLIC_DRESS_SLUGS` PHOTO-* gallery entries for collisions; exits 0 on `collisions: 0`, exits 1 with details on any collision.
+- **`package.json`**: Added `"check:assets": "tsx scripts/check-assets.ts"` script.
 - **`CategoryFilter.tsx`** (existing): only "Tout" + "Robes" — no bags/scarfs filter.
 - **`Header.tsx`** (existing): no bag/scarf category links.
 - **`page.tsx` (home)** (existing): `categoryLinks` passes only `[{ href: "/catalogue" }]` to `HomeCategoryStrip` — no sac/foulard links.
-- **Tests (this run)**: Fixed `CategoryFilter.test.tsx` to match dress-only implementation (removed stale Sacs/Foulards expectations). Added 7 new `storefrontCatalogue` tests (all 3 signature slugs, bag/scarf/non-signature rejection). Added gallery PHOTO-* test in `productImages.test.ts`. 112 web tests green, typecheck clean on both apps.
-- **User story**: `docs/product/user-stories/catalogue--dress-only-public--US-001--dress-only-catalogue.md`
+- **Tests**: 113 web tests green (0 failed), `check:assets` → `collisions: 0`, typecheck clean.
 
-**Checks:** 112 web tests green (0 failed), typecheck clean on web + cms.
+**Acceptance criteria satisfied:**
+- `/fr/catalogue` lists only dresses (3 signature slugs when seeded) ✅
+- Home featured carousel: three dress slugs only ✅
+- `npm run check:assets` → `collisions: 0` ✅
+- Bags/scarf URLs return 404 (seeded as draft) ✅
 
 ## Next recommended step
 
