@@ -264,9 +264,9 @@ Tracking PR #86 (`orchestrator/tracking-orch-selection-ux--p0-drawer-motion-1781
 - **`prefers-reduced-motion`:** `motion-reduce:!transition-none` on both backdrop and sheet — instant show/hide.
 - **Tests** (`apps/web/src/components/selection/__tests__/SelectionPill.test.tsx`): 7 new tests written test-first. All 103 web tests pass, typecheck clean.
 
-**`orch-catalogue--dress-only-public` — COMPLETE (2026-06-17)**
+**`orch-catalogue--dress-only-public` — COMPLETE (2026-06-17, PR #90)**
 
-Tracking PR #88 (`orchestrator/tracking-orch-catalogue--dress-only-public-1781674681732`).
+Tracking PR #90 (`orchestrator/tracking-orch-catalogue--dress-only-public-1781679197083`) — re-verified on new tracking branch; implementation fully in main from prior PR #88.
 
 **What was built:**
 
