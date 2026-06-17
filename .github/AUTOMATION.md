@@ -48,17 +48,19 @@ Settings → Branches → Add rule:
 - Require branches up to date ✅
 
 ### e. Model selection per script
-The mapping lives in [`.github/scripts/core/cursor-models.config.ts`](scripts/core/cursor-models.config.ts) and follows the tiers defined in [`.cursor/core/rules/20-model-routing.mdc`](../.cursor/core/rules/20-model-routing.mdc):
+The mapping lives in [`.github/scripts/core/cursor-models.config.ts`](scripts/core/cursor-models.config.ts) and follows the tiers defined in [`.cursor/core/rules/20-model-routing.mdc`](../.cursor/core/rules/20-model-routing.mdc).
+
+**Project model cap (lenue.paris):** maximum model is `claude-sonnet-4-6`. Opus 4.8 and "max mode" reasoning are disallowed in CI and chat, so the Vision tier is capped to Sonnet 4.6 (a code-level guard coerces any opus id — even via a stale `vars.CURSOR_MODEL_VISION_ID` — back to Sonnet). Tiers differ by reasoning effort, not by a bigger model.
 
 | Script | Tier | Model | Why |
 |---|---|---|---|
-| `pr-automation.ts` | Manager | `claude-4.6-sonnet` | Routine PR review against governance; PRs stay < ~20 files |
-| `conflict-resolver.ts` (default) | Manager | `claude-4.6-sonnet` | File-level merge judgment on most PRs |
-| `conflict-resolver.ts` (sensitive) | Vision | `claude-opus-4-8` | Auto-escalates when ANY conflicted file touches `.cursor/**`, `docs/state/**`, `docs/product/**`, or `docs/product-decisions/**` |
-| `ci-failure-autofix.ts` (default) | Manager | `claude-4.6-sonnet` | Diagnoses a failed CI/E2E run and pushes the smallest fix to the PR branch |
-| `ci-failure-autofix.ts` (sensitive) | Vision | `claude-opus-4-8` | Auto-escalates when the PR diff touches `.cursor/**`, `docs/state/**`, `docs/product/**`, or `docs/product-decisions/**` |
-| `phase-orchestrator.ts` worker | Manager | `claude-4.6-sonnet` | The worker IS the per-step router — picks the smallest coherent layer, decides blocked vs proceed, then sub-delegates the actual typing to Executor subagents (`composer-2.5-fast`) via `Task` |
-| `prd-decomposer.ts` | Vision | `claude-opus-4-8` | Drives the full PRD → Feature Area → Scope Slice chain autonomously and commits durable product-scope decisions that feed implementation — irreversible/strategic, so Vision |
+| `pr-automation.ts` | Manager | `claude-sonnet-4-6` | Routine PR review against governance; PRs stay < ~20 files |
+| `conflict-resolver.ts` (default) | Manager | `claude-sonnet-4-6` | File-level merge judgment on most PRs |
+| `conflict-resolver.ts` (sensitive) | Vision (capped) | `claude-sonnet-4-6` | Auto-escalates when ANY conflicted file touches `.cursor/**`, `docs/state/**`, `docs/product/**`, or `docs/product-decisions/**` |
+| `ci-failure-autofix.ts` (default) | Manager | `claude-sonnet-4-6` | Diagnoses a failed CI/E2E run and pushes the smallest fix to the PR branch |
+| `ci-failure-autofix.ts` (sensitive) | Vision (capped) | `claude-sonnet-4-6` | Auto-escalates when the PR diff touches `.cursor/**`, `docs/state/**`, `docs/product/**`, or `docs/product-decisions/**` |
+| `phase-orchestrator.ts` worker | Manager | `claude-sonnet-4-6` | The worker IS the per-step router — picks the smallest coherent layer, decides blocked vs proceed, then sub-delegates the actual typing to Executor subagents (`composer-2.5-fast`) via `Task` |
+| `prd-decomposer.ts` | Vision (capped) | `claude-sonnet-4-6` | Drives the full PRD → Feature Area → Scope Slice chain autonomously and commits durable product-scope decisions that feed implementation — irreversible/strategic, so Vision (capped to Sonnet per project policy) |
 
 Inside the run, the cloud agent itself respects `20-model-routing.mdc` and routes subagent calls accordingly. To change a model, edit the constants file and open a PR.
 

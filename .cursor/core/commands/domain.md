@@ -16,7 +16,7 @@ real-time, UI, copy, marketing, or business reasoning).
 
 | Name | Skill | Agent | Tier |
 |------|-------|-------|------|
-| `architecture` | `.cursor/core/skills/domains/architecture/SKILL.md` | `architecture-specialist` | Vision (`claude-opus-4-8`) |
+| `architecture` | `.cursor/core/skills/domains/architecture/SKILL.md` | `architecture-specialist` | Vision (`claude-opus-4-6`) |
 | `backend` | `.cursor/core/skills/domains/backend/SKILL.md` | `backend-specialist` | Manager (`claude-4.6-sonnet`) |
 | `http` | `.cursor/core/skills/domains/http/SKILL.md` | `http-specialist` | Manager |
 | `event` | `.cursor/core/skills/domains/event/SKILL.md` | `event-specialist` | Manager |
@@ -24,7 +24,7 @@ real-time, UI, copy, marketing, or business reasoning).
 | `design` | `.cursor/core/skills/domains/design/SKILL.md` | `design-specialist` | Manager |
 | `copywriter` | `.cursor/core/skills/domains/copywriter/SKILL.md` | `copywriter-specialist` | Manager |
 | `marketing` | `.cursor/core/skills/domains/marketing/SKILL.md` | `marketing-specialist` | Manager |
-| `business` | `.cursor/core/skills/domains/business/SKILL.md` | `business-specialist` | Vision (`claude-opus-4-8`) |
+| `business` | `.cursor/core/skills/domains/business/SKILL.md` | `business-specialist` | Vision (`claude-opus-4-6`) |
 
 ## Behavior
 

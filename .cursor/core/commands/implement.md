@@ -31,7 +31,7 @@ Agents: `.cursor/core/agents/implementation/{implementation-lead,executor,implem
 | `test <spec-or-task-path>` | Executor | Write the tests named in the Spec `## Tests` — **before** implementation. They must fail for the right reason. |
 | `run <spec-or-task-path>` | Executor | Implement the smallest change that turns the traced tests green. Follow the architecture baseline. |
 | `verify <spec-or-task-path>` | Manager | Run tests + lints; confirm every Spec AC and Contract error row is covered. |
-| `review <spec-or-task-path>` | Manager / **Vision** | Review the change. High-risk (auth, money, migration, external contract, security) escalates to `claude-opus-4-8`. |
+| `review <spec-or-task-path>` | Manager / **Vision** | Review the change. High-risk (auth, money, migration, external contract, security) escalates to `claude-opus-4-6`. |
 
 ## Pre-flight (all modes) — hard gate
 
@@ -76,7 +76,7 @@ Also read: the Spec, its parent User Story, `30-test-strategy.mdc`, `40-architec
 ## Mode: review
 
 1. Routine → Manager review against the Spec + doctrine.
-2. **High-risk → Vision** (`claude-opus-4-8`) via `implementation-reviewer`.
+2. **High-risk → Vision** (`claude-opus-4-6`) via `implementation-reviewer`.
 3. Output: blocking issues, suggestions, verdict (APPROVE / CHANGES). On APPROVE recommend `/task promote` (if Task) or note the Spec is implemented.
 
 ## Hard rules

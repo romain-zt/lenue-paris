@@ -59,7 +59,7 @@ Before doing the work, run `setup-readiness-checker.md`:
 
 ## 5. Tier routing
 
-Triage + delegation is Vision (`claude-opus-4-8`). Planning/splitting is Manager.
+Triage + delegation is Vision (`claude-opus-4-6`). Planning/splitting is Manager.
 The smallest brick is Executor (`composer-2.5-fast`). See `20-model-routing.mdc`.
 
 ## 6. Output

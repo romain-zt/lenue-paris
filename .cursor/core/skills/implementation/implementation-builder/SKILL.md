@@ -70,7 +70,7 @@ Run full traced tests + lints. Emit a coverage map (AC → test, Contract error 
 
 ## 8. Mode: review
 
-Routine: Manager checks scope, traceability, doctrine adherence, test quality. High-risk (auth, money, migration, external contract, security): escalate to Vision (`implementation-reviewer`, `claude-opus-4-8`). Verdict APPROVE/CHANGES. On APPROVE → `/task promote` (Task) or note Spec implemented.
+Routine: Manager checks scope, traceability, doctrine adherence, test quality. High-risk (auth, money, migration, external contract, security): escalate to Vision (`implementation-reviewer`, `claude-opus-4-6`). Verdict APPROVE/CHANGES. On APPROVE → `/task promote` (Task) or note Spec implemented.
 
 ## 9. Anti-patterns
 

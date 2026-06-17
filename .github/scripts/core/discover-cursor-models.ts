@@ -94,7 +94,7 @@ async function main(): Promise<void> {
   }
   console.log("");
   console.log("Tier id candidates (per .cursor/core/rules/20-model-routing.mdc):");
-  console.log("  vision    →  any claude-opus-* id");
+  console.log("  vision    →  claude-sonnet-4-6 (project cap: no Opus 4.8 / max mode)");
   console.log("  manager   →  any claude-sonnet-* id");
   console.log("  executor  →  composer-2.5 (or composer-2.5-fast variant)");
 
