@@ -8,9 +8,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 loadEnv({ path: path.resolve(__dirname, "../../../../.env") });
 import { getPayload } from "payload";
 import config from "@payload-config";
+import { PUBLIC_DRESS_SLUGS } from "../lib/catalogue/storefrontCatalogue";
 import { seed } from "../seed";
 
-const FEATURED_COUNT = 6;
+const FEATURED_COUNT = PUBLIC_DRESS_SLUGS.length;
 const HOME_SLUG = "home";
 
 const hasDb = Boolean(process.env.TEST_DATABASE_URL || process.env.DATABASE_URL);
