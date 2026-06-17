@@ -11,9 +11,10 @@
  *   - `executor`        — composer-2.5. Mechanical implementation of one brick
  *                         from an approved plan/Spec. The orchestrator worker
  *                         and ci-autofix delegate code-typing here.
- *   - `vision-reviewer` — claude-opus-4-8. High-stakes review (architecture,
- *                         security, irreversible product decisions). Used to
- *                         escalate when the Manager is unsure.
+ *   - `vision-reviewer` — claude-sonnet-4-6 (project cap: no Opus 4.8 / max mode).
+ *                         High-stakes review (architecture, security, irreversible
+ *                         product decisions). Used to escalate when the Manager is
+ *                         unsure. Resolves via TIER_MODELS.vision, which is capped.
  *
  * The parent's own model is selected per-script via TIER_MODELS in
  * cursor-models.config.ts; this file only defines the *delegates* it can call.
