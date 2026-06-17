@@ -1,15 +1,17 @@
 {
   "nav": {
     "dresses": "Платья",
-    "bags": "Сумки",
-    "scarfs": "Платки",
     "collection": "Коллекция",
+    "about": "О нас",
+    "delivery": "Доставка",
+    "contact": "Контакты",
     "home": "Lénue Paris — Главная",
     "openMenu": "Открыть меню",
     "closeMenu": "Закрыть меню",
     "filterByCategory": "Фильтр по категории",
     "leftNav": "Левая навигация",
     "rightNav": "Правая навигация",
+    "footerNav": "Ссылки в подвале",
     "mobileNav": "Мобильное меню"
   },
   "locale": {
@@ -39,7 +41,7 @@
   "catalogue": {
     "title": "Коллекция",
     "metaTitle": "Каталог — Lénue Paris",
-    "metaDescription": "Смотрите коллекцию платьев, сумок и платков класса люкс.",
+    "metaDescription": "Платья Lénue Paris — плавный крой, благородные ткани, малые серии.",
     "all": "Все",
     "emptyDresses": "Платья пока недоступны.",
     "emptyBags": "Сумки пока недоступны.",
@@ -86,9 +88,18 @@
     "metaDescription": "История Lénue Paris — бутика моды, рождённого в Париже."
   },
   "footer": {
-    "boutique": "Бутик",
-    "catalogue": "Коллекция",
-    "about": "О нас"
+    "collection": "Коллекция",
+    "about": "О нас",
+    "delivery": "Доставка",
+    "contact": "Контакты"
+  },
+  "delivery": {
+    "metaTitle": "Доставка — Lénue Paris",
+    "metaDescription": "Бережная доставка каждого платья Lénue — малые серии, подтверждение в WhatsApp."
+  },
+  "contactPage": {
+    "metaTitle": "Контакты — Lénue Paris",
+    "metaDescription": "Напишите Lénue Paris в WhatsApp — дом платьев, личный ответ."
   },
   "selection": {
     "pillCount": "Мой выбор · {count}",

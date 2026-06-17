@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter, usePathname } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { SelectionPill } from "@/components/selection/SelectionPill";
+import { STOREFRONT_NAV_LINKS, type StorefrontNavHref } from "@/lib/navigation/storefrontNav";
 
 export function Header() {
   const t = useTranslations("nav");
@@ -38,11 +39,14 @@ export function Header() {
   // Light-on-hero only at home top with menu closed
   const overlayMode = isHome && !scrolled && !open;
 
-  const navLeft = [{ href: "/catalogue" as const, label: t("collection") }];
+  const navLinks = STOREFRONT_NAV_LINKS.map((link) => ({
+    href: link.href,
+    label: t(link.labelKey),
+  }));
 
-  const navRight: { href: "/catalogue" | "/a-propos"; label: string }[] = [];
-
-  const allNav = [...navLeft, ...navRight];
+  const navLeft = navLinks.filter((link) => link.href === "/catalogue");
+  const navRight = navLinks.filter((link) => link.href !== "/catalogue");
+  const allNav = navLinks;
 
   function switchLocale(next: string) {
     router.replace(pathname, { locale: next });
@@ -77,7 +81,7 @@ export function Header() {
               aria-label={t("leftNav")}
             >
               {navLeft.map((link) => (
-                <Link key={link.href} href={link.href} className={linkClass}>
+                <Link key={link.href} href={link.href as StorefrontNavHref} className={linkClass}>
                   {link.label}
                 </Link>
               ))}
@@ -108,7 +112,7 @@ export function Header() {
             <nav className="hidden flex-1 items-center justify-end gap-5 md:flex" aria-label={t("rightNav")}>
               <SelectionPill overlayMode={overlayMode} />
               {navRight.map((link) => (
-                <Link key={link.href} href={link.href} className={linkClass}>
+                <Link key={link.href} href={link.href as StorefrontNavHref} className={linkClass}>
                   {link.label}
                 </Link>
               ))}
@@ -195,7 +199,7 @@ export function Header() {
             }}
           >
             <Link
-              href={link.href}
+              href={link.href as StorefrontNavHref}
               onClick={() => setOpen(false)}
               tabIndex={open ? 0 : -1}
               className="block border-b border-stone-100 px-6 py-4 text-xs font-medium uppercase tracking-[0.2em] text-stone-700 hover:bg-stone-50/60 hover:text-stone-900"

@@ -11,7 +11,7 @@ interface BrandPageProps {
 
 export async function generateMetadata({ params }: BrandPageProps) {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "footer" });
+  const t = await getTranslations({ locale, namespace: "nav" });
   const copy = BRAND_PAGE_COPY[locale as Locale] ?? BRAND_PAGE_COPY.fr;
 
   return {

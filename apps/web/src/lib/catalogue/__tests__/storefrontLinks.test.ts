@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { PUBLIC_DRESS_SLUGS } from "../storefrontCatalogue";
 import { PRODUCT_IMAGES, getProductMainImageUrl } from "../../productImages";
 
-/** Buyer-facing routes that must resolve (client brief #3). */
-const STOREFRONT_STATIC_PATHS = ["/", "/catalogue", "/a-propos"] as const;
+/** Buyer-facing routes that must resolve (client brief #3 + #7). */
+const STOREFRONT_STATIC_PATHS = ["/", "/catalogue", "/a-propos", "/livraison", "/contact"] as const;
 
 describe("storefront link parity (broken-links audit)", () => {
   it("every public dress slug has a product image mapping and main frame", () => {

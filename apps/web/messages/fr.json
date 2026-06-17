@@ -1,15 +1,17 @@
 {
   "nav": {
     "dresses": "Robes",
-    "bags": "Sacs",
-    "scarfs": "Foulards",
     "collection": "Collection",
+    "about": "À propos",
+    "delivery": "Livraison",
+    "contact": "Contact",
     "home": "Lénue Paris — Accueil",
     "openMenu": "Ouvrir le menu",
     "closeMenu": "Fermer le menu",
     "filterByCategory": "Filtrer par catégorie",
     "leftNav": "Navigation gauche",
     "rightNav": "Navigation droite",
+    "footerNav": "Liens du pied de page",
     "mobileNav": "Menu mobile"
   },
   "locale": {
@@ -39,7 +41,7 @@
   "catalogue": {
     "title": "Collection",
     "metaTitle": "Catalogue — Lénue Paris",
-    "metaDescription": "Parcourez notre collection de robes, sacs et foulards de luxe.",
+    "metaDescription": "Découvrez les robes Lénue Paris — coupes fluides, matières nobles, petites séries.",
     "all": "Tout",
     "emptyDresses": "Aucune robe disponible pour l'instant.",
     "emptyBags": "Aucun sac disponible pour l'instant.",
@@ -86,9 +88,18 @@
     "metaDescription": "L'histoire de Lénue Paris, une boutique de mode née à Paris."
   },
   "footer": {
-    "boutique": "Boutique",
-    "catalogue": "Catalogue",
-    "about": "À propos"
+    "collection": "Collection",
+    "about": "À propos",
+    "delivery": "Livraison",
+    "contact": "Contact"
+  },
+  "delivery": {
+    "metaTitle": "Livraison — Lénue Paris",
+    "metaDescription": "Livraison soignée pour chaque robe Lénue — préparation en petites séries, confirmation sur WhatsApp."
+  },
+  "contactPage": {
+    "metaTitle": "Contact — Lénue Paris",
+    "metaDescription": "Écrivez à Lénue Paris sur WhatsApp — maison de robes, réponse personnelle."
   },
   "selection": {
     "pillCount": "Ma sélection · {count}",

@@ -13,6 +13,7 @@ import { Header } from "@/components/Header";
 import { LivePreviewListener } from "@/components/cms/LivePreviewListener";
 import { SelectionProvider } from "@/lib/selection/SelectionProvider";
 import { buildPageMetadata } from "@/lib/seo/metadata";
+import { STOREFRONT_NAV_LINKS } from "@/lib/navigation/storefrontNav";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin", "cyrillic"],
@@ -64,7 +65,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   setRequestLocale(locale);
 
   const messages = await getMessages();
-  const t = await getTranslations("footer");
+  const tNav = await getTranslations("nav");
   const { isEnabled: isDraft } = await draftMode();
 
   return (
@@ -76,16 +77,19 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
             <Header />
             {children}
           <footer data-maison="footer" className="mt-12 border-t border-stone-200 py-6">
-            <nav className="mx-auto flex max-w-screen-xl flex-wrap gap-4 px-4 text-sm text-stone-500 sm:px-6">
-              <Link href="/" className="transition-colors hover:text-stone-900">
-                {t("boutique")}
-              </Link>
-              <Link href="/catalogue" className="transition-colors hover:text-stone-900">
-                {t("catalogue")}
-              </Link>
-              <Link href="/a-propos" className="transition-colors hover:text-stone-900">
-                {t("about")}
-              </Link>
+            <nav
+              className="mx-auto flex max-w-screen-xl flex-wrap gap-x-6 gap-y-2 px-4 text-sm text-stone-500 sm:px-6"
+              aria-label={tNav("footerNav")}
+            >
+              {STOREFRONT_NAV_LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="min-h-[44px] py-2 transition-colors hover:text-stone-900"
+                >
+                  {tNav(link.labelKey)}
+                </Link>
+              ))}
             </nav>
           </footer>
           </SelectionProvider>

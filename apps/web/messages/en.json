@@ -1,15 +1,17 @@
 {
   "nav": {
     "dresses": "Dresses",
-    "bags": "Bags",
-    "scarfs": "Scarves",
     "collection": "Collection",
+    "about": "About",
+    "delivery": "Delivery",
+    "contact": "Contact",
     "home": "Lénue Paris — Home",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "filterByCategory": "Filter by category",
     "leftNav": "Left navigation",
     "rightNav": "Right navigation",
+    "footerNav": "Footer links",
     "mobileNav": "Mobile menu"
   },
   "locale": {
@@ -39,7 +41,7 @@
   "catalogue": {
     "title": "Collection",
     "metaTitle": "Catalogue — Lénue Paris",
-    "metaDescription": "Browse our collection of luxury dresses, bags and scarves.",
+    "metaDescription": "Discover Lénue Paris dresses — fluid cuts, fine materials, small-batch runs.",
     "all": "All",
     "emptyDresses": "No dresses available right now.",
     "emptyBags": "No bags available right now.",
@@ -86,9 +88,18 @@
     "metaDescription": "The story of Lénue Paris, a fashion boutique born in Paris."
   },
   "footer": {
-    "boutique": "Boutique",
-    "catalogue": "Collection",
-    "about": "About"
+    "collection": "Collection",
+    "about": "About",
+    "delivery": "Delivery",
+    "contact": "Contact"
+  },
+  "delivery": {
+    "metaTitle": "Delivery — Lénue Paris",
+    "metaDescription": "Careful delivery for every Lénue dress — small-batch preparation, confirmed on WhatsApp."
+  },
+  "contactPage": {
+    "metaTitle": "Contact — Lénue Paris",
+    "metaDescription": "Write to Lénue Paris on WhatsApp — a house of dresses, personal replies."
   },
   "selection": {
     "pillCount": "My selection · {count}",
