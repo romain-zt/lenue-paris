@@ -135,6 +135,16 @@
 {"ts":"2026-06-17T05:38:04.978Z","step":"orch-catalogue--dress-only-public","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-17T06:09:47.941Z","step":"orch-catalogue--dress-only-public","status":"todo","note":"reset stale in-progress after failed preflight","actor":"spark"}
 {"ts":"2026-06-17T06:09:48.311Z","step":"orch-ci--brainstorm-round-graft","status":"todo","note":"reset stale in-progress after failed preflight","actor":"spark"}
+{"ts":"2026-06-17T05:40:58.593Z","step":"orch-catalogue--dress-only-public","status":"in-progress","note":"Picked up: implementation already present in allowlist files; finalizing tests, user story, checks","actor":"agent"}
+{"ts":"2026-06-17T05:43:58.277Z","step":"orch-catalogue--dress-only-public","status":"in-review","note":"Implementation present across all allowlist files; tests fixed + expanded (112 green); typecheck clean on web + cms; user story written","actor":"agent"}
+{"ts":"2026-06-17T05:44:18.269Z","step":"orch-catalogue--dress-only-public","status":"validated","note":"Re-test pass: 112/112 web tests green, typecheck clean on web + cms","actor":"agent"}
+{"ts":"2026-06-17T05:44:23.213Z","step":"orch-catalogue--dress-only-public","status":"complete","note":"All checks green, PR #88 ready","actor":"agent"}
+{"ts":"2026-06-17T06:11:12.983Z","step":"orch-catalogue--dress-only-public","status":"in-progress","actor":"orchestrator"}
+{"ts":"2026-06-17T06:11:13.944Z","step":"orch-ci--brainstorm-round-graft","status":"in-progress","actor":"orchestrator"}
+{"ts":"2026-06-17T06:17:34.957Z","step":"orch-catalogue--dress-only-public","status":"in-review","note":"all checks pass, gallery collision fixed, check:assets 0","actor":"agent"}
+{"ts":"2026-06-17T06:18:27.757Z","step":"orch-catalogue--dress-only-public","status":"validated","note":"113 web tests green, check:assets collisions:0, typecheck clean","actor":"agent"}
+{"ts":"2026-06-17T06:18:57.118Z","step":"orch-catalogue--dress-only-public","status":"complete","note":"gallery collision fixed, check:assets collisions:0, 113 tests green, pr ready","actor":"agent"}
+{"ts":"2026-06-17T06:24:50.822Z","step":"orch-catalogue--dress-only-public","status":"complete","note":"gallery hash collision fixed (dress-louise/robe-margot); FEATURED_COUNT test fixed; 113 tests green, typecheck clean","actor":"agent"}
 {"ts":"2026-06-17T05:40:01.151Z","step":"orch-ci--brainstorm-round-graft","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-17T05:41:16.637Z","step":"orch-ci--brainstorm-round-graft","status":"in-review","note":"All AC satisfied: import+callsite in phase-orchestrator.ts, check-gate blocks gh pr ready, BRAINSTORM_ROUND_ENABLED=false default","actor":"agent"}
 {"ts":"2026-06-17T05:41:38.209Z","step":"orch-ci--brainstorm-round-graft","status":"validated","note":"Re-verified: all AC pass, typecheck clean, import exits 0, check-gate blocks gh pr ready","actor":"agent"}
