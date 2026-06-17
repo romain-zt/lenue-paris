@@ -39,12 +39,17 @@ import {
 import fs from "node:fs";
 import path from "node:path";
 import { execSync, execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import {
   canPrReady,
   compileManagerAllowlist,
   getOpenLuxuryFloors,
   LUXURY_LOG_REL,
 } from "./orchestrator-allowlist";
+import { runBrainstormRound, type RoundContext } from "./brainstorm-round";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ---------------------------------------------------------------------------
 // Environment
@@ -65,6 +70,14 @@ const stepId = process.env.STEP_ID?.trim() || "";
  * agent refire loops when an agent keeps exploring without committing.
  */
 const MAX_REMEDIATION_RUNS = parseInt(process.env.MAX_REMEDIATION_RUNS ?? "5", 10);
+
+/**
+ * When true, the worker runs an Orchestrator → Spark → Skeptic brainstorm round
+ * (via Cursor cloud agents) before stamping `complete` / calling `gh pr ready`.
+ * Default: false (off until the smoke on ci--brainstorm-round-graft passes).
+ * Set BRAINSTORM_ROUND_ENABLED=true in repo variables to activate.
+ */
+const brainstormRoundEnabled = process.env.BRAINSTORM_ROUND_ENABLED === "true";
 
 if (!orchestratorEnabled) {
   console.log("⏸️  ORCHESTRATOR_ENABLED=false — paused. Set it to 'true' to resume.");
@@ -911,6 +924,91 @@ async function executeAgentRun(step: string, trackingPR: TrackingPR, remediate: 
       // Keep the branch merged up with base so GitHub doesn't flag it CONFLICTING
       // on the union-merged state log (GitHub auto-merge ignores merge=union).
       syncTrackingBranchWithBase(trackingPR.branch);
+
+      // -----------------------------------------------------------------------
+      // Gate 1 (P00000): wait-for-required-pr-checks must pass on the tracking
+      // SHA before we may stamp gh pr ready.  Prevents the ~55-second theater
+      // where the Manager self-reports complete before CI even starts.
+      // -----------------------------------------------------------------------
+      const trackingSha = (() => {
+        try {
+          return execSync(`git rev-parse origin/${trackingPR.branch}`, { encoding: "utf8" }).trim();
+        } catch {
+          return "";
+        }
+      })();
+
+      const requiredChecks = process.env.REQUIRED_CHECKS ?? "quality,playwright,luxury-brand-gate";
+      let checksGreen = false;
+      if (trackingSha) {
+        try {
+          execFileSync(
+            path.join(__dirname, "wait-for-required-pr-checks.sh"),
+            [],
+            {
+              env: {
+                ...process.env,
+                REPO: repo!,
+                PR_SHA: trackingSha,
+                PR_NUMBER: String(trackingPR.number),
+                REQUIRED_CHECKS: requiredChecks,
+                WAIT_MODE: "polite",
+              },
+              stdio: "inherit",
+            },
+          );
+          checksGreen = true;
+        } catch {
+          console.warn(
+            `⚠️  Required checks (${requiredChecks}) not yet green on ${trackingSha.slice(0, 7)} — skipping gh pr ready until they pass.`,
+          );
+        }
+      } else {
+        console.warn("⚠️  Could not resolve tracking SHA — skipping check gate (non-fatal).");
+        checksGreen = true;
+      }
+
+      if (!checksGreen) {
+        console.log(`⏳ "${step}" complete on branch but check gate pending — will retry on next orchestrator run.`);
+        process.exit(0);
+      }
+
+      // -----------------------------------------------------------------------
+      // Gate 2 (P00000): brainstorm round — Orchestrator → Spark → Skeptic
+      // Runs only when BRAINSTORM_ROUND_ENABLED=true (default off).
+      // The round uses real Cursor cloud dispatch() so each role is a separate
+      // agent call binding to the frozen scope slice (no live PRD.md).
+      // -----------------------------------------------------------------------
+      if (brainstormRoundEnabled) {
+        const stepRow = pipelineStepById(step);
+        const roundCtx: RoundContext = {
+          repo: repo!,
+          stepId: step,
+          scopeSlicePath: stepRow.workload.scopeSliceFile,
+          trackingBranch: trackingPR.branch,
+          trackingPrNumber: trackingPR.number,
+        };
+
+        const dispatch: Parameters<typeof runBrainstormRound>[1] = async (role, prompt) => {
+          console.log(`\n🗣️  Brainstorm round — dispatching ${role}…`);
+          const result = await runOneCloudPrompt(prompt, `brainstorm:${role}:${step}`);
+          if (result.status === "error") {
+            throw new Error(`Brainstorm dispatch failed for role ${role}`);
+          }
+          return result.result ?? "";
+        };
+
+        console.log(`\n🔄 Running brainstorm round (Orchestrator → Spark → Skeptic) for "${step}"…`);
+        const roundResult = await runBrainstormRound(roundCtx, dispatch);
+        if (!roundResult.ok) {
+          console.warn(
+            `⚠️  Brainstorm round did not pass (role=${roundResult.role}): ${roundResult.summary.slice(0, 200)}`,
+          );
+          console.warn("    Skipping gh pr ready — remediation required.");
+          process.exit(0);
+        }
+        console.log(`✅ Brainstorm round passed (${roundResult.role}): ${roundResult.summary.slice(0, 120)}`);
+      }
 
       // Work is done on the branch. If the agent forgot to flip the PR ready,
       // do it for them (idempotent) so pr-ready.yml / cleanup can merge it.
