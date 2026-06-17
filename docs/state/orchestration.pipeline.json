@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Orchestration pipeline. The `bootstrap` step is a permanent anchor (always complete). Slice steps are appended after it by sync-prd-orchestration.ts (from the PRD Flow Inventory) and orchestration-planner.ts (from the planner queue). Do not run code agents from this file directly — it only declares step order + dependencies.",
+  "description": "Orchestration pipeline. The `bootstrap` step is a permanent anchor (always complete). Slice steps are appended after it by sync-prd-orchestration.ts (from the PRD Flow Inventory) and orchestration-planner.ts (from the planner queue). Do not run code agents from this file directly \u2014 it only declares step order + dependencies.",
   "steps": [
     {
       "id": "bootstrap",
@@ -144,7 +144,7 @@
       "priority": 0,
       "workload": {
         "kind": "slice",
-        "title": "Selection UX — Primary CTA (P0.1)",
+        "title": "Selection UX \u2014 Primary CTA (P0.1)",
         "featureAreaFile": "docs/product/feature-areas/selection-ux.md",
         "scopeSliceFile": "docs/product/scope-slices/selection-ux--p0-primary-cta.md",
         "userStoryFile": null,
@@ -160,7 +160,7 @@
       "priority": 0,
       "workload": {
         "kind": "slice",
-        "title": "Selection UX — List Overlay (P0.2)",
+        "title": "Selection UX \u2014 List Overlay (P0.2)",
         "featureAreaFile": "docs/product/feature-areas/selection-ux.md",
         "scopeSliceFile": "docs/product/scope-slices/selection-ux--p0-list-overlay.md",
         "userStoryFile": null,
@@ -176,12 +176,124 @@
       "priority": 0,
       "workload": {
         "kind": "slice",
-        "title": "Selection UX — Soft Drawer (P0.3)",
+        "title": "Selection UX \u2014 Soft Drawer (P0.3)",
         "featureAreaFile": "docs/product/feature-areas/selection-ux.md",
         "scopeSliceFile": "docs/product/scope-slices/selection-ux--p0-drawer-motion.md",
         "userStoryFile": null,
         "planFile": null,
         "notes": "Client P0.3: soft panel motion matching header nav."
+      }
+    },
+    {
+      "id": "orch-catalogue--dress-only-public",
+      "dependsOn": [
+        "orch-selection-ux--p0-drawer-motion"
+      ],
+      "priority": 0,
+      "workload": {
+        "kind": "slice",
+        "title": "Catalogue \u2014 Dress-only public (P1)",
+        "featureAreaFile": "docs/product/feature-areas/product-catalog.md",
+        "scopeSliceFile": "docs/product/scope-slices/catalogue--dress-only-public.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Client P1 + #1/#2: filter public catalogue/home to dresses, hide sacs/foulards, three public dress slugs with 2-3 unique PHOTO-* gallery frames each."
+      }
+    },
+    {
+      "id": "orch-storefront-shell--nav-four-links",
+      "dependsOn": [
+        "orch-catalogue--dress-only-public"
+      ],
+      "priority": 0,
+      "workload": {
+        "kind": "slice",
+        "title": "Storefront Shell \u2014 Nav four links (#7)",
+        "featureAreaFile": "docs/product/feature-areas/storefront-shell.md",
+        "scopeSliceFile": "docs/product/scope-slices/storefront-shell--nav-four-links.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Client #7: Collection \u00b7 \u00c0 propos \u00b7 Livraison \u00b7 Contact. Remove sacs/foulards strip from header."
+      }
+    },
+    {
+      "id": "orch-editorial--a-propos-atelier",
+      "dependsOn": [
+        "orch-storefront-shell--nav-four-links"
+      ],
+      "priority": 1,
+      "workload": {
+        "kind": "slice",
+        "title": "Editorial \u2014 Notre histoire & \u00c0 propos (#4, #8)",
+        "featureAreaFile": "docs/product/feature-areas/editorial.md",
+        "scopeSliceFile": "docs/product/scope-slices/editorial--a-propos-atelier.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Client #4/#8: rewrite \u00e0-propos with viscose story + petites s\u00e9ries narrative. Tri-locale fr/en/ru. Maison Lens tone gate."
+      }
+    },
+    {
+      "id": "orch-product-detail--photography-editorial",
+      "dependsOn": [
+        "orch-catalogue--dress-only-public"
+      ],
+      "priority": 1,
+      "workload": {
+        "kind": "slice",
+        "title": "Product Detail \u2014 Photography editorial (#6)",
+        "featureAreaFile": "docs/product/feature-areas/product-detail.md",
+        "scopeSliceFile": "docs/product/scope-slices/product-detail--photography-editorial.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Client #6: taller gallery, fabric/detail frames, editorial full-bleed hero per product."
+      }
+    },
+    {
+      "id": "orch-editorial--capsule-limited-series",
+      "dependsOn": [
+        "orch-editorial--a-propos-atelier"
+      ],
+      "priority": 1,
+      "workload": {
+        "kind": "slice",
+        "title": "Editorial \u2014 Capsule & s\u00e9rie limit\u00e9e (#5)",
+        "featureAreaFile": "docs/product/feature-areas/editorial.md",
+        "scopeSliceFile": "docs/product/scope-slices/editorial--capsule-limited-series.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Client #5: s\u00e9rie limit\u00e9e/collection capsule badge on home hero + product, no fake scarcity copy."
+      }
+    },
+    {
+      "id": "orch-storefront--broken-links-audit",
+      "dependsOn": [
+        "orch-catalogue--dress-only-public"
+      ],
+      "priority": 1,
+      "workload": {
+        "kind": "slice",
+        "title": "Storefront \u2014 Broken links audit (#3)",
+        "featureAreaFile": "docs/product/feature-areas/storefront-shell.md",
+        "scopeSliceFile": "docs/product/scope-slices/storefront--broken-links-audit.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Client #3: sitemap + 404 pass, seed slug parity, fix all broken product links."
+      }
+    },
+    {
+      "id": "orch-ci--brainstorm-round-graft",
+      "dependsOn": [
+        "orch-selection-ux--p0-drawer-motion"
+      ],
+      "priority": 2,
+      "workload": {
+        "kind": "slice",
+        "title": "CI \u2014 Brainstorm round graft (P00000)",
+        "featureAreaFile": "docs/product/feature-areas/ci-orchestration.md",
+        "scopeSliceFile": "docs/product/scope-slices/ci--brainstorm-round-graft.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "P00000: prove check-gate blocks gh pr ready; smoke with BRAINSTORM_ROUND_ENABLED=false on this PR, then default-on after smoke passes on next tracking PR."
       }
     }
   ]
