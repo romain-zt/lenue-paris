@@ -14,7 +14,7 @@
       "orch-selection-ux--p0-list-overlay": "complete",
       "orch-selection-ux--p0-drawer-motion": "complete",
       "orch-catalogue--dress-only-public": "in-progress",
-      "orch-ci--brainstorm-round-graft": "not-started"
+      "orch-ci--brainstorm-round-graft": "in-progress"
     },
     "remediation_counts": {
       "orch-product-detail--gallery-and-variants": 2,
