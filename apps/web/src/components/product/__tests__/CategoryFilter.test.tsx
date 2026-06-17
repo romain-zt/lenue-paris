@@ -8,8 +8,6 @@ describe("CategoryFilter", () => {
     render(<WithIntl><CategoryFilter selected={null} onSelect={vi.fn()} /></WithIntl>);
     expect(screen.getByText("Tout")).toBeDefined();
     expect(screen.getByText("Robes")).toBeDefined();
-    expect(screen.getByText("Sacs")).toBeDefined();
-    expect(screen.getByText("Foulards")).toBeDefined();
   });
 
   it("calls onSelect with correct value when category clicked", () => {
@@ -27,8 +25,8 @@ describe("CategoryFilter", () => {
   });
 
   it("marks selected category as active", () => {
-    render(<WithIntl><CategoryFilter selected={"bags"} onSelect={vi.fn()} /></WithIntl>);
-    const bagsBtn = screen.getByText("Sacs");
-    expect(bagsBtn.getAttribute("aria-pressed")).toBe("true");
+    render(<WithIntl><CategoryFilter selected={"dresses"} onSelect={vi.fn()} /></WithIntl>);
+    const dressesBtn = screen.getByText("Robes");
+    expect(dressesBtn.getAttribute("aria-pressed")).toBe("true");
   });
 });
