@@ -13,8 +13,8 @@
       "orch-selection-ux--p0-primary-cta": "complete",
       "orch-selection-ux--p0-list-overlay": "complete",
       "orch-selection-ux--p0-drawer-motion": "complete",
-      "orch-catalogue--dress-only-public": "todo",
-      "orch-ci--brainstorm-round-graft": "todo"
+      "orch-catalogue--dress-only-public": "in-progress",
+      "orch-ci--brainstorm-round-graft": "in-progress"
     }
   }
 }
