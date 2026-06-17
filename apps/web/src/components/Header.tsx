@@ -38,15 +38,9 @@ export function Header() {
   // Light-on-hero only at home top with menu closed
   const overlayMode = isHome && !scrolled && !open;
 
-  const navLeft = [
-    { href: "/catalogue?categorie=robes" as const, label: t("dresses") },
-    { href: "/catalogue?categorie=sacs" as const, label: t("bags") },
-  ];
+  const navLeft = [{ href: "/catalogue" as const, label: t("collection") }];
 
-  const navRight = [
-    { href: "/catalogue?categorie=foulards" as const, label: t("scarfs") },
-    { href: "/catalogue" as const, label: t("collection") },
-  ];
+  const navRight: { href: "/catalogue" | "/a-propos"; label: string }[] = [];
 
   const allNav = [...navLeft, ...navRight];
 

@@ -1,5 +1,6 @@
 import type { Page as PayloadPage, Product as PayloadProduct, Collection as PayloadCollection } from "@/payload-types";
 import type { Product } from "@/types/product";
+import { filterStorefrontProducts } from "@/lib/catalogue/storefrontCatalogue";
 import { getProductMainImageUrl } from "@/lib/productImages";
 import { resolveHeroImageUrl, resolveMediaAlt, resolveMediaUrl, resolveHeroVideoUrl } from "./media";
 import type { ContentLocale, MappedHomeBlock } from "./types";
@@ -67,9 +68,11 @@ export function mapPayloadProductDetail(
 function resolveProductsFromCollection(collection: PayloadCollection | number | null | undefined): Product[] {
   if (!collection || typeof collection === "number") return [];
   if (!collection.products?.length) return [];
-  return collection.products
-    .map((entry) => (typeof entry === "number" ? null : mapPayloadProduct(entry)))
-    .filter((p): p is Product => p != null);
+  return filterStorefrontProducts(
+    collection.products
+      .map((entry) => (typeof entry === "number" ? null : mapPayloadProduct(entry)))
+      .filter((p): p is Product => p != null),
+  );
 }
 
 function resolveFeaturedProducts(block: Extract<PayloadBlock, { blockType: "featuredProducts" }>): {
@@ -83,9 +86,11 @@ function resolveFeaturedProducts(block: Extract<PayloadBlock, { blockType: "feat
     return { products, collectionHref };
   }
 
-  const products = (block.products ?? [])
-    .map((entry) => (typeof entry === "number" ? null : mapPayloadProduct(entry)))
-    .filter((p): p is Product => p != null);
+  const products = filterStorefrontProducts(
+    (block.products ?? [])
+      .map((entry) => (typeof entry === "number" ? null : mapPayloadProduct(entry)))
+      .filter((p): p is Product => p != null),
+  );
   return { products };
 }
 

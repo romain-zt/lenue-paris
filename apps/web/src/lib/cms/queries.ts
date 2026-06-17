@@ -11,6 +11,7 @@ import {
   mapProductGridBlock,
 } from "./blocks";
 import type { ContentLocale, HomePageDto } from "./types";
+import { STOREFRONT_PRODUCT_CATEGORY, filterStorefrontProducts } from "@/lib/catalogue/storefrontCatalogue";
 import { resolveMediaAlt, resolveMediaUrl } from "./media";
 
 const HOME_SLUG = "home";
@@ -163,9 +164,11 @@ export async function getCollectionBySlug(
   const doc = await getCollectionDocumentBySlug(slug, locale, options);
   if (!doc) return null;
 
-  const products = (doc.products ?? [])
-    .map((entry) => (typeof entry === "number" ? null : mapPayloadProductToStorefront(entry)))
-    .filter((p): p is Product => p != null);
+  const products = filterStorefrontProducts(
+    (doc.products ?? [])
+      .map((entry) => (typeof entry === "number" ? null : mapPayloadProductToStorefront(entry)))
+      .filter((p): p is Product => p != null),
+  );
 
   let heroImageUrl: string | undefined;
   let heroImageAlt: string | undefined;
@@ -218,15 +221,22 @@ export async function getCataloguePage(locale: ContentLocale): Promise<Catalogue
     collection: "products",
     locale,
     fallbackLocale: "fr",
-    where: { _status: { equals: "published" } },
+    where: {
+      and: [
+        { _status: { equals: "published" } },
+        { category: { equals: STOREFRONT_PRODUCT_CATEGORY } },
+      ],
+    },
     depth: 1,
     limit: 100,
     sort: "title",
   });
 
-  const products = productsResult.docs
-    .map((doc) => mapPayloadProductToStorefront(doc))
-    .filter((p): p is Product => p != null);
+  const products = filterStorefrontProducts(
+    productsResult.docs
+      .map((doc) => mapPayloadProductToStorefront(doc))
+      .filter((p): p is Product => p != null),
+  );
 
   const title =
     gridBlock?.title ??

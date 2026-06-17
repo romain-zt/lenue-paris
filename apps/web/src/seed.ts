@@ -18,6 +18,7 @@ import fs from "fs";
 import { getPayload } from "payload";
 import config from "./payload.config";
 import { PRODUCT_IMAGES } from "./lib/productImages";
+import { PUBLIC_DRESS_SLUGS, isPublicStorefrontSlug } from "./lib/catalogue/storefrontCatalogue";
 
 function envFlag(name: string, defaultValue: boolean): boolean {
   const raw = process.env[name];
@@ -219,25 +220,18 @@ const COLLECTION_DEFINITIONS = [
       en: "Summer 2026",
       ru: "Лето 2026",
     },
-    productSlugs: ["robe-camille", "robe-louise", "robe-margot", "robe-heloise"],
+    productSlugs: [...PUBLIC_DRESS_SLUGS],
+    published: true,
   },
   {
-    slug: "sacs",
+    slug: "robes-signature",
     title: {
-      fr: "Sacs",
-      en: "Bags",
-      ru: "Сумки",
+      fr: "Robes signature",
+      en: "Signature dresses",
+      ru: "Фирменные платья",
     },
-    productSlugs: ["sac-juliette", "sac-amelie", "sac-celeste", "sac-victoire"],
-  },
-  {
-    slug: "nouveautes",
-    title: {
-      fr: "Nouveautés",
-      en: "New arrivals",
-      ru: "Новинки",
-    },
-    productSlugs: ["robe-camille", "sac-celeste", "foulard-diane", "look-elise-edition-limitee"],
+    productSlugs: [...PUBLIC_DRESS_SLUGS],
+    published: true,
   },
 ] as const;
 
@@ -247,15 +241,8 @@ const CATALOGUE_PAGE_COPY = {
   ru: { title: "Каталог", gridTitle: "Вся коллекция" },
 } as const;
 
-/** Featured carousel slugs — mirrored from storefront until CMS-b reads blocks only. */
-const HOME_FEATURED_SLUGS = [
-  "robe-camille",
-  "look-elise-edition-limitee",
-  "robe-margot",
-  "sac-celeste",
-  "robe-louise",
-  "robe-heloise",
-] as const;
+/** Featured carousel — signature robes only (client brief #2). */
+const HOME_FEATURED_SLUGS = [...PUBLIC_DRESS_SLUGS] as const;
 
 type ContentLocale = (typeof PRODUCT_LOCALES)[number];
 
@@ -335,12 +322,14 @@ async function publishProductLocales(
   product: (typeof PRODUCTS)[number],
   data: Record<string, unknown>,
 ) {
+  const published = isPublicStorefrontSlug(product.slug);
+
   await payload.update({
     collection: "products",
     id: productId,
-    data: data as any,
+    data: { ...data, _status: published ? "published" : "draft" } as any,
     locale: "en",
-    draft: false,
+    draft: !published,
   });
 
   await payload.update({
@@ -349,9 +338,10 @@ async function publishProductLocales(
     data: {
       title: product.title.fr,
       description: product.description.fr,
+      _status: published ? "published" : "draft",
     },
     locale: "fr",
-    draft: false,
+    draft: !published,
   });
 
   // v0: RU falls back to FR copy until dedicated translations exist.
@@ -361,9 +351,10 @@ async function publishProductLocales(
     data: {
       title: product.title.fr,
       description: product.description.fr,
+      _status: published ? "published" : "draft",
     },
     locale: "ru",
-    draft: false,
+    draft: !published,
   });
 }
 
@@ -516,10 +507,10 @@ async function seedCollections(
           title: def.title.en,
           slug: def.slug,
           products: productIds,
-          _status: "published",
+          _status: def.published ? "published" : "draft",
         } as any,
         locale: "en",
-        draft: false,
+        draft: !def.published,
       });
       collectionId = doc.id;
       console.log(`  ✅ Created collection ${def.slug} → id ${collectionId}`);
@@ -532,10 +523,10 @@ async function seedCollections(
         data: {
           title: def.title[locale],
           products: productIds,
-          _status: "published",
+          _status: def.published ? "published" : "draft",
         } as any,
         locale,
-        draft: false,
+        draft: !def.published,
       });
     }
 
@@ -706,18 +697,20 @@ export async function seed() {
       await publishProductLocales(payload, existing.docs[0].id, product, data);
       productIdBySlug[product.slug] = existing.docs[0].id;
       updated++;
-      console.log(`  ✅ Published ${product.title.fr} — id ${existing.docs[0].id}`);
+      const vis = isPublicStorefrontSlug(product.slug) ? "published" : "draft";
+      console.log(`  ✅ Synced ${product.title.fr} (${vis}) — id ${existing.docs[0].id}`);
     } else {
+      const published = isPublicStorefrontSlug(product.slug);
       const doc = await payload.create({
         collection: "products",
-        data: data as any,
+        data: { ...data, _status: published ? "published" : "draft" } as any,
         locale: "en",
-        draft: false,
+        draft: !published,
       });
       await publishProductLocales(payload, doc.id, product, data);
       productIdBySlug[product.slug] = doc.id;
       created++;
-      console.log(`  ✅ Created & published ${product.title.fr} — id ${doc.id}`);
+      console.log(`  ✅ Created ${product.title.fr} (${published ? "published" : "draft"}) — id ${doc.id}`);
     }
   }
 

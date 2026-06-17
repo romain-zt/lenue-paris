@@ -11,15 +11,27 @@ export interface ProductImageSet {
 export const PRODUCT_IMAGES: Record<string, ProductImageSet> = {
   "robe-camille": {
     main: "dress-camille.jpg",
-    gallery: ["PHOTO-2026-06-12-17-30-46.jpg", "PHOTO-2026-06-12-23-17-33.jpg"],
+    gallery: [
+      "PHOTO-2026-06-12-17-30-46.jpg",
+      "PHOTO-2026-06-12-23-17-33.jpg",
+      "PHOTO-2026-06-12-17-30-33.jpg",
+    ],
   },
   "robe-louise": {
     main: "dress-louise.jpg",
-    gallery: ["PHOTO-2026-06-12-17-30-56.jpg"],
+    gallery: [
+      "PHOTO-2026-06-12-17-30-56.jpg",
+      "PHOTO-2026-06-12-18-07-47.jpg",
+      "PHOTO-2026-06-13-08-45-41.jpg",
+    ],
   },
   "robe-margot": {
     main: "dress-margot.jpg",
-    gallery: ["PHOTO-2026-06-12-17-30-56.jpg"],
+    gallery: [
+      "PHOTO-2026-06-12-18-02-57.jpg",
+      "PHOTO-2026-06-12-22-37-24.jpg",
+      "PHOTO-2026-06-12-17-30-33.jpg",
+    ],
   },
   "robe-heloise": {
     main: "dress-heloise.jpg",

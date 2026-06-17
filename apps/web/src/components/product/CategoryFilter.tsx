@@ -14,8 +14,6 @@ export function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
   const categories: { value: ProductCategory | null; label: string }[] = [
     { value: null, label: t("catalogue.all") },
     { value: "dresses", label: t("nav.dresses") },
-    { value: "bags", label: t("nav.bags") },
-    { value: "scarfs", label: t("nav.scarfs") },
   ];
 
   return (

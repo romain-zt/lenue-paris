@@ -17,7 +17,13 @@ describe("productImages", () => {
   });
 
   it("returns gallery urls from mapping", () => {
-    expect(getProductGalleryUrls("robe-louise")).toEqual(["/images/PHOTO-2026-06-12-17-30-56.jpg"]);
+    expect(getProductGalleryUrls("robe-louise")).toEqual([
+      "/images/PHOTO-2026-06-12-17-30-56.jpg",
+      "/images/PHOTO-2026-06-12-18-07-47.jpg",
+      "/images/PHOTO-2026-06-13-08-45-41.jpg",
+    ]);
+    expect(getProductGalleryUrls("robe-camille")).toHaveLength(3);
+    expect(getProductGalleryUrls("robe-margot")).toHaveLength(3);
   });
 
   it("covers all seeded product slugs", () => {
