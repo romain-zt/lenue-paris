@@ -24,7 +24,7 @@ describe("productImages", () => {
       "/images/PHOTO-2026-06-13-08-45-41.jpg",
     ]);
     expect(getProductGalleryUrls("robe-camille")).toHaveLength(3);
-    expect(getProductGalleryUrls("robe-margot")).toHaveLength(3);
+    expect(getProductGalleryUrls("robe-margot")).toHaveLength(2);
   });
 
   it("covers all seeded product slugs", () => {
