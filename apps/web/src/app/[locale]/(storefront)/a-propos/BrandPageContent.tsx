@@ -34,15 +34,25 @@ export function BrandPageContent({ title, body, cover }: BrandPageContentProps) 
       )}
 
       <article className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
-        <h1 className="mb-8 font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">
-          {title}
-        </h1>
+        {title && (
+          <h1 className="mb-8 font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">
+            {title}
+          </h1>
+        )}
         <div className="space-y-6">
-          {paragraphs.map((paragraph) => (
-            <p key={paragraph} className="text-base leading-relaxed text-stone-700 sm:text-lg">
-              {paragraph}
-            </p>
-          ))}
+          {paragraphs.map((paragraph, i) => {
+            const lines = paragraph.split("\n");
+            return (
+              <p key={i} className="text-base leading-relaxed text-stone-700 sm:text-lg">
+                {lines.map((line, j) => (
+                  <span key={j}>
+                    {line}
+                    {j < lines.length - 1 && <br />}
+                  </span>
+                ))}
+              </p>
+            );
+          })}
         </div>
       </article>
     </main>

@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { BrandPageContent } from "./BrandPageContent";
 import { getBrandPageData } from "@/lib/getBrandPageData";
-import { BRAND_PAGE_COPY } from "@/lib/brandPageCopy";
 import Loading from "./loading";
 import NotFound from "./not-found";
 
@@ -27,7 +26,7 @@ describe("BrandPageContent", () => {
   it("renders title from CMS page", async () => {
     mockedGetPage.mockResolvedValue({
       id: "1",
-      title: "À propos",
+      title: "Notre histoire",
       slug: "a-propos",
       body: "Hello",
       cover: null,
@@ -35,13 +34,13 @@ describe("BrandPageContent", () => {
 
     await renderBrandPageFromCms();
 
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toContain("À propos");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toContain("Notre histoire");
   });
 
   it("renders body paragraphs split by newlines", async () => {
     mockedGetPage.mockResolvedValue({
       id: "1",
-      title: "À propos",
+      title: "Notre histoire",
       slug: "a-propos",
       body: "First para\n\nSecond para",
       cover: null,
@@ -53,29 +52,18 @@ describe("BrandPageContent", () => {
     expect(screen.getByText("Second para")).toBeDefined();
   });
 
-  it("renders hardcoded fallback when getPage returns null", async () => {
+  it("renders nothing when CMS is empty (no fallback copy)", async () => {
     mockedGetPage.mockResolvedValue(null);
 
     await renderBrandPageFromCms();
 
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("À propos");
-    expect(screen.getByText(/moins de pièces, plus de goût/)).toBeDefined();
-  });
-
-  it("falls back to BRAND_PAGE_COPY.en when getPage returns null and locale is en", async () => {
-    mockedGetPage.mockResolvedValue(null);
-
-    const data = await getBrandPageData("en");
-
-    expect(data.title).toBe(BRAND_PAGE_COPY.en.title);
-    expect(data.body).toBe(BRAND_PAGE_COPY.en.body);
-    expect(data.title).not.toBe(BRAND_PAGE_COPY.fr.title);
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
   });
 
   it("renders without cover image when cover is null", async () => {
     mockedGetPage.mockResolvedValue({
       id: "1",
-      title: "À propos",
+      title: "Notre histoire",
       slug: "a-propos",
       body: "Hello",
       cover: null,

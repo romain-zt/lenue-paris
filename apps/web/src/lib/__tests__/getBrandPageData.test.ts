@@ -15,42 +15,48 @@ describe("getBrandPageData", () => {
     vi.clearAllMocks();
   });
 
-  it('returns English fallback title when getPage returns null and locale is "en"', async () => {
+  it("returns empty body when CMS has no a-propos page", async () => {
     mockGetPage.mockResolvedValue(null);
-
-    const result = await getBrandPageData("en");
-
-    expect(result.title).toBe("About");
+    const result = await getBrandPageData("fr");
+    expect(result.title).toBe("");
+    expect(result.body).toBe("");
+    expect(result.cover).toBeNull();
   });
 
-  it('returns Russian fallback title when getPage returns null and locale is "ru"', async () => {
+  it("returns empty body for any locale when CMS is empty", async () => {
     mockGetPage.mockResolvedValue(null);
-
-    const result = await getBrandPageData("ru");
-
-    expect(result.title).toBe("О нас");
-  });
-
-  it("returns French fallback title when getPage returns null and locale is omitted", async () => {
-    mockGetPage.mockResolvedValue(null);
-
-    const result = await getBrandPageData();
-
-    expect(result.title).toBe("À propos");
+    const en = await getBrandPageData("en");
+    const ru = await getBrandPageData("ru");
+    expect(en.body).toBe("");
+    expect(ru.body).toBe("");
   });
 
   it("uses CMS page data when getPage returns a page and passes locale to getPage", async () => {
     mockGetPage.mockResolvedValue({
       id: "page-1",
-      title: "CMS About Page",
+      title: "Notre histoire",
       slug: "a-propos",
       body: "CMS body",
       cover: null,
     });
 
-    const result = await getBrandPageData("en");
+    const result = await getBrandPageData("fr");
 
-    expect(result.title).toBe("CMS About Page");
-    expect(mockGetPage).toHaveBeenCalledWith("a-propos", "en");
+    expect(result.title).toBe("Notre histoire");
+    expect(result.body).toBe("CMS body");
+    expect(mockGetPage).toHaveBeenCalledWith("a-propos", "fr");
+  });
+
+  it("returns cover from CMS when populated", async () => {
+    mockGetPage.mockResolvedValue({
+      id: "page-1",
+      title: "Notre histoire",
+      slug: "a-propos",
+      body: "body",
+      cover: { url: "/images/cover.jpg", alt: "Cover" },
+    });
+
+    const result = await getBrandPageData("fr");
+    expect(result.cover?.url).toBe("/images/cover.jpg");
   });
 });

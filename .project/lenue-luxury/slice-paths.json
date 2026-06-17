@@ -19,5 +19,20 @@
       "apps/web/public/images/",
       "apps/web/media/"
     ]
+  },
+  "editorial--a-propos-atelier": {
+    "scope_slice_file": "docs/product/scope-slices/editorial--a-propos-atelier.md",
+    "preview_port": 3001,
+    "preview_url": "http://localhost:3001/fr/a-propos",
+    "paths": [
+      "apps/web/src/lib/brandPageCopy.ts",
+      "apps/web/src/lib/getBrandPageData.ts",
+      "apps/web/src/app/[locale]/(storefront)/a-propos/page.tsx",
+      "apps/web/src/app/[locale]/(storefront)/a-propos/BrandPageContent.tsx",
+      "apps/web/src/seed.ts",
+      "apps/web/messages/fr.json",
+      "apps/web/messages/en.json",
+      "apps/web/messages/ru.json"
+    ]
   }
 }

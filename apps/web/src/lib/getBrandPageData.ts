@@ -1,5 +1,4 @@
 import type { BrandPageContentProps } from "@/app/[locale]/(storefront)/a-propos/BrandPageContent";
-import { BRAND_PAGE_COPY } from "@/lib/brandPageCopy";
 import { getPage } from "@/lib/getPage";
 
 export type { BrandPageContentProps };
@@ -13,10 +12,9 @@ export async function getBrandPageData(locale: string = "fr"): Promise<BrandPage
       cover: page.cover ?? null,
     };
   }
-  const fallback = BRAND_PAGE_COPY[locale as keyof typeof BRAND_PAGE_COPY] ?? BRAND_PAGE_COPY.fr;
   return {
-    title: fallback.title,
-    body: fallback.body,
+    title: "",
+    body: "",
     cover: null,
   };
 }

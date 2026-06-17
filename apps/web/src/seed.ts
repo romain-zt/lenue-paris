@@ -276,7 +276,7 @@ const HOME_PAGE_COPY: Record<
     editorialSubline: "C'est se sentir soi-même.",
     editorialBody:
       "Chaque pièce est sélectionnée pour sa matière, sa coupe, et ce qu'elle dit de vous. Commandez en toute simplicité, via WhatsApp.",
-    editorialCta: "Explorer la boutique",
+    editorialCta: "Voir la collection",
     heroImageAlt: "Lénue Paris — collection Printemps Été 2026",
     editorialImageAlt: "Femme en robe Lénue Paris au Café de Flore",
   },
@@ -292,7 +292,7 @@ const HOME_PAGE_COPY: Record<
     editorialSubline: "It's about feeling like yourself.",
     editorialBody:
       "Every piece is chosen for its fabric, its cut, and what it says about you. Order simply, via WhatsApp.",
-    editorialCta: "Explore the boutique",
+    editorialCta: "See the collection",
     heroImageAlt: "Lénue Paris — Spring Summer 2026 collection",
     editorialImageAlt: "Woman in a Lénue Paris dress at Café de Flore",
   },
@@ -308,7 +308,7 @@ const HOME_PAGE_COPY: Record<
     editorialSubline: "Это ощущение себя.",
     editorialBody:
       "Каждая вещь выбрана за материал, крой и то, что она говорит о вас. Заказывайте просто — через WhatsApp.",
-    editorialCta: "Открыть бутик",
+    editorialCta: "Смотреть коллекцию",
     heroImageAlt: "Lénue Paris — коллекция Весна Лето 2026",
     editorialImageAlt: "Женщина в платье Lénue Paris в Café de Flore",
   },
@@ -590,6 +590,103 @@ async function seedCataloguePage(payload: Awaited<ReturnType<typeof getPayload>>
   console.log(`  ✅ Published catalogue page (${PRODUCT_LOCALES.join(", ")})`);
 }
 
+const A_PROPOS_SLUG = "a-propos";
+
+const A_PROPOS_BODY: Record<ContentLocale, { title: string; body: string }> = {
+  fr: {
+    title: "Notre histoire",
+    body: [
+      "LÉNUE est née d'une recherche presque impossible.",
+      "Celle d'une robe que l'on aurait envie de porter du matin jusqu'au soir.\nUne robe élégante sans être rigide.\nFéminine sans effort.\nSensuelle sans jamais en faire trop.",
+      "Pendant des mois, nous avons cherché une matière capable d'offrir cette sensation rare : oublier que l'on porte une robe.",
+      "Nous avons finalement choisi une viscose italienne d'une qualité exceptionnelle.\nLégère, fluide et respirante, elle accompagne le mouvement du corps sans jamais le contraindre.\nPar temps chaud, elle laisse la peau respirer.\nElle glisse sur la silhouette avec la douceur d'une seconde peau.",
+      "C'est le genre de tissu que l'on touche une fois, puis une deuxième, puis une troisième.\nParce qu'il est difficile de résister à sa douceur.",
+      "Nous avons imaginé des robes pour les journées d'été, les voyages, les dîners qui s'éternisent, les promenades au bord de la mer et les moments que l'on aimerait retenir un peu plus longtemps.",
+      "Des robes dans lesquelles on se sent belle avant même de se regarder dans un miroir.",
+      "Chaque imprimé a été choisi avec soin.\nChaque détail a été pensé pour traverser les saisons et les années.",
+      "Nous ne croyons pas aux tendances qui disparaissent en quelques mois.\nNous croyons aux pièces que l'on garde, que l'on emporte partout avec soi et que l'on aime retrouver, année après année.",
+      "LÉNUE est une invitation à ralentir.\nÀ profiter du soleil sur la peau.\nÀ se sentir libre, légère et infiniment féminine.",
+    ].join("\n\n"),
+  },
+  en: {
+    title: "Our story",
+    body: [
+      "LÉNUE began with an almost impossible search.",
+      "A dress you'd want to wear from morning until night.\nElegant without being stiff.\nFeminine without effort.\nSensual without trying too hard.",
+      "We spent months looking for a fabric that would feel like nothing at all.",
+      "We found it in an Italian viscose of exceptional quality.\nLight, fluid, and breathable, it follows the body without ever constraining it.\nIn the heat, it lets the skin breathe.\nIt moves across the silhouette with the softness of a second skin.",
+      "The kind of fabric you touch once, then again, then a third time.\nBecause it's hard to resist.",
+      "We imagined dresses for summer days, for travel, for dinners that stretch late, for walks along the shore and for the moments you wish you could hold a little longer.",
+      "Dresses that make you feel beautiful before you've even looked in the mirror.",
+      "Every print was chosen with care.\nEvery detail was made to outlast the seasons and the years.",
+      "We don't believe in trends that vanish after a few months.\nWe believe in pieces you keep, carry everywhere, and love to find again, year after year.",
+      "LÉNUE is an invitation to slow down.\nTo feel the sun on your skin.\nTo feel free, light, and infinitely feminine.",
+    ].join("\n\n"),
+  },
+  ru: {
+    title: "Наша история",
+    body: [
+      "LÉNUE родился из почти невозможного поиска.",
+      "Платья, которое хочется носить с утра до вечера.\nЭлегантного, но не строгого.\nЖенственного без усилий.\nЧувственного без излишества.",
+      "Месяцами мы искали ткань, способную дарить редкое ощущение: забыть, что на тебе платье.",
+      "Мы остановили выбор на итальянском вискозе исключительного качества.\nЛёгкий, текучий и дышащий, он следует движениям тела, не сковывая его.\nВ жару он позволяет коже дышать.\nСкользит по силуэту с мягкостью второй кожи.",
+      "Это та ткань, которую хочется потрогать снова и снова.\nПотому что трудно устоять перед её нежностью.",
+      "Мы придумывали платья для летних дней, поездок, затянувшихся ужинов, прогулок у моря и тех мгновений, которые хочется удержать чуть дольше.",
+      "Платья, в которых чувствуешь себя красивой ещё до того, как посмотришь в зеркало.",
+      "Каждый принт выбран с особой тщательностью.\nКаждая деталь продумана так, чтобы переживать сезоны и годы.",
+      "Мы не верим в тренды, исчезающие через несколько месяцев.\nМы верим в вещи, которые хранят, берут с собой и с радостью находят вновь — год за годом.",
+      "LÉNUE — это приглашение замедлиться.\nПочувствовать солнце на коже.\nОщутить себя свободной, лёгкой и бесконечно женственной.",
+    ].join("\n\n"),
+  },
+};
+
+async function seedAProposPage(payload: Awaited<ReturnType<typeof getPayload>>): Promise<void> {
+  console.log("\n📄 Syncing à-propos page");
+
+  const existing = await payload.find({
+    collection: "pages",
+    where: { slug: { equals: A_PROPOS_SLUG } },
+    limit: 1,
+  });
+
+  let pageId: number | string;
+
+  if (existing.docs[0]) {
+    pageId = existing.docs[0].id;
+    console.log(`  ♻️  Reusing à-propos page → id ${pageId}`);
+  } else {
+    const doc = await payload.create({
+      collection: "pages",
+      data: {
+        title: A_PROPOS_BODY.en.title,
+        slug: A_PROPOS_SLUG,
+        body: A_PROPOS_BODY.en.body,
+        _status: "published",
+      } as any,
+      locale: "en",
+      draft: false,
+    });
+    pageId = doc.id;
+    console.log(`  ✅ Created à-propos page → id ${pageId}`);
+  }
+
+  for (const locale of PRODUCT_LOCALES) {
+    await payload.update({
+      collection: "pages",
+      id: pageId,
+      data: {
+        title: A_PROPOS_BODY[locale].title,
+        body: A_PROPOS_BODY[locale].body,
+        _status: "published",
+      } as any,
+      locale,
+      draft: false,
+    });
+  }
+
+  console.log(`  ✅ Published à-propos page (${PRODUCT_LOCALES.join(", ")})`);
+}
+
 export async function seed() {
   const payload = await getPayload({ config });
 
@@ -717,6 +814,7 @@ export async function seed() {
   await seedHomePage(payload, productIdBySlug, findOrUploadImage);
   await seedCollections(payload, productIdBySlug);
   await seedCataloguePage(payload);
+  await seedAProposPage(payload);
 
   console.log(`\n🎉 Seed complete — ${created} created, ${updated} updated (${PRODUCT_LOCALES.join(", ")} locales)`);
 }
