@@ -161,7 +161,7 @@ You are running at **Manager** tier. Per \`.cursor/core/rules/20-model-routing.m
 Named subagents pre-wired into this run via the \`Task\` tool:
 - **Per-part specialists** (all composer-2.5): \`backend-specialist\`, \`http-specialist\`, \`frontend-specialist\`, \`design-specialist\`, \`copywriter-specialist\` — delegate each feature part to its specialist (see §Decompose on pickup).
 - **\`executor\`** (composer-2.5) — generic brick for parts that don't fit a specialist (one Task / one commit).
-- **\`vision-reviewer\`** (claude-opus-4-8) — read-only escalation for high-risk decisions (irreversible, security, architecture, contract). Use before committing changes touching \`auth\`, \`money\`, \`data migrations\`, public contracts, or anything you can't undo.
+- **\`vision-reviewer\`** (claude-sonnet-4-6 — project cap: no Opus 4.8 / max mode) — read-only escalation for high-risk decisions (irreversible, security, architecture, contract). Use before committing changes touching \`auth\`, \`money\`, \`data migrations\`, public contracts, or anything you can't undo.
 Default DOWN: plan/split at Manager, push the typing to composer specialists/executor, escalate to \`vision-reviewer\` only when genuinely high-stakes.
 
 ## Review includes setup self-improvement (mandatory)
