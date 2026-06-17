@@ -19,20 +19,31 @@ and the v0 boundary.
 
 ## Active work
 
-**`orch-ci--brainstorm-round-graft` — IN-REVIEW (2026-06-17)**
+**`orch-ci--brainstorm-round-graft` — TO-QA-HUMAN (2026-06-17)**
 
 Tracking PR #87 (`orchestrator/tracking-orch-ci--brainstorm-round-graft-1781674672573`).
 
-All acceptance criteria satisfied by existing code in `.github/scripts/core/phase-orchestrator.ts`:
-- AC1: `runBrainstormRound` imported and called at lines 49 + 1002
+**Status: `to-qa-human`** — implementation complete, CI blocked by GitHub bot-loop prevention.
+
+All code-level acceptance criteria are satisfied:
+- AC1: `runBrainstormRound` imported (line 49) and called (line 1002) in `phase-orchestrator.ts`
 - AC2: `wait-for-required-pr-checks.sh` called via `execFileSync` inside `phaseIsComplete` block (line 946)
 - AC3: `BRAINSTORM_ROUND_ENABLED` reads from env, defaults to `false` (line 80)
-- AC4: Orchestrator coordinator mode exits 0 with no crash from import
-- AC5: Check gate at line 944–974 blocks `gh pr ready` until `quality,playwright,luxury-brand-gate` all pass
+- AC4: Orchestrator coordinator mode exits 0 with no crash from import (verified locally)
+- AC5: Check gate at lines 944–974 blocks `gh pr ready` until `quality,playwright,luxury-brand-gate` pass (code verified; CI smoke needs human trigger)
 
-`BRAINSTORM_ROUND_ENABLED` stays `false` (default) until smoke passes on this PR. Default-on after smoke passes on next tracking PR.
+**Blocker — human action needed:**
+GitHub's loop-prevention policy prevents `pull_request` workflow events when commits are authored by `github-actions[bot]` via `GITHUB_TOKEN`. All commits on this tracking branch were made by the bot, so GitHub Actions never fires CI workflows.
 
-Pre-existing test failures (unrelated to this slice): `maison-scorers` asset/image dedup tests, `CategoryFilter` UI test — not in allowlist, not caused by this slice.
+**To complete the smoke and merge:**
+1. Push any trivial commit to `orchestrator/tracking-orch-ci--brainstorm-round-graft-1781674672573` using a personal token (not GITHUB_TOKEN)
+2. Confirm `gh pr checks 87 --watch --repo romain-zt/lenue-paris` shows `quality` and `playwright` green
+   - `luxury-brand-gate` will be skipped (no `apps/web/**` changes — this is expected and correct for a CI-only slice)
+3. Call `gh pr ready 87 --repo romain-zt/lenue-paris`
+
+**Note on luxury-brand-gate:** The check is `quality,playwright,luxury-brand-gate` in `phase-orchestrator.ts`. Since `luxury-brand-gate.yml` has a `paths: apps/web/**` filter, it won't fire on this CI-only PR. The `wait-for-required-pr-checks.sh` will timeout waiting for it unless `REQUIRED_CHECKS` is overridden for non-storefront slices. This is a systemic gap to fix in a future slice.
+
+Pre-existing test failures (unrelated to this slice): `maison-scorers` asset/image dedup tests, `CategoryFilter` UI test.
 
 
 
