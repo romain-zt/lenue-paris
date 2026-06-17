@@ -79,9 +79,30 @@ const DEFAULT_TIER_IDS = {
   executor: "composer-2.5",
 } as const;
 
+/**
+ * PROJECT MODEL CAP (lenue.paris): the maximum allowed model is Sonnet 4.6.
+ * Opus 4.8 (and any opus variant) is disallowed in CI and chat per the human's
+ * P0. This guard is intentionally unbreakable from config: even if a stale repo
+ * variable (`vars.CURSOR_MODEL_VISION_ID=claude-opus-4-8`) is wired into a
+ * workflow env, it is coerced back to Sonnet 4.6 with a loud warning rather than
+ * silently escalating to Opus.
+ */
+const CAPPED_MODEL_ID = "claude-sonnet-4-6";
+function capModelId(id: string): string {
+  if (/opus/i.test(id)) {
+    console.warn(
+      `⚠️  Model cap: "${id}" is disallowed (no Opus 4.8 / max mode). ` +
+        `Coercing to "${CAPPED_MODEL_ID}".`,
+    );
+    return CAPPED_MODEL_ID;
+  }
+  return id;
+}
+
 function envId(name: string, fallback: string): string {
   const raw = process.env[name];
-  return raw && raw.trim() ? raw.trim() : fallback;
+  const id = raw && raw.trim() ? raw.trim() : fallback;
+  return capModelId(id);
 }
 
 export const TIER_MODELS: {
