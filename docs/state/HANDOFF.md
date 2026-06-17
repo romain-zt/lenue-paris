@@ -19,21 +19,26 @@ and the v0 boundary.
 
 ## Active work
 
-**`orch-ci--brainstorm-round-graft` — COMPLETE (2026-06-17, PR #89 smoke pass)**
+**`orch-ci--brainstorm-round-graft` — TO-QA-HUMAN (2026-06-17)**
 
-Tracking PR #87 (`orchestrator/tracking-orch-ci--brainstorm-round-graft-1781674672573`) — **MERGED**.
-Tracking PR #89 (`orchestrator/tracking-orch-ci--brainstorm-round-graft-1781678667273`) — **smoke verified**: BRAINSTORM_ROUND_ENABLED=false (check-gate only); all AC confirmed; 106 web tests green; typecheck clean.
+Tracking PR #87 (`orchestrator/tracking-orch-ci--brainstorm-round-graft-1781674672573`) — **MERGED** (implementation lives here).
+Tracking PR #89 (`orchestrator/tracking-orch-ci--brainstorm-round-graft-1781678667273`) — **OPEN, needs human merge**.
 
-All acceptance criteria satisfied and CI green:
+All code-level acceptance criteria satisfied (AC1–4 verified on `main`):
 - AC1: `runBrainstormRound` imported (line 49) and called (line 1002) in `phase-orchestrator.ts`
 - AC2: `wait-for-required-pr-checks.sh` called via `execFileSync` inside `phaseIsComplete` block (line 946)
 - AC3: `BRAINSTORM_ROUND_ENABLED` reads from env, defaults to `false` (line 80)
 - AC4: Orchestrator coordinator mode exits 0 (no crash from import)
-- AC5: `quality`, `playwright`, `luxury-brand-gate` all green; PR auto-merged
+- AC5: **BLOCKED** — GitHub bot loop-prevention prevents CI from auto-triggering on PR #89
 
-**Also fixed (pre-existing test failures that blocked CI on all PRs):**
-- `CategoryFilter.test.tsx`: test expected Sacs/Foulards categories that were removed in the dress-only catalogue refactor
-- `seed-idempotency.test.ts`: hardcoded `FEATURED_COUNT = 6` but only 3 dresses exist; fixed to `PUBLIC_DRESS_SLUGS.length`
+**Root cause of block:** PR #89 was created and managed entirely by bot actors (`cursor[bot]`, `github-actions[bot]`). GitHub suppresses `pull_request` workflow events when `ready_for_review` is fired by a bot, even for subsequent human commits. After 5+ minutes, 0 check runs registered on the HEAD commit (`ad08402`).
+
+**Human action required (one of):**
+1. **Easiest**: Manually merge PR #89 — it's `mergeable: MERGEABLE`, no branch protection required checks.
+2. **Alternative**: Push any small commit from a real human GitHub account (not a bot) to PR #89's branch — this should trigger `pull_request` `synchronize` as a real user and unblock CI.
+3. **Alternative**: In GitHub UI → PR #89 → Convert to draft → Mark ready again — this re-fires `ready_for_review` as a human actor, which triggers `pr-ready.yml`.
+
+Once merged, the orchestrator should advance to the next step automatically.
 
 
 
