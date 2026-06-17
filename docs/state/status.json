@@ -14,10 +14,10 @@
       "orch-selection-ux--p0-list-overlay": "complete",
       "orch-selection-ux--p0-drawer-motion": "complete",
       "orch-catalogue--dress-only-public": "in-progress",
-      "orch-ci--brainstorm-round-graft": "in-progress"
+      "orch-ci--brainstorm-round-graft": "in-review"
     },
     "remediation_counts": {
-      "orch-catalogue--dress-only-public": 1
+      "orch-catalogue--dress-only-public": 2
     }
   }
 }
