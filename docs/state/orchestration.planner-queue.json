@@ -1,41 +1,5 @@
 {
   "version": 2,
-  "description": "Client brief — robe-only atelier repositioning after selection UX (P0.1–P0.3 on main).",
-  "steps": [
-    {
-      "featureId": "catalogue--dress-only-public",
-      "priority": 0,
-      "status": "in-progress"
-    },
-    {
-      "featureId": "storefront-shell--nav-four-links",
-      "priority": 0,
-      "status": "pending"
-    },
-    {
-      "featureId": "product-detail--photography-editorial",
-      "priority": 1,
-      "status": "pending"
-    },
-    {
-      "featureId": "editorial--a-propos-atelier",
-      "priority": 1,
-      "status": "pending"
-    },
-    {
-      "featureId": "editorial--capsule-limited-series",
-      "priority": 1,
-      "status": "pending"
-    },
-    {
-      "featureId": "storefront--broken-links-audit",
-      "priority": 1,
-      "status": "pending"
-    },
-    {
-      "featureId": "ci--brainstorm-round-graft",
-      "priority": 2,
-      "status": "pending"
-    }
-  ]
+  "description": "Client brief steps are registered in orchestration.pipeline.json (89f7b6c+). Queue empty until next manual slice enqueue.",
+  "steps": []
 }

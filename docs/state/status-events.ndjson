@@ -133,3 +133,5 @@
 {"ts":"2026-06-17T05:37:55.379Z","step":"orch-ci--brainstorm-round-graft","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-17T05:37:59.293Z","step":"orch-catalogue--dress-only-public","status":"not-started","note":"orphan reset (agent failed)","actor":"orchestrator"}
 {"ts":"2026-06-17T05:38:04.978Z","step":"orch-catalogue--dress-only-public","status":"in-progress","actor":"orchestrator"}
+{"ts":"2026-06-17T06:09:47.941Z","step":"orch-catalogue--dress-only-public","status":"todo","note":"reset stale in-progress after failed preflight","actor":"spark"}
+{"ts":"2026-06-17T06:09:48.311Z","step":"orch-ci--brainstorm-round-graft","status":"todo","note":"reset stale in-progress after failed preflight","actor":"spark"}
