@@ -50,6 +50,41 @@ export function AddToSelectionButton({
     }
   }
 
+  const isOverlay = variant === "overlay";
+
+  if (isOverlay) {
+    const iconFilled = selected || feedback === "added";
+    return (
+      <button
+        type="button"
+        data-testid="add-to-selection-button"
+        onClick={handleClick}
+        disabled={selected}
+        aria-disabled={selected}
+        aria-label={selected ? t("inSelection") : t("add")}
+        className={`flex min-h-[44px] min-w-[44px] items-center justify-center transition-opacity focus-visible:outline-none disabled:cursor-default ${
+          selected ? "opacity-100" : "opacity-70 hover:opacity-100"
+        } ${className}`}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          strokeWidth={1.4}
+          stroke="white"
+          fill={iconFilled ? "white" : "none"}
+          className="h-5 w-5 drop-shadow-sm"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z"
+          />
+        </svg>
+      </button>
+    );
+  }
+
   const label =
     feedback === "added"
       ? t("added")
@@ -61,8 +96,6 @@ export function AddToSelectionButton({
             ? t("inSelection")
             : t("add");
 
-  const isOverlay = variant === "overlay";
-
   return (
     <button
       type="button"
@@ -70,11 +103,7 @@ export function AddToSelectionButton({
       onClick={handleClick}
       disabled={selected}
       aria-disabled={selected}
-      className={`w-full font-medium uppercase transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2 disabled:cursor-default ${
-        isOverlay
-          ? "min-h-[36px] bg-white/90 text-[9px] tracking-[0.12em]"
-          : "min-h-[44px] text-[10px] tracking-[0.12em]"
-      } ${
+      className={`w-full min-h-[44px] text-[10px] font-medium uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2 disabled:cursor-default ${
         selected
           ? "text-stone-400"
           : feedback === "full"

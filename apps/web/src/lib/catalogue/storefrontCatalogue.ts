@@ -1,7 +1,7 @@
 import type { Product } from "@/types/product";
 
 /** Signature robe slugs visible on the public storefront (client brief P1). */
-export const PUBLIC_DRESS_SLUGS = ["robe-camille", "robe-louise", "robe-margot"] as const;
+export const PUBLIC_DRESS_SLUGS = ["robe-camille", "robe-louise", "robe-margot", "robe-heloise"] as const;
 
 export type PublicDressSlug = (typeof PUBLIC_DRESS_SLUGS)[number];
 

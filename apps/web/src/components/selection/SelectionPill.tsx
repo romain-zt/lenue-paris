@@ -163,15 +163,36 @@ export function SelectionPill({ overlayMode = false }: SelectionPillProps) {
       <button
         type="button"
         onClick={openPanel}
-        className={`min-h-[44px] rounded-full border px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.14em] transition-colors ${
-          overlayMode
-            ? "border-white/30 bg-white/10 text-white hover:bg-white/20"
-            : "border-stone-200 bg-stone-50 text-stone-700 hover:border-stone-300 hover:bg-stone-100"
-        }`}
+        aria-label={t("pillCount", { count })}
         aria-haspopup="dialog"
         aria-expanded={isPanelOpen}
+        className={`relative flex min-h-[44px] min-w-[44px] items-center justify-center transition-colors ${
+          overlayMode ? "text-white/80 hover:text-white" : "text-stone-600 hover:text-stone-900"
+        }`}
       >
-        {t("pillCount", { count })}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.4}
+          stroke="currentColor"
+          className="h-5 w-5"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z"
+          />
+        </svg>
+        <span
+          className={`absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-semibold leading-none ${
+            overlayMode ? "bg-white text-stone-900" : "bg-stone-900 text-white"
+          }`}
+          aria-hidden="true"
+        >
+          {count}
+        </span>
       </button>
       <SelectionPanel open={isPanelOpen} onClose={closePanel} />
     </>

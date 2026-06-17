@@ -78,7 +78,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
             {children}
           <footer data-maison="footer" className="mt-12 border-t border-stone-200 py-6">
             <nav
-              className="mx-auto flex max-w-screen-xl flex-wrap gap-x-6 gap-y-2 px-4 text-sm text-stone-500 sm:px-6"
+              className="mx-auto flex max-w-screen-xl flex-wrap items-center gap-x-6 gap-y-2 px-4 text-sm text-stone-500 sm:px-6"
               aria-label={tNav("footerNav")}
             >
               {STOREFRONT_NAV_LINKS.map((link) => (
@@ -90,6 +90,29 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                   {tNav(link.labelKey)}
                 </Link>
               ))}
+              <a
+                href="https://www.instagram.com/alisa.inwonderland.21"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className="ml-auto flex min-h-[44px] items-center py-2 transition-colors hover:text-stone-900"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                  aria-hidden="true"
+                >
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                  <circle cx="12" cy="12" r="4" />
+                  <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" />
+                </svg>
+              </a>
             </nav>
           </footer>
           </SelectionProvider>

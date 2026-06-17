@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { CONTACT_PAGE_COPY } from "@/lib/editorial/contactPageCopy";
-import { BrandPageContent } from "../a-propos/BrandPageContent";
+import { ContactPageContent } from "./ContactPageContent";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 
 type Locale = keyof typeof CONTACT_PAGE_COPY;
@@ -26,5 +26,5 @@ export default async function ContactPage({ params }: PageProps) {
   setRequestLocale(locale);
   const copy = CONTACT_PAGE_COPY[locale as Locale] ?? CONTACT_PAGE_COPY.fr;
 
-  return <BrandPageContent title={copy.title} body={copy.body} cover={null} />;
+  return <ContactPageContent title={copy.title} body={copy.body} whatsAppLabel={copy.whatsAppLabel} />;
 }

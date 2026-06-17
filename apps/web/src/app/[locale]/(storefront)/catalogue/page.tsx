@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { CatalogueGridSkeleton } from "@/components/skeletons/CatalogueGridSkeleton";
 import { CatalogueClient } from "./CatalogueClient";
-import { parseCategoryParam } from "@/lib/catalogueCategory";
 import { getCataloguePage } from "@/lib/cms/queries";
 import type { ContentLocale } from "@/lib/cms/types";
 import type { Product } from "@/types/product";
@@ -12,7 +11,6 @@ export const dynamic = "force-dynamic";
 
 interface CataloguePageProps {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ categorie?: string }>;
 }
 
 export async function generateMetadata({ params }: CataloguePageProps) {
@@ -26,9 +24,8 @@ export async function generateMetadata({ params }: CataloguePageProps) {
   });
 }
 
-export default async function CataloguePage({ params, searchParams }: CataloguePageProps) {
+export default async function CataloguePage({ params }: CataloguePageProps) {
   const { locale } = await params;
-  const { categorie } = await searchParams;
   setRequestLocale(locale);
 
   const t = await getTranslations("catalogue");
@@ -45,8 +42,6 @@ export default async function CataloguePage({ params, searchParams }: CatalogueP
     error = "fetch_failed";
   }
 
-  const initialCategory = parseCategoryParam(categorie);
-
   return (
     <main className="mx-auto max-w-screen-xl px-4 py-10 sm:px-6 lg:px-8">
       <h1 className="mb-8 text-2xl font-semibold tracking-tight sm:text-3xl">{pageTitle}</h1>
@@ -54,7 +49,6 @@ export default async function CataloguePage({ params, searchParams }: CatalogueP
         <CatalogueClient
           initialProducts={products}
           initialError={error}
-          initialCategory={initialCategory}
         />
       </Suspense>
     </main>
