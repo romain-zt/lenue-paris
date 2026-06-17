@@ -19,10 +19,10 @@ and the v0 boundary.
 
 ## Active work
 
-**`orch-ci--brainstorm-round-graft` — TO-QA-HUMAN (2026-06-17)**
+**`orch-ci--brainstorm-round-graft` — TO-QA-HUMAN (2026-06-17, confirmed remediation run 4/5)**
 
 Tracking PR #87 (`orchestrator/tracking-orch-ci--brainstorm-round-graft-1781674672573`) — **MERGED** (implementation lives here).
-Tracking PR #89 (`orchestrator/tracking-orch-ci--brainstorm-round-graft-1781678667273`) — **OPEN, needs human merge**.
+Tracking PR #89 (`orchestrator/tracking-orch-ci--brainstorm-round-graft-1781678667273`) — **OPEN (not draft), `MERGEABLE`, needs human action**.
 
 All code-level acceptance criteria satisfied (AC1–4 verified on `main`):
 - AC1: `runBrainstormRound` imported (line 49) and called (line 1002) in `phase-orchestrator.ts`
@@ -31,12 +31,14 @@ All code-level acceptance criteria satisfied (AC1–4 verified on `main`):
 - AC4: Orchestrator coordinator mode exits 0 (no crash from import)
 - AC5: **BLOCKED** — GitHub bot loop-prevention prevents CI from auto-triggering on PR #89
 
-**Root cause of block:** PR #89 was created and managed entirely by bot actors (`cursor[bot]`, `github-actions[bot]`). GitHub suppresses `pull_request` workflow events when `ready_for_review` is fired by a bot, even for subsequent human commits. After 5+ minutes, 0 check runs registered on the HEAD commit (`ad08402`).
+**Root cause of block:** PR #89 was created and managed entirely by bot actors (`cursor[bot]`, `github-actions[bot]`). GitHub suppresses `pull_request` workflow events when `ready_for_review` is fired by a bot. Both `[skip ci]` and non-`[skip ci]` commits were pushed by bots — 0 check runs registered on any commit to this branch. This cannot be resolved by agent commits alone.
 
-**Human action required (one of):**
-1. **Easiest**: Manually merge PR #89 — it's `mergeable: MERGEABLE`, no branch protection required checks.
-2. **Alternative**: Push any small commit from a real human GitHub account (not a bot) to PR #89's branch — this should trigger `pull_request` `synchronize` as a real user and unblock CI.
-3. **Alternative**: In GitHub UI → PR #89 → Convert to draft → Mark ready again — this re-fires `ready_for_review` as a human actor, which triggers `pr-ready.yml`.
+**Confirmed by remediation run 4 (2026-06-17T07:34):** `gh api repos/romain-zt/lenue-paris/commits/ad08402/check-runs` → `total_count: 0`. The non-skip-ci commit from the previous run also did not trigger CI.
+
+**Human action required (one of — pick the easiest):**
+1. **Easiest**: Manually merge PR #89 in the GitHub UI — it's `mergeable: MERGEABLE`, no required CI branch protections are blocking it. The orchestrator will auto-advance once merged.
+2. **Alternative**: Push any small commit from a real human GitHub account to `orchestrator/tracking-orch-ci--brainstorm-round-graft-1781678667273` — this triggers `pull_request` `synchronize` as a real user and unblocks CI.
+3. **Alternative**: In GitHub UI → PR #89 → Convert to draft → Mark ready again as a human — re-fires `ready_for_review` as a human actor, triggering `pr-ready.yml`.
 
 Once merged, the orchestrator should advance to the next step automatically.
 
