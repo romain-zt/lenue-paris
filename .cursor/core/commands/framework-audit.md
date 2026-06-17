@@ -1,6 +1,6 @@
 # /framework-audit — Framework Completeness Audit
 
-> **Tier:** Vision (`claude-opus-4-8`) — framework changes are irreversible and load-bearing.
+> **Tier:** Vision (`claude-opus-4-6`) — framework changes are irreversible and load-bearing.
 >
 > **Agent:** `.cursor/core/agents/framework/framework-improver.md` (drafts only, never merges)
 >

@@ -44,7 +44,7 @@ Other entry points: **`/setup`** (always-first project setup), **`/btw "…" pN`
 
 | Tier | Model | Owns |
 |------|-------|------|
-| **Vision** | `claude-opus-4-8` | big plans, strategy, architecture & business decisions, high-risk review, triage/delegation |
+| **Vision** | `claude-opus-4-6` | big plans, strategy, architecture & business decisions, high-risk review, triage/delegation |
 | **Manager** | `claude-4.6-sonnet` | planning, scoping, splitting into bricks, routine review |
 | **Executor** | `composer-2.5-fast` | one brick — one Task / one commit, test-first code |
 

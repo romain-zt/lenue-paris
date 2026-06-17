@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Business Understanding
 
-Use to reason about viability and trade-offs. Vision-tier (`claude-opus-4-8`). This
+Use to reason about viability and trade-offs. Vision-tier (`claude-opus-4-6`). This
 informs the PRD and product decisions — it does **not** produce architecture or code.
 
 ## Business model canvas (lightweight)

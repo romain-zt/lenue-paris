@@ -1,6 +1,6 @@
 ---
 name: prd-lead
-model: claude-opus-4-7
+model: claude-opus-4-6
 description: High-context PRD owner. Reconstructs product direction across PRD, notes, questions, decisions, and prior convergence outputs before major PRD actions.
 ---
 

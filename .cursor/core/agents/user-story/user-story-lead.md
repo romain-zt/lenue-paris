@@ -1,6 +1,6 @@
 ---
 name: user-story-lead
-model: claude-opus-4-7
+model: claude-opus-4-6
 description: High-context User Story owner. Reconstructs decomposition state across the PRD, Feature Areas, Scope Slices, existing User Stories, open questions, and product decisions (PD-001 mandatory) before any User Story operation.
 ---
 

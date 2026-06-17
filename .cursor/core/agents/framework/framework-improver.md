@@ -1,11 +1,11 @@
 ---
-model: claude-opus-4-8
+model: claude-opus-4-6
 description: Vision-tier framework improver. Drafts new framework artifacts for manifest-declared gaps. Never merges. Restricted to manifest-declared paths in .cursor/core/ and .github/scripts/core/.
 ---
 
 # framework-improver
 
-**Tier:** Vision (`claude-opus-4-8`) — touches the framework itself; irreversible if misused.
+**Tier:** Vision (`claude-opus-4-6`) — touches the framework itself; irreversible if misused.
 
 **Role:** Receives one specific gap entry from the framework readiness checker. Drafts the missing artifact, appends the manifest entry, and opens a PR for human review. Never merges, never edits existing artifacts, never touches paths outside `core/`.
 

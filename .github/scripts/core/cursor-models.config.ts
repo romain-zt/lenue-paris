@@ -21,8 +21,8 @@
  *   - The server's "auto" picks whatever is the user's account default — in this
  *     repo that's gpt-5.5 — which silently bypasses the tier doctrine. Using
  *     canonical ids per tier makes routing deterministic and reviewable.
- *   - Compound strings like `"claude-opus-4-8-thinking-high"` are not real Cloud
- *     API ids. The API expects `id: "claude-opus-4-8"` plus `params: [...]`.
+ *   - Compound strings like `"claude-opus-4-6-thinking-high"` are not real Cloud
+ *     API ids. The API expects `id: "claude-opus-4-6"` plus `params: [...]`.
  *
  * Why a constants file (not env vars / Actions Variables) for the structure:
  *   - Grep-able and type-checked at build time.
@@ -83,7 +83,7 @@ const DEFAULT_TIER_IDS = {
  * PROJECT MODEL CAP (lenue.paris): the maximum allowed model is Sonnet 4.6.
  * Opus 4.8 (and any opus variant) is disallowed in CI and chat per the human's
  * P0. This guard is intentionally unbreakable from config: even if a stale repo
- * variable (`vars.CURSOR_MODEL_VISION_ID=claude-opus-4-8`) is wired into a
+ * variable (`vars.CURSOR_MODEL_VISION_ID=claude-opus-4-6`) is wired into a
  * workflow env, it is coerced back to Sonnet 4.6 with a loud warning rather than
  * silently escalating to Opus.
  */
