@@ -12,7 +12,7 @@
  *
  *  2. **Subagent router** is wired automatically via `agents` so every cloud
  *     run can `Task`-delegate to an `executor` (composer-2.5) or `vision-reviewer`
- *     (claude-opus-4-8). Definitions live in `cursor-subagents.config.ts`.
+ *     (claude-opus-4-6). Definitions live in `cursor-subagents.config.ts`.
  *
  * Project-agnostic.
  */

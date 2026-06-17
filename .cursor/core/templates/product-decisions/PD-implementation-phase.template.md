@@ -34,7 +34,7 @@ Area is `delivery-ready`. Work proceeds **Spec → Test → Implementation**:
 3. A Task reaches `ready-for-merge` only when its traced tests pass.
 
 `/implement` drives this. Executors (`composer-2.5-fast`) write code; a Manager
-plans/splits; high-risk review is Vision-tier (`claude-opus-4-8`).
+plans/splits; high-risk review is Vision-tier (`claude-opus-4-6`).
 
 ## Consequences / tradeoffs
 

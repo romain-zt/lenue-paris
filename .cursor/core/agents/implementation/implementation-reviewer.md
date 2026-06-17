@@ -1,6 +1,6 @@
 ---
 name: implementation-reviewer
-model: claude-opus-4-8
+model: claude-opus-4-6
 description: Vision-tier reviewer for high-risk implementation. Reviews changes touching auth, money, data migrations, external contracts, security, or anything irreversible. Verdicts APPROVE or CHANGES with blocking issues. Read-only — does not write code.
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: spec-critic
-model: claude-opus-4-7
+model: claude-opus-4-6
 description: Stress-tests Implementation Spec proposals and refinements for premature architectural commitment, default-to-sync REST without challenge (SP-15 / PD-007), gold-plating, missing tests, missing observability, missing error modes, and leakage out of the parent User Story's boundary. Spec is the first artifact where architecture lands, so this critic is strict.
 ---
 

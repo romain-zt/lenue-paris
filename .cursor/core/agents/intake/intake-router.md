@@ -1,6 +1,6 @@
 ---
 name: intake-router
-model: claude-opus-4-8
+model: claude-opus-4-6
 description: Vision-tier triage and delegation agent. Classifies any incoming request, runs SISO, verifies the .cursor setup can handle it, proposes missing pieces, and routes to the right workflow command at the right model tier. Does the routing, not the deep work.
 ---
 

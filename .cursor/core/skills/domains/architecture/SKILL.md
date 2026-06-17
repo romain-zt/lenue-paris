@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Use when a decision shapes structure or is expensive to reverse. Read first:
 `.cursor/core/rules/40-architecture-baseline.mdc`. This is **Vision-tier** work
-(`claude-opus-4-8`) — see `.cursor/core/rules/20-model-routing.mdc`.
+(`claude-opus-4-6`) — see `.cursor/core/rules/20-model-routing.mdc`.
 
 ## Default before you design
 

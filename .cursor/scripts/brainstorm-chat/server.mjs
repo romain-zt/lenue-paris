@@ -97,21 +97,34 @@ const AUTO_RETRY_DELAY_MS = 8000;
 const STUCK_RUN_MS = 5000;
 const BUILTIN_SPECIALISTS = ["spark", "skeptic"];
 
+/**
+ * PROJECT MODEL CAP: maximum model is claude-sonnet-4-6 (no Opus 4.8 / max mode).
+ * Coerce any opus override (e.g. a stale CURSOR_MODEL_VISION_ID) back to Sonnet.
+ * @param {string | undefined} raw
+ * @param {string} fallback
+ */
+function cappedModelId(raw, fallback) {
+  const id = raw?.trim() || fallback;
+  if (/opus/i.test(id)) {
+    console.warn(`⚠️  Model cap: "${id}" disallowed (no Opus / max mode). Using claude-sonnet-4-6.`);
+    return "claude-sonnet-4-6";
+  }
+  return id;
+}
+
 /** @type {import('@cursor/sdk').ModelSelection} */
 const MODEL_ORCHESTRATOR = {
-  id: process.env.CURSOR_MODEL_VISION_ID?.trim() || "claude-sonnet-4-6",
+  id: cappedModelId(process.env.CURSOR_MODEL_VISION_ID, "claude-sonnet-4-6"),
   params: [
-    { id: "cyber", value: "false" },
     { id: "thinking", value: "true" },
     { id: "context", value: "1m" },
     { id: "effort", value: "medium" },
-    { id: "fast", value: "false" },
   ],
 };
 
 /** @type {import('@cursor/sdk').ModelSelection} */
 const MODEL_DYNAMIC_SPECIALIST = {
-  id: process.env.CURSOR_MODEL_MANAGER_ID?.trim() || "claude-sonnet-4-6",
+  id: cappedModelId(process.env.CURSOR_MODEL_MANAGER_ID, "claude-sonnet-4-6"),
   params: [
     { id: "thinking", value: "true" },
     { id: "context", value: "1m" },

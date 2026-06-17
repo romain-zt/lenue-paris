@@ -1,6 +1,6 @@
 ---
 name: spec-lead
-model: claude-opus-4-7
+model: claude-opus-4-6
 description: High-context Spec owner. Reconstructs the full chain state (PRD, Feature Area, Scope Slice, User Story, existing Specs, open questions, product decisions including PD-001) before any Spec operation. Treats architectural decisions as load-bearing and surfaces premature commitment risk.
 ---
 

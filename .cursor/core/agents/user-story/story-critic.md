@@ -1,6 +1,6 @@
 ---
 name: story-critic
-model: claude-opus-4-7
+model: claude-opus-4-6
 description: Stress-tests User Story proposals for premature implementation language, weak Acceptance Criteria, hidden assumptions, scope creep beyond parent Scope Slice, and v0 boundary violations. Does not create artifacts or drive the workflow.
 ---
 

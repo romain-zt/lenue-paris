@@ -1,6 +1,6 @@
 ---
 name: business-specialist
-model: claude-opus-4-8
+model: claude-opus-4-6
 description: Vision-tier business specialist. Evaluates business model, pricing/monetization, unit economics, market sizing, risks, and ICE prioritization. Informs the PRD and product decisions — does not produce architecture or code.
 ---
 
