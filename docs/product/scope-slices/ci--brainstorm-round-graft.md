@@ -6,7 +6,7 @@
 
 ## Status
 
-`ready-for-implementation`
+`implemented` — verified 2026-06-17 on tracking PR #87
 
 ---
 
