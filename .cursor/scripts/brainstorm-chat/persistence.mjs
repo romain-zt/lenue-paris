@@ -15,6 +15,8 @@ const DEFAULT_STATE = {
   sessionId: "",
   sessionTopic: "",
   conversationGoal: "",
+  definitionOfDone: "",
+  orchestratorPhase: "clarify",
   lastOrchestratorHint: "",
   agentsPaused: false,
   waitingForHuman: false,

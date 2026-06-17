@@ -31,7 +31,7 @@ const BASE_PARTICIPANTS = {
     label: "Agent · routes",
     color: "#d97706",
     persona:
-      "You are the Orchestrator. You keep the brainstorm on goal and decide who speaks next.",
+      "You are the Orchestrator — the senior lead of this brainstorm. You always work in three phases: (1) confirm the goal and definition of done with the human, (2) review the team and spawn missing specialists/skills, (3) run the multi-agent debate until the goal is met.",
     builtin: true,
   },
   spark: {
@@ -63,6 +63,15 @@ const agentInstances = {};
 /** @type {Record<string, string>} */
 let agentBindings = store.loadAgentBindings();
 
+/** @typedef {"clarify" | "assess_team" | "execute"} OrchestratorPhase */
+
+/** @type {Record<string, OrchestratorPhase>} */
+const ORCHESTRATOR_PHASES = {
+  CLARIFY: "clarify",
+  ASSESS_TEAM: "assess_team",
+  EXECUTE: "execute",
+};
+
 const sessionState = store.loadState();
 /** @type {ChatMessage[]} */
 const messages = store.loadMessages();
@@ -71,6 +80,12 @@ let sessionAssets = store.loadAssets();
 
 let sessionTopic = sessionState.sessionTopic;
 let conversationGoal = sessionState.conversationGoal;
+let definitionOfDone = sessionState.definitionOfDone || "";
+let orchestratorPhase =
+  sessionState.orchestratorPhase ||
+  (messages.some((m) => m.author !== "human" && m.author !== "orchestrator")
+    ? ORCHESTRATOR_PHASES.EXECUTE
+    : ORCHESTRATOR_PHASES.CLARIFY);
 let lastOrchestratorHint = sessionState.lastOrchestratorHint;
 let agentsPaused = sessionState.agentsPaused;
 let waitingForHuman = sessionState.waitingForHuman;
@@ -81,6 +96,39 @@ const MAX_AUTO_RETRIES = 5;
 const AUTO_RETRY_DELAY_MS = 8000;
 const STUCK_RUN_MS = 5000;
 const BUILTIN_SPECIALISTS = ["spark", "skeptic"];
+
+/** @type {import('@cursor/sdk').ModelSelection} */
+const MODEL_ORCHESTRATOR = {
+  id: process.env.CURSOR_MODEL_VISION_ID?.trim() || "claude-opus-4-8",
+  params: [
+    { id: "cyber", value: "false" },
+    { id: "thinking", value: "true" },
+    { id: "context", value: "1m" },
+    { id: "effort", value: "high" },
+    { id: "fast", value: "false" },
+  ],
+};
+
+/** @type {import('@cursor/sdk').ModelSelection} */
+const MODEL_DYNAMIC_SPECIALIST = {
+  id: process.env.CURSOR_MODEL_MANAGER_ID?.trim() || "claude-sonnet-4-6",
+  params: [
+    { id: "thinking", value: "true" },
+    { id: "context", value: "1m" },
+    { id: "effort", value: "medium" },
+  ],
+};
+
+/** Local SDK uses "default" for server-picked model (cloud "auto" is not valid locally). */
+/** @type {import('@cursor/sdk').ModelSelection} */
+const MODEL_DEFAULT = { id: "default" };
+
+/** @param {string} author */
+function modelForAuthor(author) {
+  if (author === "orchestrator") return MODEL_ORCHESTRATOR;
+  if (dynamicParticipants[author]) return MODEL_DYNAMIC_SPECIALIST;
+  return MODEL_DEFAULT;
+}
 
 let loopRunning = false;
 let forceStopRequested = false;
@@ -128,6 +176,8 @@ function persistSession() {
     sessionId: sessionState.sessionId,
     sessionTopic,
     conversationGoal,
+    definitionOfDone,
+    orchestratorPhase,
     lastOrchestratorHint,
     agentsPaused,
     waitingForHuman,
@@ -176,6 +226,8 @@ function broadcastGoal(wss) {
     type: "goal_update",
     goal: conversationGoal,
     topic: sessionTopic,
+    definitionOfDone,
+    orchestratorPhase,
   });
 }
 
@@ -358,9 +410,63 @@ function shouldResumeFlowOnStartup() {
 }
 
 function conversationGoalText() {
-  return (
-    conversationGoal || sessionTopic || lastHumanMessage() || "(not set yet)"
-  );
+  const goal =
+    conversationGoal || sessionTopic || lastHumanMessage() || "(not set yet)";
+  const dod = definitionOfDone.trim();
+  if (!dod) return goal;
+  return `${goal}\n\nDefinition of done:\n${dod}`;
+}
+
+function orchestratorPhaseLabel(phase) {
+  if (phase === ORCHESTRATOR_PHASES.CLARIFY) return "1 — Clarify goal & definition of done";
+  if (phase === ORCHESTRATOR_PHASES.ASSESS_TEAM) return "2 — Assess team & skills";
+  return "3 — Plan & execute (multi-agent debate)";
+}
+
+function buildOrchestratorPhaseInstructions() {
+  if (orchestratorPhase === ORCHESTRATOR_PHASES.CLARIFY) {
+    return `CURRENT PHASE: ${orchestratorPhaseLabel(ORCHESTRATOR_PHASES.CLARIFY)}
+
+Before any specialist speaks, confirm with the human:
+- Is the goal clear and specific enough to work toward?
+- What is the definition of done — how will we know we're finished?
+
+Ask concise, direct questions. Summarize what you understood so far.
+If goal or definition of done is still missing or ambiguous, end with:
+  [ROUTE: WAIT_FOR_HUMAN]
+When BOTH are clear and the human has confirmed (or supplied them), capture the definition of done:
+  [DEFINITION_OF_DONE: one-line or short bullet summary]
+Then advance:
+  [PHASE: ASSESS_TEAM]
+Do NOT route to Spark, Skeptic, or other specialists in this phase.`;
+  }
+
+  if (orchestratorPhase === ORCHESTRATOR_PHASES.ASSESS_TEAM) {
+    return `CURRENT PHASE: ${orchestratorPhaseLabel(ORCHESTRATOR_PHASES.ASSESS_TEAM)}
+
+Review the current team (Spark, Skeptic, and any spawned specialists listed above).
+Decide whether the goal needs expertise nobody on the team has yet.
+- If yes, add spawn lines BEFORE advancing:
+  [SPAWN: id|Display Name|short label|persona one-liner]
+  or with a skill body:
+  [SPAWN_SKILL: id|Display Name|short label|persona|skill markdown body]
+- If Spark + Skeptic are enough, say so briefly — do not spawn unnecessarily.
+
+When the team is ready, advance to execution:
+  [PHASE: EXECUTE]
+  [ROUTE: SPARK] — kick off with creative ideas (or route to the best-fit specialist)
+Do NOT route to specialists until you emit [PHASE: EXECUTE].`;
+  }
+
+  return `CURRENT PHASE: ${orchestratorPhaseLabel(ORCHESTRATOR_PHASES.EXECUTE)}
+
+Run the multi-agent brainstorm: route Spark and Skeptic (and spawned specialists) to challenge and refine ideas toward the goal and definition of done.
+Spawn new specialists only when a clear gap appears mid-conversation.
+End each turn with exactly one routing line:
+  [ROUTE: SPARK] — need fresh ideas
+  [ROUTE: SKEPTIC] — need critique / stress-test
+  [ROUTE: <id>] — route to a spawned or existing specialist
+  [ROUTE: WAIT_FOR_HUMAN] — human must answer or decide before continuing`;
 }
 
 function listSpecialistsForPrompt() {
@@ -376,7 +482,7 @@ function listSpecialistsForPrompt() {
 
 /**
  * @param {string} raw
- * @returns {{ text: string; route: string; spawns: Array<{ id: string; name: string; label: string; persona: string; skill?: string }> }}
+ * @returns {{ text: string; route: string; phase: OrchestratorPhase | null; definitionOfDone: string | null; spawns: Array<{ id: string; name: string; label: string; persona: string; skill?: string }> }}
  */
 function parseOrchestratorReply(raw) {
   const lines = raw.trim().split("\n");
@@ -419,12 +525,32 @@ function parseOrchestratorReply(raw) {
     else route = routeMatch[1].trim().toLowerCase().replace(/\s+/g, "_");
   }
 
+  const phaseLine = [...lines].reverse().find((l) => /^\[PHASE:/i.test(l.trim()));
+  const phaseMatch = phaseLine?.trim().match(/^\[PHASE:\s*(.+?)\]\s*$/i);
+  /** @type {OrchestratorPhase | null} */
+  let phase = null;
+  if (phaseMatch) {
+    const key = phaseMatch[1].trim().toUpperCase();
+    if (key === "CLARIFY") phase = ORCHESTRATOR_PHASES.CLARIFY;
+    else if (key === "ASSESS_TEAM") phase = ORCHESTRATOR_PHASES.ASSESS_TEAM;
+    else if (key === "EXECUTE") phase = ORCHESTRATOR_PHASES.EXECUTE;
+  }
+
+  const dodLine = [...lines]
+    .reverse()
+    .find((l) => /^\[DEFINITION_OF_DONE:/i.test(l.trim()));
+  const dodMatch = dodLine?.trim().match(/^\[DEFINITION_OF_DONE:\s*(.+?)\]\s*$/i);
+  const parsedDefinitionOfDone = dodMatch ? dodMatch[1].trim() : null;
+
   const text = lines
-    .filter((l) => !/^\[(ROUTE|SPAWN|SPAWN_SKILL):/i.test(l.trim()))
+    .filter(
+      (l) =>
+        !/^\[(ROUTE|SPAWN|SPAWN_SKILL|PHASE|DEFINITION_OF_DONE):/i.test(l.trim()),
+    )
     .join("\n")
     .trim();
 
-  return { text, route, spawns };
+  return { text, route, phase, definitionOfDone: parsedDefinitionOfDone, spawns };
 }
 
 function isDegenerateReply(text) {
@@ -482,22 +608,15 @@ ${Object.entries(dynamicParticipants)
   })
   .join("\n")}
 
-Your job each turn:
-1. Optionally write 0–2 sentences to refocus the group (on goal, not meta). Skip if unnecessary.
-2. If the conversation needs expertise nobody has yet, add a spawn line BEFORE routing:
-   [SPAWN: id|Display Name|short label|persona one-liner]
-   or with a skill body:
-   [SPAWN_SKILL: id|Display Name|short label|persona|skill markdown body]
-   Use lowercase id with underscores. Only spawn when clearly relevant — not every turn.
-3. End with exactly one routing line:
-   [ROUTE: SPARK] — need fresh ideas
-   [ROUTE: SKEPTIC] — need critique / stress-test
-   [ROUTE: <id>] — route to a spawned or existing specialist
-   [ROUTE: WAIT_FOR_HUMAN] — human must answer or decide before continuing
+${buildOrchestratorPhaseInstructions()}
 
-Route WAIT_FOR_HUMAN when a human decision blocks progress, not just because the thread is rich.
+Each turn:
+1. Write 1–3 sentences for the human (refocus, questions, or brief steering). Skip only if truly unnecessary.
+2. Use structured lines below when required by your phase (spawns, phase advance, definition of done, routing).
+
+Route WAIT_FOR_HUMAN when a human decision blocks progress — especially in phase 1.
 Avoid routing the same specialist twice in a row unless the other just spoke.
-Never let the thread drift from the goal.
+Never let the thread drift from the goal or definition of done.
 
 Full thread:
 ${history || "(just started)"}
@@ -555,11 +674,11 @@ ${history || "(just started)"}
 Reply as ${who.name}:`;
 }
 
-function baseAgentOptions(name) {
+function baseAgentOptions(name, author) {
   return {
     apiKey,
     name,
-    model: { id: "default" },
+    model: modelForAuthor(author),
     local: { cwd: REPO_ROOT, settingSources: [] },
   };
 }
@@ -582,12 +701,13 @@ async function disposeAgent(author) {
 
 async function createFreshAgent(author, displayName) {
   await disposeAgent(author);
-  const agent = await Agent.create(baseAgentOptions(displayName));
+  const model = modelForAuthor(author);
+  const agent = await Agent.create(baseAgentOptions(displayName, author));
   agentInstances[author] = agent;
   agentBindings[author] = agent.agentId;
   store.saveAgentBindings(agentBindings);
   broadcastAgentBindings(wss);
-  console.log(`Created ${displayName} (${agent.agentId})`);
+  console.log(`Created ${displayName} (${agent.agentId}, model=${model.id})`);
   return agent;
 }
 
@@ -595,7 +715,7 @@ async function resumeOrCreateAgent(author, displayName) {
   const boundId = agentBindings[author];
   if (boundId) {
     try {
-      const agent = await Agent.resume(boundId, baseAgentOptions(displayName));
+      const agent = await Agent.resume(boundId, baseAgentOptions(displayName, author));
       agentInstances[author] = agent;
       console.log(`Resumed ${displayName} (${boundId})`);
       return agent;
@@ -1009,6 +1129,33 @@ async function runAgent(agent, prompt, author, wss) {
 
 /**
  * @param {WebSocketServer} wss
+ * @param {OrchestratorPhase | null} nextPhase
+ */
+function applyOrchestratorPhase(wss, nextPhase) {
+  if (!nextPhase || nextPhase === orchestratorPhase) return;
+  orchestratorPhase = nextPhase;
+  persistSession();
+  broadcastGoal(wss);
+  broadcast(wss, {
+    type: "system",
+    text: `Orchestrator moved to phase ${orchestratorPhaseLabel(orchestratorPhase)}.`,
+  });
+}
+
+/**
+ * @param {string} route
+ * @returns {string}
+ */
+function enforceOrchestratorRoute(route) {
+  if (orchestratorPhase === ORCHESTRATOR_PHASES.CLARIFY) return "wait";
+  if (orchestratorPhase === ORCHESTRATOR_PHASES.ASSESS_TEAM) {
+    return route === "wait" ? "wait" : "orchestrator";
+  }
+  return route;
+}
+
+/**
+ * @param {WebSocketServer} wss
  * @returns {Promise<string | null>}
  */
 async function runOrchestratorTurn(wss) {
@@ -1023,13 +1170,23 @@ async function runOrchestratorTurn(wss) {
   );
   if (!raw) return null;
 
-  const { text, route, spawns } = parseOrchestratorReply(raw);
+  const { text, route, phase, definitionOfDone: parsedDod, spawns } =
+    parseOrchestratorReply(raw);
+
+  if (parsedDod) {
+    definitionOfDone = parsedDod;
+    persistSession();
+    broadcastGoal(wss);
+  }
+
   lastOrchestratorHint = text || "Stay focused on the human's goal.";
   persistSession();
 
   for (const spawn of spawns) {
     await spawnSpecialist(spawn, wss);
   }
+
+  applyOrchestratorPhase(wss, phase);
 
   if (text) {
     const message = {
@@ -1045,7 +1202,7 @@ async function runOrchestratorTurn(wss) {
 
   turnsThisCycle += 1;
   persistSession();
-  return route;
+  return enforceOrchestratorRoute(route);
 }
 
 /**
@@ -1108,14 +1265,25 @@ async function brainstormLoop(wss) {
       break;
     }
 
+    if (route === "orchestrator") {
+      if (forceStopRequested || agentsPaused) break;
+      continue;
+    }
+
     if (route === "wait") {
       waitingForHuman = true;
       agentsPaused = true;
       persistSession();
       broadcastWaitState(wss);
+      const waitHint =
+        orchestratorPhase === ORCHESTRATOR_PHASES.CLARIFY
+          ? "Orchestrator needs goal clarity and a definition of done before continuing."
+          : orchestratorPhase === ORCHESTRATOR_PHASES.ASSESS_TEAM
+            ? "Orchestrator is assessing the team — reply if you want to steer specialist selection."
+            : "Orchestrator needs your input before the brainstorm can continue.";
       broadcast(wss, {
         type: "system",
-        text: "Orchestrator needs your input before the brainstorm can continue.",
+        text: waitHint,
       });
       break;
     }
@@ -1227,6 +1395,8 @@ async function resetSession(wss) {
   sessionAssets = [];
   sessionTopic = "";
   conversationGoal = "";
+  definitionOfDone = "";
+  orchestratorPhase = ORCHESTRATOR_PHASES.CLARIFY;
   lastOrchestratorHint = "";
   agentsPaused = false;
   waitingForHuman = false;
@@ -1264,6 +1434,8 @@ function buildInitPayload() {
     waitingForHuman,
     sessionTopic,
     conversationGoal,
+    definitionOfDone,
+    orchestratorPhase,
     activeAuthor,
     activeElapsedMs: activeAuthor ? Date.now() - activeRunStartedAt : 0,
     autoRetrying,
@@ -1374,6 +1546,8 @@ async function shutdown() {
     sessionId: sessionState.sessionId,
     sessionTopic,
     conversationGoal,
+    definitionOfDone,
+    orchestratorPhase,
     lastOrchestratorHint,
     agentsPaused,
     waitingForHuman,
