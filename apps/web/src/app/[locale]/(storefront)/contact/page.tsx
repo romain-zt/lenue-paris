@@ -1,9 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { CONTACT_PAGE_COPY } from "@/lib/editorial/contactPageCopy";
+import { getContactPageData } from "@/lib/getContactPageData";
 import { ContactPageContent } from "./ContactPageContent";
 import { buildPageMetadata } from "@/lib/seo/metadata";
-
-type Locale = keyof typeof CONTACT_PAGE_COPY;
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -24,7 +22,15 @@ export async function generateMetadata({ params }: PageProps) {
 export default async function ContactPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const copy = CONTACT_PAGE_COPY[locale as Locale] ?? CONTACT_PAGE_COPY.fr;
 
-  return <ContactPageContent title={copy.title} body={copy.body} whatsAppLabel={copy.whatsAppLabel} />;
+  const t = await getTranslations({ locale, namespace: "contactPage" });
+  const data = await getContactPageData(locale);
+
+  return (
+    <ContactPageContent
+      title={data.title}
+      body={data.body}
+      whatsAppLabel={t("whatsAppLabel")}
+    />
+  );
 }

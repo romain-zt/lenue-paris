@@ -592,6 +592,7 @@ async function seedCataloguePage(payload: Awaited<ReturnType<typeof getPayload>>
 }
 
 const A_PROPOS_SLUG = "a-propos";
+const CONTACT_SLUG = "contact";
 
 const A_PROPOS_BODY: Record<ContentLocale, { title: string; body: string }> = {
   fr: {
@@ -686,6 +687,80 @@ async function seedAProposPage(payload: Awaited<ReturnType<typeof getPayload>>):
   }
 
   console.log(`  ✅ Published à-propos page (${PRODUCT_LOCALES.join(", ")})`);
+}
+
+const CONTACT_BODY: Record<ContentLocale, { title: string; body: string }> = {
+  fr: {
+    title: "Contact",
+    body: [
+      "Lénue est une maison de robes — nous répondons nous-mêmes à chaque message.",
+      "Pour découvrir la collection, choisir une taille ou passer commande, écrivez-nous sur WhatsApp. Nous vous accompagnons du premier échange jusqu'à la livraison.",
+      "Nous ne tenons pas de marketplace : chaque robe est proposée directement, avec la même attention qu'en atelier.",
+    ].join("\n\n"),
+  },
+  en: {
+    title: "Contact",
+    body: [
+      "Lénue is a house of dresses — we answer every message ourselves.",
+      "To explore the collection, choose a size, or place an order, write to us on WhatsApp. We guide you from the first exchange through to delivery.",
+      "We are not a marketplace: each dress is offered directly, with the same care as in the atelier.",
+    ].join("\n\n"),
+  },
+  ru: {
+    title: "Контакты",
+    body: [
+      "Lénue — дом платьев; на каждое сообщение отвечаем лично.",
+      "Чтобы познакомиться с коллекцией, выбрать размер или оформить заказ, напишите нам в WhatsApp. Мы сопровождаем вас от первого обращения до доставки.",
+      "Мы не маркетплейс: каждое платье предлагается напрямую, с тем же вниманием, что и в ателье.",
+    ].join("\n\n"),
+  },
+};
+
+async function seedContactPage(payload: Awaited<ReturnType<typeof getPayload>>): Promise<void> {
+  console.log("\n📄 Syncing contact page");
+
+  const existing = await payload.find({
+    collection: "pages",
+    where: { slug: { equals: CONTACT_SLUG } },
+    limit: 1,
+  });
+
+  let pageId: number | string;
+
+  if (existing.docs[0]) {
+    pageId = existing.docs[0].id;
+    console.log(`  ♻️  Reusing contact page → id ${pageId}`);
+  } else {
+    const doc = await payload.create({
+      collection: "pages",
+      data: {
+        title: CONTACT_BODY.en.title,
+        slug: CONTACT_SLUG,
+        body: CONTACT_BODY.en.body,
+        _status: "published",
+      } as any,
+      locale: "en",
+      draft: false,
+    });
+    pageId = doc.id;
+    console.log(`  ✅ Created contact page → id ${pageId}`);
+  }
+
+  for (const locale of PRODUCT_LOCALES) {
+    await payload.update({
+      collection: "pages",
+      id: pageId,
+      data: {
+        title: CONTACT_BODY[locale].title,
+        body: CONTACT_BODY[locale].body,
+        _status: "published",
+      } as any,
+      locale,
+      draft: false,
+    });
+  }
+
+  console.log(`  ✅ Published contact page (${PRODUCT_LOCALES.join(", ")})`);
 }
 
 export async function seed() {
@@ -820,6 +895,7 @@ export async function seed() {
   await seedCollections(payload, productIdBySlug);
   await seedCataloguePage(payload);
   await seedAProposPage(payload);
+  await seedContactPage(payload);
 
   console.log(`\n🎉 Seed complete — ${created} created, ${updated} updated (${PRODUCT_LOCALES.join(", ")} locales)`);
 }

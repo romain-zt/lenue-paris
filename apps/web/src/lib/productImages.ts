@@ -35,7 +35,11 @@ export const PRODUCT_IMAGES: Record<string, ProductImageSet> = {
   },
   "robe-heloise": {
     main: "dress-heloise.jpg",
-    gallery: ["PHOTO-2026-06-12-18-02-57.jpg", "PHOTO-2026-06-12-18-07-47.jpg"],
+    gallery: [
+      "PHOTO-2026-06-12-17-30-47.jpg",
+      "PHOTO-2026-06-12-17-32-34.jpg",
+      "PHOTO-2026-06-12-17-34-11.jpg",
+    ],
   },
   "sac-juliette": {
     main: "PHOTO-2026-06-12-18-07-47.jpg",

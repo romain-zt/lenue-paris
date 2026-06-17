@@ -101,7 +101,8 @@
   },
   "contactPage": {
     "metaTitle": "Contact — Lénue Paris",
-    "metaDescription": "Write to Lénue Paris on WhatsApp — a house of dresses, personal replies."
+    "metaDescription": "Write to Lénue Paris on WhatsApp — a house of dresses, personal replies.",
+    "whatsAppLabel": "Write on WhatsApp"
   },
   "selection": {
     "pillCount": "My selection · {count}",

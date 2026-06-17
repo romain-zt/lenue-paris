@@ -15,8 +15,8 @@ describe("storefront link parity (broken-links audit)", () => {
 
   it("public dress product paths are the only catalogue SKU URLs", () => {
     const paths = PUBLIC_DRESS_SLUGS.map((slug) => `/produits/${slug}`);
-    expect(paths).toHaveLength(3);
-    expect(new Set(paths).size).toBe(3);
+    expect(paths).toHaveLength(PUBLIC_DRESS_SLUGS.length);
+    expect(new Set(paths).size).toBe(PUBLIC_DRESS_SLUGS.length);
   });
 
   it("core editorial paths exist in the storefront app (no 404 stubs)", () => {

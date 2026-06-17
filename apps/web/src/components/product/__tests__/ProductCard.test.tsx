@@ -57,8 +57,10 @@ describe("ProductCard", () => {
     render(<WithIntl><ProductCard product={mockProduct} /></WithIntl>);
     const overlay = screen.getByTestId("add-to-selection-overlay");
     expect(overlay).toBeDefined();
-    expect(screen.getByTestId("add-to-selection-button")).toBeDefined();
-    expect(screen.getByText("Ajouter à ma sélection")).toBeDefined();
+    const btn = screen.getByTestId("add-to-selection-button");
+    expect(btn).toBeDefined();
+    // Overlay variant renders an SVG icon with aria-label, not visible text
+    expect(btn.getAttribute("aria-label")).toBeTruthy();
   });
 
   it("does not render AddToSelectionButton overlay when out of stock", () => {

@@ -101,7 +101,8 @@
   },
   "contactPage": {
     "metaTitle": "Контакты — Lénue Paris",
-    "metaDescription": "Напишите Lénue Paris в WhatsApp — дом платьев, личный ответ."
+    "metaDescription": "Напишите Lénue Paris в WhatsApp — дом платьев, личный ответ.",
+    "whatsAppLabel": "Написать в WhatsApp"
   },
   "selection": {
     "pillCount": "Мой выбор · {count}",
