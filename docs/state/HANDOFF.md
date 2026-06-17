@@ -247,6 +247,26 @@ Tracking PR #86 (`orchestrator/tracking-orch-selection-ux--p0-drawer-motion-1781
 - **`prefers-reduced-motion`:** `motion-reduce:!transition-none` on both backdrop and sheet — instant show/hide.
 - **Tests** (`apps/web/src/components/selection/__tests__/SelectionPill.test.tsx`): 7 new tests written test-first. All 103 web tests pass, typecheck clean.
 
+**`orch-catalogue--dress-only-public` — IN-REVIEW (2026-06-17)**
+
+Tracking PR #88 (`orchestrator/tracking-orch-catalogue--dress-only-public-1781674681732`).
+
+**What was built:**
+
+The implementation was already in place across all allowlist files (prior runs had laid the groundwork). This run finalized the slice:
+
+- **`storefrontCatalogue.ts`** (existing): `PUBLIC_DRESS_SLUGS = ["robe-camille","robe-louise","robe-margot"]`, `filterStorefrontProducts` filters by `category === 'dresses'`, `isPublicStorefrontSlug` gates draft/published in seed.
+- **`queries.ts`** (existing): `getCataloguePage` queries only published dresses; `getCollectionBySlug` uses `filterStorefrontProducts`.
+- **`seed.ts`** (existing): signature trio seeded as `published`; bags, scarfs, and non-signature dresses seeded as `draft`. `HOME_FEATURED_SLUGS = PUBLIC_DRESS_SLUGS`.
+- **`productImages.ts`** (existing): each signature dress has 2–3 unique `PHOTO-*` gallery entries.
+- **`CategoryFilter.tsx`** (existing): only "Tout" + "Robes" — no bags/scarfs filter.
+- **`Header.tsx`** (existing): no bag/scarf category links.
+- **`page.tsx` (home)** (existing): `categoryLinks` passes only `[{ href: "/catalogue" }]` to `HomeCategoryStrip` — no sac/foulard links.
+- **Tests (this run)**: Fixed `CategoryFilter.test.tsx` to match dress-only implementation (removed stale Sacs/Foulards expectations). Added 7 new `storefrontCatalogue` tests (all 3 signature slugs, bag/scarf/non-signature rejection). Added gallery PHOTO-* test in `productImages.test.ts`. 112 web tests green, typecheck clean on both apps.
+- **User story**: `docs/product/user-stories/catalogue--dress-only-public--US-001--dress-only-catalogue.md`
+
+**Checks:** 112 web tests green (0 failed), typecheck clean on web + cms.
+
 ## Next recommended step
 
 1. **`orch-storefront-shell--global-chrome`** (P0) — shared layout/chrome (header, navigation) so both pages have proper context; unblocks visual QA.
