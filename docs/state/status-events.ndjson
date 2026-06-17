@@ -131,3 +131,4 @@
 {"ts":"2026-06-17T05:37:31.705Z","step":"orch-ci--brainstorm-round-graft","status":"in-progress","actor":"orchestrator"}
 {"ts":"2026-06-17T05:37:50.832Z","step":"orch-ci--brainstorm-round-graft","status":"not-started","note":"orphan reset (agent failed)","actor":"orchestrator"}
 {"ts":"2026-06-17T05:37:55.379Z","step":"orch-ci--brainstorm-round-graft","status":"in-progress","actor":"orchestrator"}
+{"ts":"2026-06-17T05:37:59.293Z","step":"orch-catalogue--dress-only-public","status":"not-started","note":"orphan reset (agent failed)","actor":"orchestrator"}
