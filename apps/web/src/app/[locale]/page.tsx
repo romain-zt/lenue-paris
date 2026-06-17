@@ -52,6 +52,7 @@ export default async function Home({ params }: HomePageProps) {
     season: t("season"),
     viewFullCollectionLabel: t("viewFullCollection"),
     outOfStockBadge: tProduct("outOfStockBadge"),
+    capsuleBadgeLabel: t("capsuleBadge"),
     exploreLabel: t("exploreLabel"),
     quote: t("quote"),
     categoryLinks: [{ href: "/catalogue", label: t("allCollection") }],

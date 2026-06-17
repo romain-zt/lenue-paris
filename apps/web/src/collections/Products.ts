@@ -104,6 +104,16 @@ export const Products: CollectionConfig = {
       },
     },
     {
+      name: "limitedSeries",
+      type: "checkbox",
+      defaultValue: false,
+      label: FIELD_LABELS.limitedSeries,
+      admin: {
+        description: FIELD_DESCRIPTIONS.limitedSeries,
+        condition: (data) => data?.category === "dresses",
+      },
+    },
+    {
       name: "mainImage",
       type: "upload",
       relationTo: "media",

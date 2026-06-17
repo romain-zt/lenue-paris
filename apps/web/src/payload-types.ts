@@ -215,6 +215,10 @@ export interface Product {
    * Uncheck to show as out of stock — buyers can express interest via WhatsApp.
    */
   inStock?: boolean | null;
+  /**
+   * Editorial truth only — small-series production. No countdown or stock pressure.
+   */
+  limitedSeries?: boolean | null;
   mainImage: number | Media;
   /**
    * Additional product photos (shown after the main image).
@@ -255,6 +259,10 @@ export interface Page {
              * Optional muted loop (max 8 s). Poster uses the hero image. Respects reduced-motion.
              */
             heroVideo?: (number | null) | Media;
+            /**
+             * Shows a quiet « limited series » line on the home hero (The Row cadence).
+             */
+            showCapsuleBadge?: boolean | null;
             season: string;
             tagline: string;
             ctaLabel: string;
@@ -491,6 +499,7 @@ export interface PagesSelect<T extends boolean = true> {
           | {
               heroImage?: T;
               heroVideo?: T;
+              showCapsuleBadge?: T;
               season?: T;
               tagline?: T;
               ctaLabel?: T;
@@ -548,6 +557,7 @@ export interface ProductsSelect<T extends boolean = true> {
   category?: T;
   price?: T;
   inStock?: T;
+  limitedSeries?: T;
   mainImage?: T;
   gallery?:
     | T

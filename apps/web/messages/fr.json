@@ -36,7 +36,8 @@
     "exploreLabel": "Explorer",
     "allCollection": "Toute la collection",
     "heroImageAlt": "Lénue Paris — collection Printemps Été 2026",
-    "editorialImageAlt": "Femme en robe Lénue Paris au Café de Flore"
+    "editorialImageAlt": "Femme en robe Lénue Paris au Café de Flore",
+    "capsuleBadge": "Série limitée"
   },
   "catalogue": {
     "title": "Collection",
@@ -62,7 +63,8 @@
     "outOfStock": "Épuisé",
     "outOfStockBadge": "Édition limitée — épuisé",
     "outOfStockMessage": "Cette pièce est momentanément indisponible. Laissez-nous un message — nous vous prévenons en priorité dès son retour.",
-    "outOfStockCta": "Me prévenir sur WhatsApp"
+    "outOfStockCta": "Me prévenir sur WhatsApp",
+    "limitedSeriesBadge": "Série limitée"
   },
   "order": {
     "namePlaceholder": "Votre prénom et nom",

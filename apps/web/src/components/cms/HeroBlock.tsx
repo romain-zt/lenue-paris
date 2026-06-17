@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
+import { CapsuleBadge } from "@/components/editorial/CapsuleBadge";
 import type { HeroBlockProps } from "@/lib/cms/types";
 
 export function HeroBlock({
@@ -10,6 +11,7 @@ export function HeroBlock({
   heroImageUrl,
   heroImageAlt,
   heroVideoUrl,
+  capsuleBadgeLabel,
 }: HeroBlockProps) {
   const hasVideo = Boolean(heroVideoUrl);
 
@@ -56,6 +58,9 @@ export function HeroBlock({
       <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-transparent" aria-hidden="true" />
 
       <div className="absolute bottom-0 left-0 px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16">
+        {capsuleBadgeLabel ? (
+          <CapsuleBadge className="mb-3 text-white/55">{capsuleBadgeLabel}</CapsuleBadge>
+        ) : null}
         <p className="mb-5 text-[10px] font-medium uppercase tracking-[0.35em] text-white/50">{season}</p>
         <h1
           id="hero-heading"

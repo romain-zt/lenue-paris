@@ -32,6 +32,15 @@ const HeroBlock: Block = {
       },
     },
     {
+      name: "showCapsuleBadge",
+      type: "checkbox",
+      defaultValue: false,
+      label: FIELD_LABELS.showCapsuleBadge,
+      admin: {
+        description: FIELD_DESCRIPTIONS.showCapsuleBadge,
+      },
+    },
+    {
       name: "season",
       type: "text",
       required: true,

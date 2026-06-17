@@ -34,6 +34,8 @@ export interface Product {
   availableLengths?: DressLength[] | null;
   availableSizes?: DressSize[] | null;
   pairings?: Array<{ id: string; title: string }> | null;
+  /** Editorial small-series flag — not fake scarcity. */
+  limitedSeries?: boolean | null;
 }
 
 export interface ProductsResponse {

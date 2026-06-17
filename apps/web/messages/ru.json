@@ -36,7 +36,8 @@
     "exploreLabel": "Смотреть",
     "allCollection": "Вся коллекция",
     "heroImageAlt": "Lénue Paris — коллекция Весна Лето 2026",
-    "editorialImageAlt": "Женщина в платье Lénue Paris в Café de Flore"
+    "editorialImageAlt": "Женщина в платье Lénue Paris в Café de Flore",
+    "capsuleBadge": "Ограниченная серия"
   },
   "catalogue": {
     "title": "Коллекция",
@@ -62,7 +63,8 @@
     "outOfStock": "Нет в наличии",
     "outOfStockBadge": "Лимитированная серия — распродано",
     "outOfStockMessage": "Эта модель временно недоступна. Напишите нам — мы сообщим вам первой, когда она вернётся.",
-    "outOfStockCta": "Уведомить в WhatsApp"
+    "outOfStockCta": "Уведомить в WhatsApp",
+    "limitedSeriesBadge": "Ограниченная серия"
   },
   "order": {
     "namePlaceholder": "Ваше имя и фамилия",

@@ -56,6 +56,16 @@ export const FIELD_LABELS = {
   price: { en: "Price (EUR)", fr: "Prix (EUR)", ru: "Цена (EUR)" },
   category: { en: "Category", fr: "Catégorie", ru: "Категория" },
   inStock: { en: "In stock", fr: "En stock", ru: "В наличии" },
+  limitedSeries: {
+    en: "Limited series",
+    fr: "Série limitée",
+    ru: "Ограниченная серия",
+  },
+  showCapsuleBadge: {
+    en: "Show limited-series badge",
+    fr: "Afficher le badge série limitée",
+    ru: "Показать знак ограниченной серии",
+  },
   alt: { en: "Alt text (accessibility)", fr: "Texte alternatif", ru: "Альтернативный текст" },
   products: { en: "Products", fr: "Produits", ru: "Товары" },
   hero: { en: "Hero image", fr: "Image hero", ru: "Главное изображение" },
@@ -112,6 +122,16 @@ export const FIELD_DESCRIPTIONS = {
     en: "Uncheck to show as out of stock — buyers can express interest via WhatsApp.",
     fr: "Décochez si rupture — les clientes peuvent vous écrire sur WhatsApp.",
     ru: "Снимите галочку при отсутствии — покупательницы могут написать в WhatsApp.",
+  },
+  limitedSeries: {
+    en: "Editorial truth only — small-series production. No countdown or stock pressure.",
+    fr: "Vérité éditoriale uniquement — petites séries. Pas de compte à rebours ni d'urgence stock.",
+    ru: "Только редакционная правда — малые серии. Без таймера и давления «осталось мало».",
+  },
+  showCapsuleBadge: {
+    en: "Shows a quiet « limited series » line on the home hero (The Row cadence).",
+    fr: "Affiche une ligne discrète « série limitée » sur le hero d'accueil.",
+    ru: "Тихая строка « ограниченная серия » на главном hero.",
   },
   gallery: {
     en: "Additional product photos (shown after the main image).",

@@ -11,6 +11,10 @@ export interface HeroBlockProps {
   heroImageAlt: string;
   /** Optional muted hero loop — poster always uses heroImageUrl. */
   heroVideoUrl?: string;
+  /** When true, shows editorial limited-series line (i18n in component). */
+  showCapsuleBadge?: boolean;
+  /** Resolved on server when `showCapsuleBadge` is true. */
+  capsuleBadgeLabel?: string;
 }
 
 export interface FeaturedProductsBlockProps {

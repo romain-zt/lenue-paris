@@ -17,6 +17,7 @@ function mapPayloadProduct(product: PayloadProduct): Product | null {
     category: product.category,
     price: product.price,
     inStock: product.inStock,
+    limitedSeries: product.limitedSeries ?? false,
     mainImage: {
       id: String(typeof product.mainImage === "number" ? product.mainImage : product.mainImage.id),
       alt: resolveMediaAlt(product.mainImage, product.title),
@@ -112,6 +113,7 @@ export function mapHomePageBlocks(blocks: PayloadPage["blocks"]): MappedHomeBloc
           ctaLink: block.ctaLink,
           heroImageUrl,
           heroImageAlt: resolveMediaAlt(block.heroImage, "Lénue Paris"),
+          showCapsuleBadge: Boolean(block.showCapsuleBadge),
           ...(heroVideoUrl ? { heroVideoUrl } : {}),
         },
       });

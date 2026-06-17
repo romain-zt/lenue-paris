@@ -38,6 +38,26 @@ const sampleProduct = {
 };
 
 describe("mapHomePageBlocks", () => {
+  it("maps hero showCapsuleBadge from Payload shape", () => {
+    const blocks: PayloadPage["blocks"] = [
+      {
+        blockType: "hero",
+        season: "Printemps · Été 2026",
+        tagline: "Pour les moments que vous voulez garder.",
+        ctaLabel: "Découvrir",
+        ctaLink: "/catalogue",
+        heroImage: heroMedia,
+        showCapsuleBadge: true,
+      },
+    ];
+
+    const mapped = mapHomePageBlocks(blocks);
+    expect(mapped[0]?.blockType).toBe("hero");
+    if (mapped[0]?.blockType === "hero") {
+      expect(mapped[0].props.showCapsuleBadge).toBe(true);
+    }
+  });
+
   it("maps hero, featured, and editorial blocks from Payload shape", () => {
     const blocks: PayloadPage["blocks"] = [
       {

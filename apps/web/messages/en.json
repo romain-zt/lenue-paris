@@ -36,7 +36,8 @@
     "exploreLabel": "Explore",
     "allCollection": "Full collection",
     "heroImageAlt": "Lénue Paris — Spring Summer 2026 collection",
-    "editorialImageAlt": "Woman in a Lénue Paris dress at Café de Flore"
+    "editorialImageAlt": "Woman in a Lénue Paris dress at Café de Flore",
+    "capsuleBadge": "Limited series"
   },
   "catalogue": {
     "title": "Collection",
@@ -62,7 +63,8 @@
     "outOfStock": "Sold out",
     "outOfStockBadge": "Limited edition — sold out",
     "outOfStockMessage": "This piece is temporarily unavailable. Send us a message — we'll notify you first when it's back.",
-    "outOfStockCta": "Notify me on WhatsApp"
+    "outOfStockCta": "Notify me on WhatsApp",
+    "limitedSeriesBadge": "Limited series"
   },
   "order": {
     "namePlaceholder": "Your first and last name",

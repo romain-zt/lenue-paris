@@ -369,6 +369,7 @@ function buildHomeBlocks(
     {
       blockType: "hero" as const,
       heroImage: heroImageId,
+      showCapsuleBadge: true,
       season: copy.season,
       tagline: copy.heroTagline,
       ctaLabel: copy.heroCta,
@@ -782,6 +783,10 @@ export async function seed() {
       };
       data.availableLengths = [...p.availableLengths];
       data.availableSizes = [...p.availableSizes];
+    }
+
+    if (isPublicStorefrontSlug(product.slug)) {
+      data.limitedSeries = true;
     }
 
     const existing = await payload.find({

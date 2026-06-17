@@ -11,10 +11,11 @@ import type { ContentLocale } from "@/lib/cms/types";
 type HomePageContentProps = {
   initialPage: PayloadPage;
   locale: ContentLocale;
-  labels: {
+    labels: {
     season: string;
     viewFullCollectionLabel: string;
     outOfStockBadge: string;
+    capsuleBadgeLabel: string;
     exploreLabel: string;
     quote: string;
     categoryLinks: { href: string; label: string }[];
@@ -32,11 +33,18 @@ export function HomePageContent({ initialPage, locale, labels }: HomePageContent
   });
 
   const mapped = mapHomePageBlocks(page.blocks);
-  const blocks = mapped.map((block) =>
-    block.blockType === "featuredProducts"
-      ? enrichFeaturedBlock(block, locale, labels)
-      : block,
-  );
+  const blocks = mapped.map((block) => {
+    if (block.blockType === "featuredProducts") {
+      return enrichFeaturedBlock(block, locale, labels);
+    }
+    if (block.blockType === "hero" && block.props.showCapsuleBadge) {
+      return {
+        ...block,
+        props: { ...block.props, capsuleBadgeLabel: labels.capsuleBadgeLabel },
+      };
+    }
+    return block;
+  });
 
   return (
     <main>

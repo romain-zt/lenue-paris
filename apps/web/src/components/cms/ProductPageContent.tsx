@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { OrderCTA } from "@/components/product/OrderCTA";
+import { CapsuleBadge } from "@/components/editorial/CapsuleBadge";
 import { mapPayloadProductDetail } from "@/lib/cms/blocks";
 import { getPreviewSiteUrl } from "@/lib/cms/generatePreviewPath";
 import type { Product as PayloadProduct } from "@/payload-types";
@@ -55,6 +56,9 @@ export function ProductPageContent({ initialProduct, locale }: ProductPageConten
 
         <div className="flex flex-col gap-6">
           <div>
+            {product.limitedSeries ? (
+              <CapsuleBadge className="mb-3">{t("limitedSeriesBadge")}</CapsuleBadge>
+            ) : null}
             <h1 className="text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl">
               {product.title}
             </h1>
