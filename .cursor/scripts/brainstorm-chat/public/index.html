@@ -3,94 +3,85 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Brainstorm Chat</title>
+    <title>Brainstorm</title>
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
     <div class="app">
+
+      <!-- ── Header ── -->
       <header class="header">
-        <div>
+        <div class="header-brand">
           <h1>Brainstorm</h1>
-          <p class="subtitle">You lead · Orchestrator routes specialists</p>
+          <div class="goal-bar" id="goal-bar" hidden>
+            <span class="goal-label">Goal</span>
+            <span class="goal-text" id="goal-text"></span>
+          </div>
         </div>
         <div class="header-actions">
-          <button type="button" class="ghost danger" id="force-stop">Force stop</button>
-          <button type="button" class="ghost" id="pause">Pause agents</button>
           <div class="status" id="status">Connecting…</div>
+          <button type="button" class="ghost" id="pause">Pause</button>
+          <button type="button" class="ghost danger" id="force-stop">Stop</button>
         </div>
       </header>
 
-      <div class="goal-bar" id="goal-bar" hidden>
-        <span class="goal-label">Goal</span>
-        <span class="goal-text" id="goal-text"></span>
-      </div>
+      <!-- ── Workspace ── -->
+      <div class="workspace">
 
-      <div class="agents-strip" id="agents-strip">
-        <div class="agents-row" id="participants" aria-label="Participants"></div>
-        <div class="agents-live" id="live-bar" hidden>
-          <span class="live-pulse" aria-hidden="true"></span>
-          <span class="live-label" id="live-label">Idle</span>
-          <span class="live-elapsed" id="live-elapsed"></span>
-        </div>
-      </div>
-
-      <div class="main">
+        <!-- Left sidebar: agents + stream panel -->
         <aside class="sidebar">
-          <!-- Live monitor: pinned panel showing active agent streaming -->
-          <div class="live-monitor" id="live-monitor" hidden aria-live="polite" aria-label="Active agent">
-            <div class="lm-header">
-              <span class="live-pulse" aria-hidden="true"></span>
-              <span class="lm-who" id="lm-who"></span>
-              <span class="lm-phase" id="lm-phase"></span>
-              <span class="lm-elapsed" id="lm-elapsed"></span>
-            </div>
-            <div class="lm-body" id="lm-body"></div>
-          </div>
+          <div class="sidebar-label">Agents</div>
+          <div class="agent-list" id="agent-list" aria-label="Agent list"></div>
 
-          <!-- Activity log -->
-          <div class="activity-header">
-            <span class="activity-title">Activity log</span>
-            <span class="accordion-badge" id="activity-count" hidden>0</span>
-          </div>
-          <div class="activity-feed" id="activity-feed" aria-live="polite"></div>
-
-          <!-- Assets -->
-          <details class="accordion" id="assets-accordion" hidden>
-            <summary class="accordion-summary">
+          <!-- Assets accordion -->
+          <details class="assets-accordion" id="assets-accordion" hidden>
+            <summary class="assets-summary">
               <span>Assets</span>
-              <span class="accordion-badge" id="assets-count" hidden>0</span>
+              <span class="badge" id="assets-count" hidden>0</span>
             </summary>
-            <div class="accordion-body">
-              <ul class="assets-list" id="assets-list"></ul>
-            </div>
+            <ul class="assets-list" id="assets-list"></ul>
           </details>
-        </aside>
-        <main class="chat" id="chat" aria-live="polite"></main>
-      </div>
 
-      <form class="composer" id="form">
-        <label class="topic-label" for="topic">Goal / topic</label>
-        <input
-          id="topic"
-          name="topic"
-          type="text"
-          placeholder="What are we trying to figure out?"
-          autocomplete="off"
-        />
-        <div class="composer-row">
-          <textarea
-            id="input"
-            name="message"
-            rows="2"
-            placeholder="Share an idea…"
-            required
-          ></textarea>
-          <button type="submit" id="send">Send</button>
+          <!-- Stream panel: appears when an agent is selected -->
+          <div class="stream-panel" id="stream-panel" hidden>
+            <div class="stream-hd">
+              <span class="live-dot" id="stream-pulse" aria-hidden="true" hidden></span>
+              <span class="stream-name" id="stream-name"></span>
+              <span class="stream-phase" id="stream-phase"></span>
+              <button class="stream-close" id="stream-close" aria-label="Close stream">✕</button>
+            </div>
+            <div class="stream-body" id="stream-body">
+              <p class="stream-empty">Select an agent to see its live stream.</p>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Right: chat + composer -->
+        <div class="main-area">
+          <div class="chat" id="chat" aria-live="polite" aria-label="Chat"></div>
+
+          <form class="composer" id="form" autocomplete="off">
+            <input
+              id="topic"
+              name="topic"
+              type="text"
+              placeholder="Goal / topic (optional)"
+            />
+            <div class="composer-row">
+              <textarea
+                id="input"
+                name="message"
+                rows="2"
+                placeholder="Your message… (Enter to send)"
+                required
+              ></textarea>
+              <button type="submit" id="send">Send</button>
+            </div>
+            <p class="hint" id="hint">Failures auto-retry with a fresh agent.</p>
+          </form>
         </div>
-        <p class="hint" id="hint">
-          Failures auto-retry with a fresh agent. Force stop anytime.
-        </p>
-      </form>
+
+      </div>
     </div>
     <script src="/app.js"></script>
   </body>
