@@ -245,6 +245,31 @@ export async function getCataloguePage(locale: ContentLocale): Promise<Catalogue
   return { title, products, sourceType: "all" };
 }
 
+export async function getPageDocument(
+  slug: string,
+  locale: ContentLocale,
+  options?: QueryOptions,
+): Promise<PayloadPage | null> {
+  const payload = await getPayloadClient()
+  const draft = options?.draft ?? false
+
+  const where: Where = draft
+    ? { and: [{ slug: { equals: slug } }] }
+    : { and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }] }
+
+  const result = await payload.find({
+    collection: 'pages',
+    locale,
+    fallbackLocale: 'fr',
+    where,
+    depth: 3,
+    limit: 1,
+    draft,
+  })
+
+  return (result.docs[0] as PayloadPage | undefined) ?? null
+}
+
 function featuredLabels(locale: ContentLocale) {
   if (locale === "en") {
     return {
