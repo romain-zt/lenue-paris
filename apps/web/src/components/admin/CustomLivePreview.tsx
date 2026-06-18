@@ -411,6 +411,13 @@ export const CustomLivePreview: React.FC = () => {
     })
   }, [])
 
+  // Notify iframe of fullscreen state so it can switch click behaviour
+  useEffect(() => {
+    const win = iframeRef.current?.contentWindow
+    if (!win || !url) return
+    win.postMessage({ type: 'payload-preview-fullscreen', isFullscreen }, url.startsWith('http') ? new URL(url).origin : '*')
+  }, [isFullscreen, iframeRef, url])
+
   // Escape key exits fullscreen
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -801,9 +808,18 @@ export const CustomLivePreview: React.FC = () => {
           }}
         >
           {shouldRenderIframe && (
-            <iframe
+              <iframe
               id="live-preview-iframe"
-              onLoad={() => setLoadedURL(url)}
+              onLoad={() => {
+                setLoadedURL(url)
+                // Re-send fullscreen state after iframe reload
+                setTimeout(() => {
+                  iframeRef.current?.contentWindow?.postMessage(
+                    { type: 'payload-preview-fullscreen', isFullscreen: true },
+                    '*',
+                  )
+                }, 200)
+              }}
               ref={iframeRef}
               src={url}
               style={{

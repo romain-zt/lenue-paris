@@ -48,6 +48,7 @@ export const LP_OPEN_EDITOR_EVENT = 'lp:open-editor'
 export function InlineEditor() {
   const [state, setState] = useState<InlineEditorPayload | null>(null)
   const [draft, setDraft] = useState('')
+  const [saved, setSaved] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
   const panelRef = useRef<HTMLDivElement | null>(null)
 
@@ -77,6 +78,7 @@ export function InlineEditor() {
 
   function close() {
     setState(null)
+    setSaved(false)
   }
 
   function save() {
@@ -85,7 +87,8 @@ export function InlineEditor() {
       { type: 'payload-field-update', path: state.path, value: draft },
       '*',
     )
-    close()
+    setSaved(true)
+    setTimeout(close, 700)
   }
 
   function openInAdmin() {
@@ -354,20 +357,22 @@ export function InlineEditor() {
             <button
               type="button"
               onClick={save}
+              disabled={saved}
               style={{
-                background: '#6366f1',
+                background: saved ? '#22c55e' : '#6366f1',
                 border: 'none',
                 borderRadius: 4,
                 color: '#fff',
-                cursor: 'pointer',
+                cursor: saved ? 'default' : 'pointer',
                 fontFamily: 'system-ui, sans-serif',
                 fontSize: 12,
                 fontWeight: 600,
                 height: 28,
                 padding: '0 14px',
+                transition: 'background 0.15s',
               }}
             >
-              Save
+              {saved ? '✓ Saved' : 'Save'}
             </button>
           </div>
         )}
