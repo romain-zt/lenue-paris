@@ -19,11 +19,7 @@ export const Collections: CollectionConfig = {
       url: ({ data, req }) => {
         const slug = typeof data?.slug === "string" ? data.slug : "";
         if (!slug) return null;
-        const locale = req.locale || "fr";
-        const base = getPreviewSiteUrl();
-        const path =
-          locale === "fr" ? `/collections/${slug}` : `/${locale}/collections/${slug}`;
-        return `${base}${path}`;
+        return generatePreviewPath({ slug, collection: "collections", req });
       },
     },
     preview: (data, { req }) =>
