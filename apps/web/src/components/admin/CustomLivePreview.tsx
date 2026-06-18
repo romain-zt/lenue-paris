@@ -25,7 +25,7 @@ const BreakpointBar: React.FC = () => {
 
   const allBreakpoints = [
     { label: 'Responsive', name: 'responsive' },
-    ...(breakpoints ?? []).filter((bp) => bp.name !== 'responsive'),
+    ...(breakpoints ?? []).filter((bp: { name: string; label?: string }) => bp.name !== 'responsive'),
   ]
 
   return (
