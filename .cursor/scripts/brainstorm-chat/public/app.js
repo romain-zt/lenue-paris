@@ -18,6 +18,11 @@ const forceStopBtn = document.getElementById("force-stop");
 const goalBar = document.getElementById("goal-bar");
 const goalText = document.getElementById("goal-text");
 const hintEl = document.getElementById("hint");
+const liveMonitorEl = document.getElementById("live-monitor");
+const lmWhoEl = document.getElementById("lm-who");
+const lmPhaseEl = document.getElementById("lm-phase");
+const lmElapsedEl = document.getElementById("lm-elapsed");
+const lmBodyEl = document.getElementById("lm-body");
 
 /** @type {Record<string, { name: string; label: string; color: string }>} */
 let participants = {};
@@ -29,7 +34,7 @@ const typing = new Set();
 const activityLog = [];
 const MAX_ACTIVITY = 40;
 const STREAMING_PHASES = new Set(["writing", "thinking"]);
-const ACTIVITY_PREVIEW_LEN = 96;
+const ACTIVITY_PREVIEW_LEN = 160;
 /** @type {Set<string>} */
 const openActivityIds = new Set();
 let activityIdCounter = 0;
@@ -81,7 +86,7 @@ function activityPreview(detail) {
   const text = (detail || "").trim();
   if (!text) return "(empty)";
   if (text.length <= ACTIVITY_PREVIEW_LEN) return text;
-  return `…${text.slice(-ACTIVITY_PREVIEW_LEN)}`;
+  return `${text.slice(0, ACTIVITY_PREVIEW_LEN)}…`;
 }
 
 function phaseLabel(phase) {
@@ -104,17 +109,19 @@ function renderParticipants() {
   for (const [id, p] of Object.entries(participants)) {
     const row = document.createElement("div");
     const isActive = activeAuthor === id;
+    const isTyping = typing.has(id);
     const agentId = agentBindings[id];
     const dashboardUrl = id !== "human" ? cursorAgentUrl(agentId) : null;
+    const currentPhase = isActive ? phaseLabel(loopPhase) : "";
     row.className =
       "participant" +
-      (typing.has(id) ? " typing" : "") +
+      (isTyping ? " typing" : "") +
       (isActive ? " active-agent" : "") +
       (dashboardUrl ? " has-dashboard" : "");
     row.innerHTML = `
       <span class="dot" style="background:${p.color}"></span>
       <div class="meta">
-        <div class="name">${escapeHtml(p.name)}</div>
+        <div class="name">${escapeHtml(p.name)}${isActive ? `<span class="phase-tag">${escapeHtml(currentPhase)}</span>` : ""}</div>
         <div class="label">${escapeHtml(p.label)}</div>
       </div>${
         dashboardUrl
@@ -127,62 +134,86 @@ function renderParticipants() {
   }
 }
 
+/** Update the pinned live monitor panel */
+function updateLiveMonitor() {
+  const newest = activityLog.at(-1);
+  const isStreaming =
+    newest &&
+    activeAuthor === newest.author &&
+    STREAMING_PHASES.has(newest.phase);
+
+  if (!isStreaming || !activeAuthor) {
+    liveMonitorEl.hidden = true;
+    return;
+  }
+
+  liveMonitorEl.hidden = false;
+  const who = participants[activeAuthor]?.name || activeAuthor;
+  const color = participants[activeAuthor]?.color || "#4ade80";
+  lmWhoEl.textContent = who;
+  lmWhoEl.style.color = color;
+  lmPhaseEl.textContent = phaseLabel(newest.phase);
+  lmElapsedEl.textContent = activeElapsedMs > 0 ? formatElapsed(activeElapsedMs) : "";
+
+  const text = newest.detail || "";
+  lmBodyEl.textContent = text;
+  // Auto-scroll to bottom as text streams in
+  lmBodyEl.scrollTop = lmBodyEl.scrollHeight;
+}
+
+/** Flat card activity log — no accordion noise */
 function renderActivity() {
   activityFeedEl.innerHTML = "";
   const items = activityLog.slice(-MAX_ACTIVITY).reverse();
+
   if (!items.length) {
     activityFeedEl.innerHTML = `<p class="activity-empty">Waiting for agent activity…</p>`;
     activityCountEl.hidden = true;
+    updateLiveMonitor();
     return;
   }
+
   activityCountEl.textContent = String(items.length);
   activityCountEl.hidden = false;
-  const newest = activityLog.at(-1);
 
   for (const item of items) {
-    const detail = item.detail || "";
-    const isLiveStream =
-      item === newest &&
-      activeAuthor === item.author &&
-      STREAMING_PHASES.has(item.phase);
+    const detail = (item.detail || "").trim();
     const who = participants[item.author]?.name || item.author;
     const color = participants[item.author]?.color || "#888";
+    const isExpanded = openActivityIds.has(item.id);
     const expandable = detail.length > ACTIVITY_PREVIEW_LEN;
 
-    const details = document.createElement("details");
-    details.className =
+    const card = document.createElement("div");
+    card.className =
       `activity-item phase-${item.phase}` +
-      (isLiveStream ? " activity-streaming" : "") +
-      (expandable ? " activity-expandable" : "");
-    details.dataset.id = item.id;
-    if (openActivityIds.has(item.id) || isLiveStream) details.open = true;
+      (expandable ? " activity-expandable" : "") +
+      (isExpanded ? " activity-expanded" : "");
+    card.dataset.id = item.id;
 
-    details.addEventListener("toggle", () => {
-      if (details.open) openActivityIds.add(item.id);
-      else openActivityIds.delete(item.id);
-    });
-
-    const summary = document.createElement("summary");
-    summary.className = "activity-summary";
-    summary.innerHTML = `
-      <span class="activity-summary-main">
+    card.innerHTML = `
+      <div class="activity-row">
         <span class="activity-who" style="color:${color}">${escapeHtml(who)}</span>
         <span class="activity-phase">${escapeHtml(phaseLabel(item.phase))}</span>
-      </span>
-      <time class="activity-time" datetime="${new Date(item.ts).toISOString()}">${escapeHtml(formatActivityTime(item.ts))}</time>
-      <span class="activity-preview">${escapeHtml(activityPreview(detail))}</span>`;
-
-    details.appendChild(summary);
+        <time class="activity-time" datetime="${new Date(item.ts).toISOString()}">${escapeHtml(formatActivityTime(item.ts))}</time>
+      </div>
+      ${detail ? `<div class="activity-preview">${escapeHtml(detail)}</div>` : ""}`;
 
     if (expandable) {
-      const body = document.createElement("div");
-      body.className = "activity-body";
-      body.textContent = detail || "(empty)";
-      details.appendChild(body);
+      card.addEventListener("click", () => {
+        if (card.classList.contains("activity-expanded")) {
+          card.classList.remove("activity-expanded");
+          openActivityIds.delete(item.id);
+        } else {
+          card.classList.add("activity-expanded");
+          openActivityIds.add(item.id);
+        }
+      });
     }
 
-    activityFeedEl.appendChild(details);
+    activityFeedEl.appendChild(card);
   }
+
+  updateLiveMonitor();
 }
 
 function recordActivity(item) {
@@ -365,6 +396,7 @@ function startHeartbeatTicker() {
     if (activeAuthor && !autoRetrying) activeElapsedMs += 1000;
     updateLiveBar();
     updateStatus();
+    updateLiveMonitor();
   }, 1000);
 }
 
@@ -489,6 +521,7 @@ function handleServerMessage(data) {
         detail: data.reason === "stopped" ? "Stopped" : "Turn complete",
         ts: data.ts,
       });
+      liveMonitorEl.hidden = true;
       renderParticipants();
       updateStatus();
       updateComposerState();

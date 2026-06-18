@@ -36,15 +36,25 @@
 
       <div class="main">
         <aside class="sidebar">
-          <details class="accordion" id="activity-accordion" open>
-            <summary class="accordion-summary">
-              <span>Live activity</span>
-              <span class="accordion-badge" id="activity-count" hidden>0</span>
-            </summary>
-            <div class="accordion-body">
-              <div class="activity-feed" id="activity-feed" aria-live="polite"></div>
+          <!-- Live monitor: pinned panel showing active agent streaming -->
+          <div class="live-monitor" id="live-monitor" hidden aria-live="polite" aria-label="Active agent">
+            <div class="lm-header">
+              <span class="live-pulse" aria-hidden="true"></span>
+              <span class="lm-who" id="lm-who"></span>
+              <span class="lm-phase" id="lm-phase"></span>
+              <span class="lm-elapsed" id="lm-elapsed"></span>
             </div>
-          </details>
+            <div class="lm-body" id="lm-body"></div>
+          </div>
+
+          <!-- Activity log -->
+          <div class="activity-header">
+            <span class="activity-title">Activity log</span>
+            <span class="accordion-badge" id="activity-count" hidden>0</span>
+          </div>
+          <div class="activity-feed" id="activity-feed" aria-live="polite"></div>
+
+          <!-- Assets -->
           <details class="accordion" id="assets-accordion" hidden>
             <summary class="accordion-summary">
               <span>Assets</span>

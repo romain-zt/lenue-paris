@@ -31,7 +31,7 @@ const BASE_PARTICIPANTS = {
     label: "Agent · routes",
     color: "#d97706",
     persona:
-      "You are the Orchestrator — the senior lead of this brainstorm. You always work in three phases: (1) confirm the goal and definition of done with the human, (2) review the team and spawn missing specialists/skills, (3) run the multi-agent debate until the goal is met.",
+      "You are the Orchestrator. Your ONLY job is to synthesize, plan, and delegate — never to implement. You must never write code, draft content, or produce deliverables yourself. Every turn: (1) write ≤2 sentences of synthesis or status for the human, (2) emit structured directives to route specialists. Specialists and executors do all the work.",
     builtin: true,
   },
   spark: {
@@ -440,46 +440,57 @@ function buildOrchestratorPhaseInstructions() {
   if (orchestratorPhase === ORCHESTRATOR_PHASES.CLARIFY) {
     return `CURRENT PHASE: ${orchestratorPhaseLabel(ORCHESTRATOR_PHASES.CLARIFY)}
 
-Before any specialist speaks, confirm with the human:
-- Is the goal clear and specific enough to work toward?
-- What is the definition of done — how will we know we're finished?
+Your only job here: confirm the goal and definition of done. Do NOT produce any ideas, content, or analysis.
+- Ask the human ONE focused question per turn if anything is unclear.
+- Summarize what you understood so far in ≤1 sentence.
 
-Ask concise, direct questions. Summarize what you understood so far.
-If goal or definition of done is still missing or ambiguous, end with:
+If goal or definition of done is still missing or ambiguous:
   [ROUTE: WAIT_FOR_HUMAN]
-When BOTH are clear and the human has confirmed (or supplied them), capture the definition of done:
-  [DEFINITION_OF_DONE: one-line or short bullet summary]
-Then advance:
+When BOTH are confirmed, capture and advance:
+  [DEFINITION_OF_DONE: one-line summary]
   [PHASE: ASSESS_TEAM]
+
 Do NOT route to Spark, Skeptic, or other specialists in this phase.`;
   }
 
   if (orchestratorPhase === ORCHESTRATOR_PHASES.ASSESS_TEAM) {
     return `CURRENT PHASE: ${orchestratorPhaseLabel(ORCHESTRATOR_PHASES.ASSESS_TEAM)}
 
-Review the current team (Spark, Skeptic, and any spawned specialists listed above).
-Decide whether the goal needs expertise nobody on the team has yet.
-- If yes, add spawn lines BEFORE advancing:
+Your only job here: decide who needs to be on the team. Do NOT produce ideas or content.
+- Review current team (Spark, Skeptic, and any spawned specialists).
+- If the goal requires expertise nobody has, spawn that specialist:
   [SPAWN: id|Display Name|short label|persona one-liner]
-  or with a skill body:
+  or with a skill file:
   [SPAWN_SKILL: id|Display Name|short label|persona|skill markdown body]
-- If Spark + Skeptic are enough, say so briefly — do not spawn unnecessarily.
+- If existing team is sufficient, say so in ≤1 sentence and advance immediately.
 
-When the team is ready, advance to execution:
+When team is ready:
   [PHASE: EXECUTE]
-  [ROUTE: SPARK] — kick off with creative ideas (or route to the best-fit specialist)
-Do NOT route to specialists until you emit [PHASE: EXECUTE].`;
+  [ROUTE: <best-fit specialist or comma-separated list>]
+
+Do NOT route to specialists before emitting [PHASE: EXECUTE].`;
   }
 
   return `CURRENT PHASE: ${orchestratorPhaseLabel(ORCHESTRATOR_PHASES.EXECUTE)}
 
-Run the multi-agent brainstorm: route Spark and Skeptic (and spawned specialists) to challenge and refine ideas toward the goal and definition of done.
-Spawn new specialists only when a clear gap appears mid-conversation.
-End each turn with exactly one routing line:
-  [ROUTE: SPARK] — need fresh ideas
-  [ROUTE: SKEPTIC] — need critique / stress-test
-  [ROUTE: <id>] — route to a spawned or existing specialist
-  [ROUTE: WAIT_FOR_HUMAN] — human must answer or decide before continuing`;
+Your ONLY job: synthesize what has been said, identify what is still missing, and dispatch specialists.
+YOU MUST NOT implement, write code, draft content, or produce deliverables — that is the specialists' job.
+
+Each turn, follow this exact structure:
+1. ≤2 sentences: what has been resolved + what is the next open question or step.
+2. Routing: dispatch the right specialist(s) for that step.
+
+You may route to multiple specialists simultaneously using a comma-separated list:
+  [ROUTE: SPARK, SKEPTIC] — both respond to the same step in parallel
+  [ROUTE: SPARK] — single specialist
+  [ROUTE: SKEPTIC] — single specialist
+  [ROUTE: <id>] — a spawned specialist
+  [ROUTE: WAIT_FOR_HUMAN] — a human decision is blocking progress
+
+Spawn a new specialist only when a clear capability gap appears:
+  [SPAWN: id|Display Name|short label|persona one-liner]
+
+Keep iterations short. One step at a time. Never let the thread drift.`;
 }
 
 function listSpecialistsForPrompt() {
@@ -495,7 +506,7 @@ function listSpecialistsForPrompt() {
 
 /**
  * @param {string} raw
- * @returns {{ text: string; route: string; phase: OrchestratorPhase | null; definitionOfDone: string | null; spawns: Array<{ id: string; name: string; label: string; persona: string; skill?: string }> }}
+ * @returns {{ text: string; routes: string[]; phase: OrchestratorPhase | null; definitionOfDone: string | null; spawns: Array<{ id: string; name: string; label: string; persona: string; skill?: string }> }}
  */
 function parseOrchestratorReply(raw) {
   const lines = raw.trim().split("\n");
@@ -527,15 +538,24 @@ function parseOrchestratorReply(raw) {
     }
   }
 
+  // Parse [ROUTE: A] or [ROUTE: A, B] — supports parallel routing
   const routeLine = [...lines].reverse().find((l) => /^\[ROUTE:/i.test(l.trim()));
   const routeMatch = routeLine?.trim().match(/^\[ROUTE:\s*(.+?)\]\s*$/i);
-  let route = "spark";
+  /** @type {string[]} */
+  let routes = ["spark"];
   if (routeMatch) {
-    const key = routeMatch[1].trim().toUpperCase();
-    if (key === "WAIT_FOR_HUMAN") route = "wait";
-    else if (key === "SKEPTIC") route = "skeptic";
-    else if (key === "SPARK") route = "spark";
-    else route = routeMatch[1].trim().toLowerCase().replace(/\s+/g, "_");
+    routes = routeMatch[1]
+      .split(",")
+      .map((r) => {
+        const key = r.trim().toUpperCase();
+        if (key === "WAIT_FOR_HUMAN") return "wait";
+        if (key === "SKEPTIC") return "skeptic";
+        if (key === "SPARK") return "spark";
+        return r.trim().toLowerCase().replace(/\s+/g, "_");
+      })
+      // If any target is "wait", collapse to a single wait
+      .filter((r, i, arr) => !(r === "wait" && arr.indexOf("wait") !== i));
+    if (routes.includes("wait")) routes = ["wait"];
   }
 
   const phaseLine = [...lines].reverse().find((l) => /^\[PHASE:/i.test(l.trim()));
@@ -563,7 +583,7 @@ function parseOrchestratorReply(raw) {
     .join("\n")
     .trim();
 
-  return { text, route, phase, definitionOfDone: parsedDefinitionOfDone, spawns };
+  return { text, routes, phase, definitionOfDone: parsedDefinitionOfDone, spawns };
 }
 
 function isDegenerateReply(text) {
@@ -600,7 +620,7 @@ function buildOrchestratorPrompt() {
 
   return `${BASE_PARTICIPANTS.orchestrator.persona}
 
-You facilitate a brainstorm: a human (who leads), specialists you route, and optional custom experts you can spawn.
+You are a pure routing layer. You synthesize inputs, define the next step, and dispatch specialists. You do not implement anything yourself.
 
 CONVERSATION GOAL — protect this:
 ${goal}
@@ -623,12 +643,14 @@ ${Object.entries(dynamicParticipants)
 
 ${buildOrchestratorPhaseInstructions()}
 
-Each turn:
-1. Write 1–3 sentences for the human (refocus, questions, or brief steering). Skip only if truly unnecessary.
-2. Use structured lines below when required by your phase (spawns, phase advance, definition of done, routing).
+HARD RULES (never break these):
+- You NEVER implement, write code, draft copy, or produce any deliverable. That is the specialists' job.
+- Your output is always ≤2 sentences of synthesis + structured directives. Nothing more.
+- Every turn must end with a [ROUTE:] line. No exceptions.
 
-Route WAIT_FOR_HUMAN when a human decision blocks progress — especially in phase 1.
-Avoid routing the same specialist twice in a row unless the other just spoke.
+Route WAIT_FOR_HUMAN when a human decision blocks progress.
+You may route multiple specialists simultaneously: [ROUTE: SPARK, SKEPTIC]
+Avoid routing the same specialist twice in a row unless no one else has spoken.
 Never let the thread drift from the goal or definition of done.
 
 Full thread:
@@ -1156,20 +1178,20 @@ function applyOrchestratorPhase(wss, nextPhase) {
 }
 
 /**
- * @param {string} route
- * @returns {string}
+ * @param {string[]} routes
+ * @returns {string[]}
  */
-function enforceOrchestratorRoute(route) {
-  if (orchestratorPhase === ORCHESTRATOR_PHASES.CLARIFY) return "wait";
+function enforceOrchestratorRoutes(routes) {
+  if (orchestratorPhase === ORCHESTRATOR_PHASES.CLARIFY) return ["wait"];
   if (orchestratorPhase === ORCHESTRATOR_PHASES.ASSESS_TEAM) {
-    return route === "wait" ? "wait" : "orchestrator";
+    return routes.includes("wait") ? ["wait"] : ["orchestrator"];
   }
-  return route;
+  return routes;
 }
 
 /**
  * @param {WebSocketServer} wss
- * @returns {Promise<string | null>}
+ * @returns {Promise<string[] | null>}
  */
 async function runOrchestratorTurn(wss) {
   const agent = getAgentForAuthor("orchestrator");
@@ -1183,7 +1205,7 @@ async function runOrchestratorTurn(wss) {
   );
   if (!raw) return null;
 
-  const { text, route, phase, definitionOfDone: parsedDod, spawns } =
+  const { text, routes, phase, definitionOfDone: parsedDod, spawns } =
     parseOrchestratorReply(raw);
 
   if (parsedDod) {
@@ -1215,7 +1237,7 @@ async function runOrchestratorTurn(wss) {
 
   turnsThisCycle += 1;
   persistSession();
-  return enforceOrchestratorRoute(route);
+  return enforceOrchestratorRoutes(routes);
 }
 
 /**
@@ -1251,6 +1273,36 @@ async function runSpecialistTurn(author, wss) {
   return true;
 }
 
+/**
+ * Run one or more specialists. When multiple are provided they execute in parallel.
+ * Returns true if all succeeded, false if any failed.
+ * @param {string[]} targets
+ * @param {WebSocketServer} wss
+ */
+async function runSpecialistTargets(targets, wss) {
+  const known = specialistAuthors();
+  const resolved = targets.map((t) => (known.includes(t) ? t : "spark"));
+
+  if (resolved.length === 1) {
+    const ok = await runSpecialistTurn(resolved[0], wss);
+    if (!ok) scheduleAutoRetry(wss, `${resolved[0]} specialist failed`);
+    return ok;
+  }
+
+  // Parallel execution
+  broadcast(wss, {
+    type: "system",
+    text: `Dispatching ${resolved.join(" + ")} in parallel…`,
+  });
+  const results = await Promise.all(resolved.map((r) => runSpecialistTurn(r, wss)));
+  const failed = resolved.filter((_, i) => !results[i]);
+  if (failed.length > 0) {
+    scheduleAutoRetry(wss, `${failed.join(", ")} specialist(s) failed`);
+    return false;
+  }
+  return true;
+}
+
 /** @param {WebSocketServer} wss */
 async function brainstormLoop(wss) {
   if (loopRunning) return;
@@ -1270,20 +1322,21 @@ async function brainstormLoop(wss) {
       break;
     }
 
-    const route = await runOrchestratorTurn(wss);
-    if (forceStopRequested || route === null) {
-      if (route === null && !forceStopRequested) {
+    const routes = await runOrchestratorTurn(wss);
+    if (forceStopRequested || routes === null) {
+      if (routes === null && !forceStopRequested) {
         scheduleAutoRetry(wss, "orchestrator turn failed");
       }
       break;
     }
 
-    if (route === "orchestrator") {
+    // Phase ASSESS_TEAM: orchestrator loops until team is ready
+    if (routes.length === 1 && routes[0] === "orchestrator") {
       if (forceStopRequested || agentsPaused) break;
       continue;
     }
 
-    if (route === "wait") {
+    if (routes.length === 1 && routes[0] === "wait") {
       waitingForHuman = true;
       agentsPaused = true;
       persistSession();
@@ -1294,28 +1347,11 @@ async function brainstormLoop(wss) {
           : orchestratorPhase === ORCHESTRATOR_PHASES.ASSESS_TEAM
             ? "Orchestrator is assessing the team — reply if you want to steer specialist selection."
             : "Orchestrator needs your input before the brainstorm can continue.";
-      broadcast(wss, {
-        type: "system",
-        text: waitHint,
-      });
+      broadcast(wss, { type: "system", text: waitHint });
       break;
     }
 
-    if (!specialistAuthors().includes(route)) {
-      broadcast(wss, {
-        type: "system",
-        text: `Orchestrator routed to unknown specialist "${route}" — defaulting to Spark.`,
-      });
-      if (!(await runSpecialistTurn("spark", wss))) {
-        scheduleAutoRetry(wss, "spark specialist failed");
-        break;
-      }
-    } else {
-      if (!(await runSpecialistTurn(route, wss))) {
-        scheduleAutoRetry(wss, `${route} specialist failed`);
-        break;
-      }
-    }
+    if (!(await runSpecialistTargets(routes, wss))) break;
 
     if (forceStopRequested || agentsPaused) break;
   }
