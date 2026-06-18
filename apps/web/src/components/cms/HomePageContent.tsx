@@ -5,6 +5,7 @@ import { RenderBlocks } from "@/components/cms/RenderBlocks";
 import { HomeCategoryStrip } from "@/components/cms/HomeCategoryStrip";
 import { enrichFeaturedBlock, mapHomePageBlocks } from "@/lib/cms/blocks";
 import { getPreviewSiteUrl } from "@/lib/cms/generatePreviewPath";
+import { useLivePreviewFieldBridge } from "@/hooks/useLivePreviewFieldBridge";
 import type { Page as PayloadPage } from "@/payload-types";
 import type { ContentLocale } from "@/lib/cms/types";
 
@@ -25,6 +26,8 @@ type HomePageContentProps = {
 export function HomePageContent({ initialPage, locale, labels }: HomePageContentProps) {
   const serverURL =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || getPreviewSiteUrl();
+
+  useLivePreviewFieldBridge();
 
   const { data: page } = useLivePreview<PayloadPage>({
     initialData: initialPage,
@@ -48,7 +51,9 @@ export function HomePageContent({ initialPage, locale, labels }: HomePageContent
 
   return (
     <main>
-      <RenderBlocks blocks={blocks} quote={labels.quote} />
+      <div data-payload-path="blocks">
+        <RenderBlocks blocks={blocks} quote={labels.quote} />
+      </div>
       <HomeCategoryStrip exploreLabel={labels.exploreLabel} categoryLinks={labels.categoryLinks} />
     </main>
   );

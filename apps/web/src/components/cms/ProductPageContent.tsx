@@ -8,6 +8,7 @@ import { OrderCTA } from "@/components/product/OrderCTA";
 import { CapsuleBadge } from "@/components/editorial/CapsuleBadge";
 import { mapPayloadProductDetail } from "@/lib/cms/blocks";
 import { getPreviewSiteUrl } from "@/lib/cms/generatePreviewPath";
+import { useLivePreviewFieldBridge } from "@/hooks/useLivePreviewFieldBridge";
 import type { Product as PayloadProduct } from "@/payload-types";
 import type { ContentLocale } from "@/lib/cms/types";
 
@@ -20,6 +21,8 @@ export function ProductPageContent({ initialProduct, locale }: ProductPageConten
   const t = useTranslations("product");
   const serverURL =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || getPreviewSiteUrl();
+
+  useLivePreviewFieldBridge();
 
   const { data: liveDoc } = useLivePreview<PayloadProduct>({
     initialData: initialProduct,
@@ -47,26 +50,38 @@ export function ProductPageContent({ initialProduct, locale }: ProductPageConten
       </nav>
 
       <div className="grid gap-8 md:grid-cols-2 md:gap-12 lg:gap-16">
-        <ProductGallery
-          slug={product.slug}
-          mainImage={product.mainImage}
-          gallery={product.gallery}
-          title={product.title}
-        />
+        <div data-payload-path="mainImage">
+          <ProductGallery
+            slug={product.slug}
+            mainImage={product.mainImage}
+            gallery={product.gallery}
+            title={product.title}
+          />
+        </div>
 
         <div className="flex flex-col gap-6">
           <div>
             {product.limitedSeries ? (
               <CapsuleBadge className="mb-3">{t("limitedSeriesBadge")}</CapsuleBadge>
             ) : null}
-            <h1 className="text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl">
+            <h1
+              className="text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl"
+              data-payload-path="title"
+            >
               {product.title}
             </h1>
-            <p className="mt-2 text-xl text-stone-700">{formattedPrice}</p>
+            <p className="mt-2 text-xl text-stone-700" data-payload-path="price">
+              {formattedPrice}
+            </p>
           </div>
 
           {product.description && (
-            <p className="text-sm leading-relaxed text-stone-600">{product.description}</p>
+            <p
+              className="text-sm leading-relaxed text-stone-600"
+              data-payload-path="description"
+            >
+              {product.description}
+            </p>
           )}
 
           <OrderCTA product={product} />

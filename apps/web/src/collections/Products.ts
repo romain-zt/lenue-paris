@@ -32,6 +32,16 @@ export const Products: CollectionConfig = {
         collection: "products",
         req,
       }),
+    components: {
+      views: {
+        edit: {
+          livePreview: {
+            Component:
+              "@/components/admin/CustomLivePreview#CustomLivePreview",
+          },
+        },
+      },
+    },
   },
   access: {
     read: () => true,

@@ -231,6 +231,16 @@ export const Pages: CollectionConfig = {
         collection: "pages",
         req,
       }),
+    components: {
+      views: {
+        edit: {
+          livePreview: {
+            Component:
+              "@/components/admin/CustomLivePreview#CustomLivePreview",
+          },
+        },
+      },
+    },
   },
   access: {
     read: () => true,
