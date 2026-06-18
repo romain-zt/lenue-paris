@@ -97,12 +97,15 @@
   },
   "delivery": {
     "metaTitle": "Livraison — Lénue Paris",
-    "metaDescription": "Livraison soignée pour chaque robe Lénue — préparation en petites séries, confirmation sur WhatsApp."
+    "metaDescription": "Livraison soignée pour chaque robe Lénue — préparation en petites séries, confirmation sur WhatsApp.",
+    "title": "Livraison",
+    "body": "Chaque robe Lénue est préparée avec soin, en petites séries. Nous expédions depuis la France vers l'Europe et au-delà.\n\nAprès votre sélection, nous finalisons la commande avec vous sur WhatsApp : taille, adresse et délai vous sont confirmés en personne.\n\nLes frais et délais dépendent de votre pays de livraison — nous vous les précisons avant validation, sans surprise."
   },
   "contactPage": {
     "metaTitle": "Contact — Lénue Paris",
     "metaDescription": "Écrivez à Lénue Paris sur WhatsApp — maison de robes, réponse personnelle.",
-    "whatsAppLabel": "Écrire sur WhatsApp"
+    "whatsAppLabel": "Écrire sur WhatsApp",
+    "whatsAppMessage": "Bonjour, je souhaite en savoir plus sur la collection Lénue."
   },
   "selection": {
     "pillCount": "Ma sélection · {count}",

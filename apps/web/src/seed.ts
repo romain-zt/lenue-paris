@@ -593,6 +593,7 @@ async function seedCataloguePage(payload: Awaited<ReturnType<typeof getPayload>>
 
 const A_PROPOS_SLUG = "a-propos";
 const CONTACT_SLUG = "contact";
+const LIVRAISON_SLUG = "livraison";
 
 const A_PROPOS_BODY: Record<ContentLocale, { title: string; body: string }> = {
   fr: {
@@ -763,6 +764,93 @@ async function seedContactPage(payload: Awaited<ReturnType<typeof getPayload>>):
   console.log(`  ✅ Published contact page (${PRODUCT_LOCALES.join(", ")})`);
 }
 
+const LIVRAISON_BODY: Record<ContentLocale, { title: string; body: string }> = {
+  fr: {
+    title: "Livraison",
+    body: [
+      "Chaque robe Lénue est préparée avec soin, en petites séries. Nous expédions depuis la France vers l'Europe et au-delà.",
+      "Après votre sélection, nous finalisons la commande avec vous sur WhatsApp : taille, adresse et délai vous sont confirmés en personne.",
+      "Les frais et délais dépendent de votre pays de livraison — nous vous les précisons avant validation, sans surprise.",
+    ].join("\n\n"),
+  },
+  en: {
+    title: "Delivery",
+    body: [
+      "Each Lénue dress is prepared with care, in small runs. We ship from France across Europe and beyond.",
+      "Once you have made your selection, we complete the order with you on WhatsApp — size, address, and timing confirmed in person.",
+      "Shipping fees and lead times depend on your country; we share them clearly before you confirm, with no surprises.",
+    ].join("\n\n"),
+  },
+  ru: {
+    title: "Доставка",
+    body: [
+      "Каждое платье Lénue готовится с вниманием, небольшими сериями. Отправляем из Франции по Европе и за её пределы.",
+      "После выбора мы оформляем заказ с вами в WhatsApp — размер, адрес и сроки согласуем лично.",
+      "Стоимость и сроки зависят от страны доставки; мы сообщаем их до подтверждения, без сюрпризов.",
+    ].join("\n\n"),
+  },
+};
+
+async function seedLivraisonPage(payload: Awaited<ReturnType<typeof getPayload>>): Promise<void> {
+  console.log("\n📄 Syncing livraison page");
+
+  const existing = await payload.find({
+    collection: "pages",
+    where: { slug: { equals: LIVRAISON_SLUG } },
+    limit: 1,
+  });
+
+  let pageId: number | string;
+
+  if (existing.docs[0]) {
+    pageId = existing.docs[0].id;
+    console.log(`  ♻️  Reusing livraison page → id ${pageId}`);
+  } else {
+    const doc = await payload.create({
+      collection: "pages",
+      data: {
+        title: LIVRAISON_BODY.en.title,
+        slug: LIVRAISON_SLUG,
+        body: LIVRAISON_BODY.en.body,
+        _status: "published",
+      } as any,
+      locale: "en",
+      draft: false,
+    });
+    pageId = doc.id;
+    console.log(`  ✅ Created livraison page → id ${pageId}`);
+  }
+
+  for (const locale of PRODUCT_LOCALES) {
+    await payload.update({
+      collection: "pages",
+      id: pageId,
+      data: {
+        title: LIVRAISON_BODY[locale].title,
+        body: LIVRAISON_BODY[locale].body,
+        _status: "published",
+      } as any,
+      locale,
+      draft: false,
+    });
+  }
+
+  console.log(`  ✅ Published livraison page (${PRODUCT_LOCALES.join(", ")})`);
+}
+
+async function seedSiteSettings(payload: Awaited<ReturnType<typeof getPayload>>): Promise<void> {
+  console.log("\n⚙️  Syncing site settings");
+  await payload.updateGlobal({
+    slug: "site-settings",
+    data: {
+      brandName: "Lénue Paris",
+      instagramUrl: "https://www.instagram.com/alisa.inwonderland.21",
+      whatsappPhone: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "79117126262",
+    } as any,
+  });
+  console.log("  ✅ Site settings synced");
+}
+
 export async function seed() {
   const payload = await getPayload({ config });
 
@@ -896,6 +984,8 @@ export async function seed() {
   await seedCataloguePage(payload);
   await seedAProposPage(payload);
   await seedContactPage(payload);
+  await seedLivraisonPage(payload);
+  await seedSiteSettings(payload);
 
   console.log(`\n🎉 Seed complete — ${created} created, ${updated} updated (${PRODUCT_LOCALES.join(", ")} locales)`);
 }

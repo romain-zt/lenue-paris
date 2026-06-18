@@ -14,6 +14,7 @@ import { Collections } from "./collections/Collections";
 import { Pages } from "./collections/Pages";
 import { Products } from "./collections/Products";
 import { Orders } from "./collections/Orders";
+import { SiteSettings } from "./globals/SiteSettings";
 import { getPostgresPoolConfig } from "./lib/database";
 import { getPreviewSiteUrl } from "./lib/cms/generatePreviewPath";
 
@@ -52,6 +53,7 @@ export default buildConfig({
   },
 
   collections: [Users, Media, Collections, Pages, Products, Orders],
+  globals: [SiteSettings],
 
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || "",

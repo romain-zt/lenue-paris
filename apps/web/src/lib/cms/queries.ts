@@ -4,7 +4,6 @@ import type { Page as PayloadPage, Collection as PayloadCollection, Product as P
 import type { Product } from "@/types/product";
 import {
   mapHomePageBlocks,
-  enrichFeaturedBlock,
   mapPayloadProductToStorefront,
   mapPayloadProductDetail,
   findProductGridBlock,
@@ -57,15 +56,11 @@ export async function getHomePage(
   if (!doc?.blocks?.length) return null;
 
   const mapped = mapHomePageBlocks(doc.blocks);
-  const enriched = mapped.map((block) => {
-    if (block.blockType !== "featuredProducts") return block;
-    return enrichFeaturedBlock(block, locale, featuredLabels(locale));
-  });
 
   return {
     id: doc.id,
     slug: doc.slug ?? HOME_SLUG,
-    blocks: enriched,
+    blocks: mapped,
   };
 }
 
@@ -250,44 +245,23 @@ export async function getPageDocument(
   locale: ContentLocale,
   options?: QueryOptions,
 ): Promise<PayloadPage | null> {
-  const payload = await getPayloadClient()
-  const draft = options?.draft ?? false
+  const payload = await getPayloadClient();
+  const draft = options?.draft ?? false;
 
   const where: Where = draft
     ? { and: [{ slug: { equals: slug } }] }
-    : { and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }] }
+    : { and: [{ slug: { equals: slug } }, { _status: { equals: "published" } }] };
 
   const result = await payload.find({
-    collection: 'pages',
+    collection: "pages",
     locale,
-    fallbackLocale: 'fr',
+    fallbackLocale: "fr",
     where,
     depth: 3,
     limit: 1,
     draft,
-  })
+  });
 
-  return (result.docs[0] as PayloadPage | undefined) ?? null
+  return (result.docs[0] as PayloadPage | undefined) ?? null;
 }
 
-function featuredLabels(locale: ContentLocale) {
-  if (locale === "en") {
-    return {
-      season: "Spring · Summer 2026",
-      viewFullCollectionLabel: "View full collection →",
-      outOfStockBadge: "Out of stock",
-    };
-  }
-  if (locale === "ru") {
-    return {
-      season: "Весна · Лето 2026",
-      viewFullCollectionLabel: "Смотреть коллекцию →",
-      outOfStockBadge: "Нет в наличии",
-    };
-  }
-  return {
-    season: "Printemps · Été 2026",
-    viewFullCollectionLabel: "Voir toute la collection →",
-    outOfStockBadge: "Épuisé",
-  };
-}

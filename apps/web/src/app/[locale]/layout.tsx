@@ -14,7 +14,7 @@ import { LivePreviewListener } from "@/components/cms/LivePreviewListener";
 import { SelectionProvider } from "@/lib/selection/SelectionProvider";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { STOREFRONT_NAV_LINKS } from "@/lib/navigation/storefrontNav";
-import { WHATSAPP_PHONE } from "@/lib/whatsapp/config";
+import { getSiteSettings } from "@/lib/cms/siteSettings";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin", "cyrillic"],
@@ -68,6 +68,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   const messages = await getMessages();
   const tNav = await getTranslations("nav");
   const { isEnabled: isDraft } = await draftMode();
+  const siteSettings = await getSiteSettings();
 
   return (
     <html lang={locale} className={`${cormorant.variable} ${jost.variable}`}>
@@ -93,7 +94,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
               ))}
               <div className="ml-auto flex items-center gap-3">
                 <a
-                  href={`https://wa.me/${WHATSAPP_PHONE}`}
+                  href={`https://wa.me/${siteSettings.whatsappPhone}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="WhatsApp"
@@ -110,7 +111,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                   </svg>
                 </a>
                 <a
-                  href="https://www.instagram.com/alisa.inwonderland.21"
+                  href={siteSettings.instagramUrl ?? "https://www.instagram.com"}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Instagram"

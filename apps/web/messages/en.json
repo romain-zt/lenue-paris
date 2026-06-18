@@ -97,12 +97,15 @@
   },
   "delivery": {
     "metaTitle": "Delivery — Lénue Paris",
-    "metaDescription": "Careful delivery for every Lénue dress — small-batch preparation, confirmed on WhatsApp."
+    "metaDescription": "Careful delivery for every Lénue dress — small-batch preparation, confirmed on WhatsApp.",
+    "title": "Delivery",
+    "body": "Each Lénue dress is prepared with care, in small runs. We ship from France across Europe and beyond.\n\nOnce you have made your selection, we complete the order with you on WhatsApp — size, address, and timing confirmed in person.\n\nShipping fees and lead times depend on your country; we share them clearly before you confirm, with no surprises."
   },
   "contactPage": {
     "metaTitle": "Contact — Lénue Paris",
     "metaDescription": "Write to Lénue Paris on WhatsApp — a house of dresses, personal replies.",
-    "whatsAppLabel": "Write on WhatsApp"
+    "whatsAppLabel": "Write on WhatsApp",
+    "whatsAppMessage": "Hello, I would like to learn more about the Lénue collection."
   },
   "selection": {
     "pillCount": "My selection · {count}",

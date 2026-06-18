@@ -34,33 +34,14 @@ export function GenericPageContent({ initialPage, locale }: GenericPageContentPr
       {hasBlocks ? (
         <RenderBlocks blocks={mappedBlocks} quote="" />
       ) : (
-        <article
-          style={{
-            maxWidth: 720,
-            margin: '0 auto',
-            padding: '3rem 1.5rem',
-          }}
-        >
+        <article className="mx-auto max-w-[720px] px-6 py-12">
           {page.title && (
-            <h1
-              style={{
-                fontSize: 'clamp(1.75rem, 4vw, 3rem)',
-                fontWeight: 300,
-                letterSpacing: '-0.02em',
-                marginBottom: '2rem',
-              }}
-            >
+            <h1 className="mb-8 font-serif text-3xl font-light tracking-tight text-stone-900 sm:text-4xl lg:text-5xl">
               {typeof page.title === 'string' ? page.title : ''}
             </h1>
           )}
           {page.body && (
-            <p
-              style={{
-                fontSize: '1.0625rem',
-                lineHeight: 1.75,
-                whiteSpace: 'pre-wrap',
-              }}
-            >
+            <p className="whitespace-pre-wrap text-base leading-relaxed text-stone-700 sm:text-lg">
               {page.body}
             </p>
           )}

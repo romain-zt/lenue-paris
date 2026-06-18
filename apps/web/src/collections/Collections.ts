@@ -28,6 +28,16 @@ export const Collections: CollectionConfig = {
         collection: "collections",
         req,
       }),
+    components: {
+      views: {
+        edit: {
+          livePreview: {
+            Component:
+              "@/components/admin/CustomLivePreview#CustomLivePreview",
+          },
+        },
+      },
+    },
   },
   access: {
     read: () => true,

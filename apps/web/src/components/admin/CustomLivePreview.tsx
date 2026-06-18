@@ -10,352 +10,15 @@ import { useLocale } from '@payloadcms/ui'
 import { formatAdminURL, reduceFieldsToValues } from 'payload/shared'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
+import { BreakpointBar } from './live-preview/BreakpointBar'
+import { FAB } from './live-preview/FAB'
+import { ensureHighlightStyle, focusAdminField } from './live-preview/utils'
+
 const INSET_PX = 16
 const HANDLE_PX = 6
 const MIN_PANEL_PX = 300
 const MIN_FORM_PX = 280
 const DEFAULT_PANEL_PX = 500
-
-// ─── Breakpoint selector (normal mode only) ───────────────────────────────────
-
-const BreakpointBar: React.FC<{
-  onFullscreen: () => void
-}> = ({ onFullscreen }) => {
-  const { breakpoint, breakpoints, setBreakpoint } = useLivePreviewContext()
-
-  useEffect(() => {
-    setBreakpoint('mobile')
-  }, [])
-
-  const allBreakpoints = [
-    { label: 'Responsive', name: 'responsive' },
-    ...(breakpoints ?? []).filter((bp: { name: string; label?: string }) => bp.name !== 'responsive'),
-  ]
-
-  return (
-    <div
-      style={{
-        alignItems: 'center',
-        background: 'var(--theme-bg)',
-        borderBottom: '1px solid var(--theme-elevation-100)',
-        display: 'flex',
-        flexShrink: 0,
-        gap: 8,
-        padding: '6px 12px',
-      }}
-    >
-      <select
-        onChange={(e) => setBreakpoint(e.target.value)}
-        value={breakpoint ?? 'responsive'}
-        style={{
-          background: 'var(--theme-elevation-100)',
-          border: 'none',
-          borderRadius: 4,
-          color: 'var(--theme-text)',
-          cursor: 'pointer',
-          fontSize: 12,
-          padding: '4px 8px',
-        }}
-      >
-        {allBreakpoints.map((bp) => (
-          <option key={bp.name} value={bp.name}>
-            {bp.label}
-          </option>
-        ))}
-      </select>
-
-      <span
-        style={{
-          color: 'var(--theme-elevation-500)',
-          flex: 1,
-          fontSize: 11,
-        }}
-      >
-        Click any field in the preview to focus it in the form
-      </span>
-
-      <button
-        type="button"
-        title="Open fullscreen preview"
-        onClick={onFullscreen}
-        style={{
-          alignItems: 'center',
-          background: 'var(--theme-elevation-150)',
-          border: 'none',
-          borderRadius: 4,
-          color: 'var(--theme-text)',
-          cursor: 'pointer',
-          display: 'flex',
-          fontSize: 11,
-          fontWeight: 600,
-          gap: 5,
-          height: 26,
-          padding: '0 10px',
-          userSelect: 'none',
-        }}
-      >
-        ⛶ Full
-      </button>
-    </div>
-  )
-}
-
-// ─── Floating Action Button (fullscreen only) ─────────────────────────────────
-
-const FAB: React.FC<{
-  locale: string
-  onSave: () => void
-  onPublish: () => void
-  onExit: () => void
-  isSaving: boolean
-  saveStatus: 'idle' | 'saving' | 'saved' | 'error'
-}> = ({ locale, onSave, onPublish, onExit, isSaving, saveStatus }) => {
-  const [open, setOpen] = useState(false)
-
-  const statusColor =
-    saveStatus === 'saved' ? '#22c55e' : saveStatus === 'error' ? '#ef4444' : 'rgba(255,255,255,0.5)'
-  const statusLabel =
-    saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? '✓ Saved' : saveStatus === 'error' ? 'Save failed' : null
-
-  return (
-    <div
-      style={{
-        bottom: 20,
-        position: 'absolute',
-        right: 20,
-        zIndex: 50,
-      }}
-    >
-      {/* Popup menu */}
-      {open && (
-        <div
-          style={{
-            background: 'rgba(12,12,12,0.94)',
-            backdropFilter: 'blur(14px)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 12,
-            bottom: 60,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 4,
-            minWidth: 168,
-            padding: 8,
-            position: 'absolute',
-            right: 0,
-          }}
-        >
-          {/* Locale + status row */}
-          <div
-            style={{
-              alignItems: 'center',
-              display: 'flex',
-              gap: 6,
-              padding: '4px 6px',
-            }}
-          >
-            <span
-              style={{
-                background: 'rgba(255,255,255,0.08)',
-                borderRadius: 4,
-                color: 'rgba(255,255,255,0.5)',
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.07em',
-                padding: '2px 6px',
-                textTransform: 'uppercase',
-              }}
-            >
-              {locale}
-            </span>
-            {statusLabel && (
-              <span style={{ color: statusColor, fontSize: 11 }}>{statusLabel}</span>
-            )}
-          </div>
-
-          <div style={{ background: 'rgba(255,255,255,0.06)', height: 1, margin: '2px 0' }} />
-
-          <FABMenuItem onClick={() => { onSave(); setOpen(false) }} disabled={isSaving}>
-            Save draft
-          </FABMenuItem>
-          <FABMenuItem onClick={() => { onPublish(); setOpen(false) }} disabled={isSaving} primary>
-            Publish
-          </FABMenuItem>
-
-          <div style={{ background: 'rgba(255,255,255,0.06)', height: 1, margin: '2px 0' }} />
-
-          <FABMenuItem onClick={onExit}>
-            ✕ Exit fullscreen
-          </FABMenuItem>
-        </div>
-      )}
-
-      {/* Circular button */}
-      <button
-        type="button"
-        title={open ? 'Close menu' : 'Preview menu'}
-        onClick={() => setOpen((v) => !v)}
-        style={{
-          alignItems: 'center',
-          background: open ? 'rgba(255,255,255,0.15)' : 'rgba(12,12,12,0.88)',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255,255,255,0.15)',
-          borderRadius: '50%',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-          color: '#fff',
-          cursor: 'pointer',
-          display: 'flex',
-          fontSize: 18,
-          height: 48,
-          justifyContent: 'center',
-          transition: 'background 0.15s',
-          userSelect: 'none',
-          width: 48,
-        }}
-      >
-        {open ? '✕' : '⚙'}
-      </button>
-    </div>
-  )
-}
-
-function FABMenuItem({
-  children,
-  onClick,
-  disabled,
-  primary,
-}: {
-  children: React.ReactNode
-  onClick: () => void
-  disabled?: boolean
-  primary?: boolean
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      style={{
-        background: primary ? '#6366f1' : 'transparent',
-        border: 'none',
-        borderRadius: 7,
-        color: '#fff',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        fontSize: 12,
-        fontWeight: primary ? 600 : 400,
-        opacity: disabled ? 0.5 : 1,
-        padding: '8px 10px',
-        textAlign: 'left',
-        transition: 'background 0.12s',
-        width: '100%',
-      }}
-      onMouseEnter={(e) => {
-        if (!primary && !disabled)
-          (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)'
-      }}
-      onMouseLeave={(e) => {
-        if (!primary)
-          (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
-      }}
-    >
-      {children}
-    </button>
-  )
-}
-
-// ─── Focus a form field in the admin panel ────────────────────────────────────
-
-function focusAdminField(fieldPath: string): void {
-  const directSelectors = [
-    `[data-field-path="${fieldPath}"]`,
-    `input[name="${fieldPath}"]`,
-    `textarea[name="${fieldPath}"]`,
-    `[id^="field-${fieldPath}"]`,
-  ]
-
-  for (const selector of directSelectors) {
-    const el = document.querySelector<HTMLElement>(selector)
-    if (el) {
-      scrollAndHighlight(el)
-      return
-    }
-  }
-
-  const blockRowMatch = fieldPath.match(/^blocks\.(\d+)$/)
-  if (blockRowMatch) {
-    const index = parseInt(blockRowMatch[1] ?? '0', 10)
-    const rowSelectors = [
-      `[data-field-path="blocks"] [data-row-index="${index}"]`,
-      `[data-field-path="blocks.${index}"]`,
-      `[data-array-row-index="${index}"]`,
-    ]
-    for (const selector of rowSelectors) {
-      const el = document.querySelector<HTMLElement>(selector)
-      if (el) {
-        const toggle =
-          el.querySelector<HTMLElement>('[data-collapsed]') ??
-          el.querySelector<HTMLButtonElement>('button[aria-expanded="false"]')
-        toggle?.click()
-        scrollAndHighlight(el)
-        return
-      }
-    }
-    const allRows = document.querySelectorAll<HTMLElement>('[data-field-path^="blocks."]')
-    const row = Array.from(allRows).find(
-      (el) => el.getAttribute('data-field-path') === `blocks.${index}`,
-    )
-    if (row) {
-      scrollAndHighlight(row)
-      return
-    }
-    const blocksField = document.querySelector<HTMLElement>('[data-field-path="blocks"]')
-    if (blocksField) scrollAndHighlight(blocksField)
-    return
-  }
-
-  const segments = fieldPath.split('.')
-  if (segments.length > 1) {
-    for (let i = 0; i < segments.length; i++) {
-      const suffix = segments.slice(i).join('.')
-      const candidates = [
-        `[data-field-path="${suffix}"]`,
-        `input[name="${suffix}"]`,
-        `textarea[name="${suffix}"]`,
-      ]
-      for (const selector of candidates) {
-        const el = document.querySelector<HTMLElement>(selector)
-        if (el) {
-          scrollAndHighlight(el)
-          return
-        }
-      }
-    }
-  }
-}
-
-function scrollAndHighlight(el: HTMLElement): void {
-  el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  el.focus({ preventScroll: true })
-  el.classList.add('lp-field-highlight')
-  setTimeout(() => el.classList.remove('lp-field-highlight'), 1400)
-}
-
-let highlightStyleInjected = false
-function ensureHighlightStyle() {
-  if (highlightStyleInjected || typeof document === 'undefined') return
-  highlightStyleInjected = true
-  const style = document.createElement('style')
-  style.textContent = `
-    .lp-field-highlight {
-      outline: 2px solid var(--theme-success-500, #22c55e) !important;
-      outline-offset: 2px;
-      transition: outline 0.2s;
-    }
-  `
-  document.head.appendChild(style)
-}
-
-// ─── Main component ────────────────────────────────────────────────────────────
 
 export const CustomLivePreview: React.FC = () => {
   const {
@@ -381,23 +44,18 @@ export const CustomLivePreview: React.FC = () => {
   const { submit } = useForm()
   const { config: { routes: { api } } } = useConfig()
 
-  // Keep a ref to the latest submit so the message-listener closure never goes stale
   const submitRef = useRef(submit)
   useEffect(() => { submitRef.current = submit })
 
   const dispatchFieldsRef = useRef(dispatchFields)
-  useEffect(() => {
-    dispatchFieldsRef.current = dispatchFields
-  })
+  useEffect(() => { dispatchFieldsRef.current = dispatchFields })
 
-  useEffect(() => {
-    ensureHighlightStyle()
-  }, [])
+  useEffect(() => { ensureHighlightStyle() }, [])
 
   // ─── Fullscreen state — URL-driven (?fs=1) ────────────────────────────────
+
   const [isFullscreen, setIsFullscreen] = useState(false)
 
-  // Read URL on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('fs') === '1') setIsFullscreen(true)
@@ -413,20 +71,24 @@ export const CustomLivePreview: React.FC = () => {
         params.delete('fs')
       }
       const search = params.toString()
-      const newUrl = `${window.location.pathname}${search ? '?' + search : ''}${window.location.hash}`
-      window.history.pushState({}, '', newUrl)
+      window.history.pushState(
+        {},
+        '',
+        `${window.location.pathname}${search ? '?' + search : ''}${window.location.hash}`,
+      )
       return next
     })
   }, [])
 
-  // Notify iframe of fullscreen state so it can switch click behaviour
   useEffect(() => {
     const win = iframeRef.current?.contentWindow
     if (!win || !url) return
-    win.postMessage({ type: 'payload-preview-fullscreen', isFullscreen }, url.startsWith('http') ? new URL(url).origin : '*')
+    win.postMessage(
+      { type: 'payload-preview-fullscreen', isFullscreen },
+      url.startsWith('http') ? new URL(url).origin : '*',
+    )
   }, [isFullscreen, iframeRef, url])
 
-  // Escape key exits fullscreen
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isFullscreen) toggleFullscreen()
@@ -435,7 +97,6 @@ export const CustomLivePreview: React.FC = () => {
     return () => document.removeEventListener('keydown', handler)
   }, [isFullscreen, toggleFullscreen])
 
-  // Popstate (browser back/forward)
   useEffect(() => {
     const handler = () => {
       const params = new URLSearchParams(window.location.search)
@@ -445,7 +106,8 @@ export const CustomLivePreview: React.FC = () => {
     return () => window.removeEventListener('popstate', handler)
   }, [])
 
-  // ─── Save status ──────────────────────────────────────────────────────────
+  // ─── Save / publish ────────────────────────────────────────────────────────
+
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -493,7 +155,8 @@ export const CustomLivePreview: React.FC = () => {
       })
   }
 
-  // ─── postMessage bridge ───────────────────────────────────────────────────
+  // ─── postMessage: push form data to iframe ────────────────────────────────
+
   useEffect(() => {
     if (!isLivePreviewing || !appIsReady || !formState || !url) return
 
@@ -516,19 +179,9 @@ export const CustomLivePreview: React.FC = () => {
       iframeRef.current.contentWindow?.postMessage(message, url)
     }
   }, [
-    formState,
-    url,
-    collectionSlug,
-    globalSlug,
-    id,
-    previewWindowType,
-    popupRef,
-    appIsReady,
-    iframeRef,
-    mostRecentUpdate,
-    locale,
-    isLivePreviewing,
-    loadedURL,
+    formState, url, collectionSlug, globalSlug, id,
+    previewWindowType, popupRef, appIsReady, iframeRef,
+    mostRecentUpdate, locale, isLivePreviewing, loadedURL,
   ])
 
   const prevUpdateRef = useRef(mostRecentUpdate)
@@ -536,7 +189,6 @@ export const CustomLivePreview: React.FC = () => {
     if (!isLivePreviewing || !appIsReady || !url) return
     if (mostRecentUpdate === prevUpdateRef.current) return
     prevUpdateRef.current = mostRecentUpdate
-
     const message = { type: 'payload-document-event' }
     if (previewWindowType === 'popup' && popupRef?.current) {
       popupRef.current.postMessage(message, url)
@@ -546,7 +198,8 @@ export const CustomLivePreview: React.FC = () => {
     }
   }, [mostRecentUpdate, iframeRef, popupRef, previewWindowType, url, isLivePreviewing, appIsReady])
 
-  // ─── Listen for messages from the preview iframe ──────────────────────────
+  // ─── postMessage: receive field focus / block reorder / inline edit ───────
+
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (typeof event.data !== 'object' || event.data === null) return
@@ -585,6 +238,7 @@ export const CustomLivePreview: React.FC = () => {
   }, [])
 
   // ─── Field update from inline editor ─────────────────────────────────────
+
   function updateFormField(path: string, value: string) {
     try {
       dispatchFieldsRef.current({
@@ -594,14 +248,11 @@ export const CustomLivePreview: React.FC = () => {
       } as Parameters<typeof dispatchFieldsRef.current>[0])
       return
     } catch {
-      // fall through
+      // fall through to DOM approach
     }
 
     const blockMatch = path.match(/^blocks\.(\d+)/)
-    if (blockMatch) {
-      const idx = parseInt(blockMatch[1] ?? '0', 10)
-      expandBlockRow(idx)
-    }
+    if (blockMatch) expandBlockRow(parseInt(blockMatch[1] ?? '0', 10))
 
     setTimeout(() => {
       const selectors = [
@@ -629,47 +280,38 @@ export const CustomLivePreview: React.FC = () => {
   function expandBlockRow(index: number) {
     const blocksField = document.querySelector<HTMLElement>('[data-field-path="blocks"]')
     if (!blocksField) return
-    const rowSelectors = [
+    for (const sel of [
       `[data-field-path="blocks.${index}"]`,
       `[data-field-path="blocks"] [data-row-index="${index}"]`,
-    ]
-    for (const sel of rowSelectors) {
+    ]) {
       const row =
         blocksField.querySelector<HTMLElement>(sel) ?? document.querySelector<HTMLElement>(sel)
       if (!row) continue
-      const collapsed = row.querySelector<HTMLButtonElement>('button[aria-expanded="false"]')
-      collapsed?.click()
+      row.querySelector<HTMLButtonElement>('button[aria-expanded="false"]')?.click()
       return
     }
   }
 
-  // ─── Block reorder ────────────────────────────────────────────────────────
   function handleBlockReorder(from: number, to: number) {
     const blocksField = document.querySelector<HTMLElement>('[data-field-path="blocks"]')
     if (!blocksField) return
 
     const direction = to < from ? 'up' : 'down'
     const steps = Math.abs(to - from)
-
-    const rows = blocksField.querySelectorAll<HTMLElement>('[data-row]')
-    const targetRow = rows[from]
+    const targetRow = blocksField.querySelectorAll<HTMLElement>('[data-row]')[from]
     if (!targetRow) return
 
     const btnLabel = direction === 'up' ? /move up/i : /move down/i
-    const moveBtn = Array.from(targetRow.querySelectorAll<HTMLButtonElement>('button')).find((btn) =>
-      btnLabel.test(
-        btn.getAttribute('aria-label') ?? btn.title ?? btn.textContent ?? '',
-      ),
+    const moveBtn = Array.from(targetRow.querySelectorAll<HTMLButtonElement>('button')).find(
+      (btn) => btnLabel.test(btn.getAttribute('aria-label') ?? btn.title ?? btn.textContent ?? ''),
     )
-
     if (moveBtn) {
-      for (let i = 0; i < steps; i++) {
-        moveBtn.click()
-      }
+      for (let i = 0; i < steps; i++) moveBtn.click()
     }
   }
 
   // ─── Panel width + drag-to-resize ────────────────────────────────────────
+
   const panelRef = useRef<HTMLDivElement>(null)
   const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_PX)
   const isDragging = useRef(false)
@@ -708,8 +350,7 @@ export const CustomLivePreview: React.FC = () => {
       const parent = panelRef.current.parentElement
       const maxW = parent ? parent.clientWidth - MIN_FORM_PX - HANDLE_PX : 1200
       const delta = dragStartX.current - e.clientX
-      const newWidth = Math.max(MIN_PANEL_PX, Math.min(dragStartWidth.current + delta, maxW))
-      setPanelWidth(newWidth)
+      setPanelWidth(Math.max(MIN_PANEL_PX, Math.min(dragStartWidth.current + delta, maxW)))
     }
     const onMouseUp = () => {
       if (!isDragging.current) return
@@ -726,6 +367,7 @@ export const CustomLivePreview: React.FC = () => {
   }, [])
 
   // ─── Device scaling ───────────────────────────────────────────────────────
+
   const containerRef = useRef<HTMLDivElement>(null)
   const [iframeStyle, setIframeStyle] = useState<React.CSSProperties>({
     height: '100%',
@@ -768,7 +410,12 @@ export const CustomLivePreview: React.FC = () => {
 
   if (previewWindowType !== 'iframe') return null
 
-  // ─── Fullscreen: fixed overlay, only iframe + FAB ─────────────────────────
+  const iframeShadow = isResponsive
+    ? 'none'
+    : '0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)'
+
+  // ─── Fullscreen mode: fixed overlay, iframe + FAB only ───────────────────
+
   if (isFullscreen) {
     return (
       <div
@@ -794,11 +441,10 @@ export const CustomLivePreview: React.FC = () => {
           }}
         >
           {shouldRenderIframe && (
-              <iframe
+            <iframe
               id="live-preview-iframe"
               onLoad={() => {
                 setLoadedURL(url)
-                // Re-send fullscreen state after iframe reload
                 setTimeout(() => {
                   iframeRef.current?.contentWindow?.postMessage(
                     { type: 'payload-preview-fullscreen', isFullscreen: true },
@@ -808,13 +454,7 @@ export const CustomLivePreview: React.FC = () => {
               }}
               ref={iframeRef}
               src={url}
-              style={{
-                border: 'none',
-                boxShadow: isResponsive
-                  ? 'none'
-                  : '0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)',
-                ...iframeStyle,
-              }}
+              style={{ border: 'none', boxShadow: iframeShadow, ...iframeStyle }}
               title="Live Preview"
             />
           )}
@@ -832,7 +472,8 @@ export const CustomLivePreview: React.FC = () => {
     )
   }
 
-  // ─── Normal mode: split form + preview panel ──────────────────────────────
+  // ─── Normal mode: resizable split panel ───────────────────────────────────
+
   return (
     <div
       ref={panelRef}
@@ -849,7 +490,6 @@ export const CustomLivePreview: React.FC = () => {
         width: panelWidth,
       }}
     >
-      {/* Drag handle */}
       <div
         onMouseDown={onHandleMouseDown}
         style={{
@@ -864,10 +504,10 @@ export const CustomLivePreview: React.FC = () => {
           zIndex: 10,
         }}
         onMouseEnter={(e) => {
-          ;(e.currentTarget as HTMLDivElement).style.background = 'var(--theme-elevation-300)'
+          (e.currentTarget as HTMLDivElement).style.background = 'var(--theme-elevation-300)'
         }}
         onMouseLeave={(e) => {
-          ;(e.currentTarget as HTMLDivElement).style.background = 'var(--theme-elevation-100)'
+          (e.currentTarget as HTMLDivElement).style.background = 'var(--theme-elevation-100)'
         }}
       />
 
@@ -897,13 +537,7 @@ export const CustomLivePreview: React.FC = () => {
               onLoad={() => setLoadedURL(url)}
               ref={iframeRef}
               src={url}
-              style={{
-                border: 'none',
-                boxShadow: isResponsive
-                  ? 'none'
-                  : '0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)',
-                ...iframeStyle,
-              }}
+              style={{ border: 'none', boxShadow: iframeShadow, ...iframeStyle }}
               title="Live Preview"
             />
           )}

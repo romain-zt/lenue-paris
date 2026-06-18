@@ -2,18 +2,17 @@
 
 import { buildWhatsAppUrl } from "@/lib/whatsapp/config";
 
-const INSTAGRAM_URL = "https://www.instagram.com/alisa.inwonderland.21";
-const WHATSAPP_CONTACT_MESSAGE = "Bonjour, je souhaite en savoir plus sur la collection Lénue.";
-
 interface ContactPageContentProps {
   title: string;
   body: string;
   whatsAppLabel: string;
+  whatsAppMessage: string;
+  instagramUrl: string;
 }
 
-export function ContactPageContent({ title, body, whatsAppLabel }: ContactPageContentProps) {
+export function ContactPageContent({ title, body, whatsAppLabel, whatsAppMessage, instagramUrl }: ContactPageContentProps) {
   const paragraphs = body.split("\n\n").filter(Boolean);
-  const whatsAppUrl = buildWhatsAppUrl(WHATSAPP_CONTACT_MESSAGE);
+  const whatsAppUrl = buildWhatsAppUrl(whatsAppMessage);
 
   return (
     <main>
@@ -55,7 +54,7 @@ export function ContactPageContent({ title, body, whatsAppLabel }: ContactPageCo
             {whatsAppLabel}
           </a>
           <a
-            href={INSTAGRAM_URL}
+            href={instagramUrl}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Instagram Lénue"

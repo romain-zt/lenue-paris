@@ -1,9 +1,12 @@
+import { draftMode } from "next/headers";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { DELIVERY_PAGE_COPY } from "@/lib/editorial/deliveryPageCopy";
 import { BrandPageContent } from "../a-propos/BrandPageContent";
 import { buildPageMetadata } from "@/lib/seo/metadata";
+import { getPageDocument } from "@/lib/cms/queries";
+import { resolveMediaAlt, resolveMediaUrl } from "@/lib/cms/media";
+import type { ContentLocale } from "@/lib/cms/types";
 
-type Locale = keyof typeof DELIVERY_PAGE_COPY;
+export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -24,7 +27,29 @@ export async function generateMetadata({ params }: PageProps) {
 export default async function DeliveryPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const copy = DELIVERY_PAGE_COPY[locale as Locale] ?? DELIVERY_PAGE_COPY.fr;
 
-  return <BrandPageContent title={copy.title} body={copy.body} cover={null} />;
+  const { isEnabled: isDraft } = await draftMode();
+  const page = await getPageDocument("livraison", locale as ContentLocale, { draft: isDraft });
+
+  if (page) {
+    const cover =
+      page.cover && typeof page.cover !== "number"
+        ? {
+            url: resolveMediaUrl(page.cover) ?? "",
+            alt: resolveMediaAlt(page.cover, page.title ?? "") ?? "",
+          }
+        : null;
+
+    return (
+      <BrandPageContent
+        title={page.title ?? ""}
+        body={(page.body as string | null | undefined) ?? ""}
+        cover={cover?.url ? cover : null}
+      />
+    );
+  }
+
+  // Fallback when page not yet seeded
+  const t = await getTranslations({ locale, namespace: "delivery" });
+  return <BrandPageContent title={t("title")} body={t("body")} cover={null} />;
 }

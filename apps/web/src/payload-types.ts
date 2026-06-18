@@ -95,8 +95,12 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: ('false' | 'none' | 'null') | false | null | ('en' | 'fr' | 'ru') | ('en' | 'fr' | 'ru')[];
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'site-settings': SiteSettings;
+  };
+  globalsSelect: {
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+  };
   locale: 'en' | 'fr' | 'ru';
   widgets: {
     collections: CollectionsWidget;
@@ -647,6 +651,26 @@ export interface Auth {
   [k: string]: unknown;
 }
 
+
+/**
+ * Site-wide brand settings global.
+ */
+export interface SiteSettings {
+  id: number;
+  brandName: string;
+  instagramUrl?: string | null;
+  whatsappPhone?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+
+export interface SiteSettingsSelect<T extends boolean = true> {
+  brandName?: T;
+  instagramUrl?: T;
+  whatsappPhone?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
 
 declare module 'payload' {
   export interface GeneratedTypes extends Config {}

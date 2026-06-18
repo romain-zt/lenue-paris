@@ -2,7 +2,6 @@ import { draftMode } from "next/headers";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ProductPageContent } from "@/components/cms/ProductPageContent";
-import { isPublicStorefrontSlug } from "@/lib/catalogue/storefrontCatalogue";
 import { getProductBySlug, getProductDocumentBySlug } from "@/lib/cms/queries";
 import type { ContentLocale } from "@/lib/cms/types";
 
@@ -35,10 +34,6 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   const productDoc = await getProductDocumentBySlug(slug, contentLocale, { draft: isDraft });
 
   if (!productDoc) {
-    notFound();
-  }
-
-  if (!isDraft && !isPublicStorefrontSlug(slug)) {
     notFound();
   }
 

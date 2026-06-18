@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getContactPageData } from "@/lib/getContactPageData";
 import { ContactPageContent } from "./ContactPageContent";
 import { buildPageMetadata } from "@/lib/seo/metadata";
+import { getSiteSettings } from "@/lib/cms/siteSettings";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -24,13 +25,18 @@ export default async function ContactPage({ params }: PageProps) {
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale, namespace: "contactPage" });
-  const data = await getContactPageData(locale);
+  const [data, siteSettings] = await Promise.all([
+    getContactPageData(locale),
+    getSiteSettings(),
+  ]);
 
   return (
     <ContactPageContent
       title={data.title}
       body={data.body}
       whatsAppLabel={t("whatsAppLabel")}
+      whatsAppMessage={t("whatsAppMessage")}
+      instagramUrl={siteSettings.instagramUrl ?? "https://www.instagram.com"}
     />
   );
 }
