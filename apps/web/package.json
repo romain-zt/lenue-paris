@@ -26,6 +26,7 @@
     "@payloadcms/richtext-lexical": "catalog:",
     "@payloadcms/storage-s3": "catalog:",
     "@payloadcms/translations": "catalog:",
+    "@payloadcms/ui": "catalog:",
     "next": "catalog:",
     "next-intl": "^3.26.3",
     "payload": "catalog:",
