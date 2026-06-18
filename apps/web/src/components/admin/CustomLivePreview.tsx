@@ -14,12 +14,11 @@ const MIN_PANEL_PX = 300
 const MIN_FORM_PX = 280
 const DEFAULT_PANEL_PX = 500
 
-// ─── Breakpoint selector ──────────────────────────────────────────────────────
+// ─── Breakpoint selector (normal mode only) ───────────────────────────────────
 
 const BreakpointBar: React.FC<{
   onFullscreen: () => void
-  isFullscreen: boolean
-}> = ({ onFullscreen, isFullscreen }) => {
+}> = ({ onFullscreen }) => {
   const { breakpoint, breakpoints, setBreakpoint } = useLivePreviewContext()
 
   useEffect(() => {
@@ -75,14 +74,14 @@ const BreakpointBar: React.FC<{
 
       <button
         type="button"
-        title={isFullscreen ? 'Exit fullscreen preview' : 'Fullscreen preview'}
+        title="Open fullscreen preview"
         onClick={onFullscreen}
         style={{
           alignItems: 'center',
-          background: isFullscreen ? 'var(--theme-success-500, #22c55e)' : 'var(--theme-elevation-150)',
+          background: 'var(--theme-elevation-150)',
           border: 'none',
           borderRadius: 4,
-          color: isFullscreen ? '#fff' : 'var(--theme-text)',
+          color: 'var(--theme-text)',
           cursor: 'pointer',
           display: 'flex',
           fontSize: 11,
@@ -93,89 +92,141 @@ const BreakpointBar: React.FC<{
           userSelect: 'none',
         }}
       >
-        {isFullscreen ? '✕ Exit' : '⛶ Full'}
+        ⛶ Full
       </button>
     </div>
   )
 }
 
-// ─── Admin bar — save / publish overlay on the preview ────────────────────────
+// ─── Floating Action Button (fullscreen only) ─────────────────────────────────
 
-const AdminBar: React.FC<{
+const FAB: React.FC<{
   locale: string
   onSave: () => void
   onPublish: () => void
+  onExit: () => void
   isSaving: boolean
   saveStatus: 'idle' | 'saving' | 'saved' | 'error'
-}> = ({ locale, onSave, onPublish, isSaving, saveStatus }) => {
+}> = ({ locale, onSave, onPublish, onExit, isSaving, saveStatus }) => {
+  const [open, setOpen] = useState(false)
+
+  const statusColor =
+    saveStatus === 'saved' ? '#22c55e' : saveStatus === 'error' ? '#ef4444' : 'rgba(255,255,255,0.5)'
+  const statusLabel =
+    saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? '✓ Saved' : saveStatus === 'error' ? 'Save failed' : null
+
   return (
     <div
-      aria-label="Preview admin bar"
       style={{
-        alignItems: 'center',
-        background: 'rgba(10,10,10,0.88)',
-        backdropFilter: 'blur(8px)',
-        borderTop: '1px solid rgba(255,255,255,0.08)',
-        bottom: 0,
-        display: 'flex',
-        flexShrink: 0,
-        gap: 8,
-        left: 0,
-        padding: '8px 12px',
+        bottom: 20,
         position: 'absolute',
-        right: 0,
+        right: 20,
         zIndex: 50,
       }}
     >
-      {/* Locale badge */}
-      <span
+      {/* Popup menu */}
+      {open && (
+        <div
+          style={{
+            background: 'rgba(12,12,12,0.94)',
+            backdropFilter: 'blur(14px)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 12,
+            bottom: 60,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+            minWidth: 168,
+            padding: 8,
+            position: 'absolute',
+            right: 0,
+          }}
+        >
+          {/* Locale + status row */}
+          <div
+            style={{
+              alignItems: 'center',
+              display: 'flex',
+              gap: 6,
+              padding: '4px 6px',
+            }}
+          >
+            <span
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                borderRadius: 4,
+                color: 'rgba(255,255,255,0.5)',
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.07em',
+                padding: '2px 6px',
+                textTransform: 'uppercase',
+              }}
+            >
+              {locale}
+            </span>
+            {statusLabel && (
+              <span style={{ color: statusColor, fontSize: 11 }}>{statusLabel}</span>
+            )}
+          </div>
+
+          <div style={{ background: 'rgba(255,255,255,0.06)', height: 1, margin: '2px 0' }} />
+
+          <FABMenuItem onClick={() => { onSave(); setOpen(false) }} disabled={isSaving}>
+            Save draft
+          </FABMenuItem>
+          <FABMenuItem onClick={() => { onPublish(); setOpen(false) }} disabled={isSaving} primary>
+            Publish
+          </FABMenuItem>
+
+          <div style={{ background: 'rgba(255,255,255,0.06)', height: 1, margin: '2px 0' }} />
+
+          <FABMenuItem onClick={onExit}>
+            ✕ Exit fullscreen
+          </FABMenuItem>
+        </div>
+      )}
+
+      {/* Circular button */}
+      <button
+        type="button"
+        title={open ? 'Close menu' : 'Preview menu'}
+        onClick={() => setOpen((v) => !v)}
         style={{
-          background: 'rgba(255,255,255,0.1)',
-          borderRadius: 4,
-          color: 'rgba(255,255,255,0.6)',
-          fontSize: 10,
-          fontWeight: 600,
-          letterSpacing: '0.06em',
-          padding: '3px 7px',
-          textTransform: 'uppercase',
+          alignItems: 'center',
+          background: open ? 'rgba(255,255,255,0.15)' : 'rgba(12,12,12,0.88)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255,255,255,0.15)',
+          borderRadius: '50%',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+          color: '#fff',
+          cursor: 'pointer',
+          display: 'flex',
+          fontSize: 18,
+          height: 48,
+          justifyContent: 'center',
+          transition: 'background 0.15s',
+          userSelect: 'none',
+          width: 48,
         }}
       >
-        {locale}
-      </span>
-
-      {/* Status indicator */}
-      {saveStatus === 'saving' && (
-        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>Saving…</span>
-      )}
-      {saveStatus === 'saved' && (
-        <span style={{ color: '#22c55e', fontSize: 11 }}>✓ Saved</span>
-      )}
-      {saveStatus === 'error' && (
-        <span style={{ color: '#ef4444', fontSize: 11 }}>Save failed</span>
-      )}
-
-      <div style={{ flex: 1 }} />
-
-      <AdminBarButton onClick={onSave} disabled={isSaving} variant="secondary">
-        Save draft
-      </AdminBarButton>
-      <AdminBarButton onClick={onPublish} disabled={isSaving} variant="primary">
-        Publish
-      </AdminBarButton>
+        {open ? '✕' : '⚙'}
+      </button>
     </div>
   )
 }
 
-function AdminBarButton({
+function FABMenuItem({
   children,
   onClick,
   disabled,
-  variant,
+  primary,
 }: {
   children: React.ReactNode
   onClick: () => void
   disabled?: boolean
-  variant: 'primary' | 'secondary'
+  primary?: boolean
 }) {
   return (
     <button
@@ -183,20 +234,26 @@ function AdminBarButton({
       disabled={disabled}
       onClick={onClick}
       style={{
-        alignItems: 'center',
-        background: variant === 'primary' ? '#6366f1' : 'rgba(255,255,255,0.12)',
+        background: primary ? '#6366f1' : 'transparent',
         border: 'none',
-        borderRadius: 5,
+        borderRadius: 7,
         color: '#fff',
         cursor: disabled ? 'not-allowed' : 'pointer',
-        display: 'flex',
         fontSize: 12,
-        fontWeight: 600,
-        height: 30,
-        letterSpacing: '0.02em',
+        fontWeight: primary ? 600 : 400,
         opacity: disabled ? 0.5 : 1,
-        padding: '0 14px',
-        userSelect: 'none',
+        padding: '8px 10px',
+        textAlign: 'left',
+        transition: 'background 0.12s',
+        width: '100%',
+      }}
+      onMouseEnter={(e) => {
+        if (!primary && !disabled)
+          (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)'
+      }}
+      onMouseLeave={(e) => {
+        if (!primary)
+          (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
       }}
     >
       {children}
@@ -207,7 +264,6 @@ function AdminBarButton({
 // ─── Focus a form field in the admin panel ────────────────────────────────────
 
 function focusAdminField(fieldPath: string): void {
-  // Direct selectors
   const directSelectors = [
     `[data-field-path="${fieldPath}"]`,
     `input[name="${fieldPath}"]`,
@@ -223,13 +279,9 @@ function focusAdminField(fieldPath: string): void {
     }
   }
 
-  // For block-level paths like "blocks.0" — find the block row in Payload's
-  // blocks array UI and expand/highlight it.
   const blockRowMatch = fieldPath.match(/^blocks\.(\d+)$/)
   if (blockRowMatch) {
     const index = parseInt(blockRowMatch[1] ?? '0', 10)
-
-    // Try Payload's block row selectors
     const rowSelectors = [
       `[data-field-path="blocks"] [data-row-index="${index}"]`,
       `[data-field-path="blocks.${index}"]`,
@@ -238,36 +290,29 @@ function focusAdminField(fieldPath: string): void {
     for (const selector of rowSelectors) {
       const el = document.querySelector<HTMLElement>(selector)
       if (el) {
-        // Expand collapsed block row if needed
-        const toggle = el.querySelector<HTMLElement>('[data-collapsed]') ??
+        const toggle =
+          el.querySelector<HTMLElement>('[data-collapsed]') ??
           el.querySelector<HTMLButtonElement>('button[aria-expanded="false"]')
         toggle?.click()
         scrollAndHighlight(el)
         return
       }
     }
-
-    // Fallback: try to find the nth block row by counting collapsed rows
     const allRows = document.querySelectorAll<HTMLElement>('[data-field-path^="blocks."]')
-    const row = Array.from(allRows).find((el) => {
-      return el.getAttribute('data-field-path') === `blocks.${index}`
-    })
+    const row = Array.from(allRows).find(
+      (el) => el.getAttribute('data-field-path') === `blocks.${index}`,
+    )
     if (row) {
       scrollAndHighlight(row)
       return
     }
-
-    // Last resort: scroll to the blocks field itself
     const blocksField = document.querySelector<HTMLElement>('[data-field-path="blocks"]')
     if (blocksField) scrollAndHighlight(blocksField)
     return
   }
 
-  // For nested field paths like "blocks.0.tagline" — try the field then fall
-  // back to the last path segment.
   const segments = fieldPath.split('.')
   if (segments.length > 1) {
-    // Try each increasingly shorter suffix
     for (let i = 0; i < segments.length; i++) {
       const suffix = segments.slice(i).join('.')
       const candidates = [
@@ -292,8 +337,6 @@ function scrollAndHighlight(el: HTMLElement): void {
   el.classList.add('lp-field-highlight')
   setTimeout(() => el.classList.remove('lp-field-highlight'), 1400)
 }
-
-// ─── Inject highlight CSS once ────────────────────────────────────────────────
 
 let highlightStyleInjected = false
 function ensureHighlightStyle() {
@@ -334,49 +377,120 @@ export const CustomLivePreview: React.FC = () => {
   const [formState, dispatchFields] = useAllFormFields()
   const { id, collectionSlug, globalSlug } = useDocumentInfo()
 
-  // Keep a stable ref so the message-handler closure always gets the latest dispatch
   const dispatchFieldsRef = useRef(dispatchFields)
   useEffect(() => {
     dispatchFieldsRef.current = dispatchFields
   })
 
-  // Inject highlight style on mount
   useEffect(() => {
     ensureHighlightStyle()
   }, [])
 
-  // ─── Fullscreen state ─────────────────────────────────────────────────────
+  // ─── Fullscreen state — URL-driven (?fs=1) ────────────────────────────────
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const toggleFullscreen = useCallback(() => setIsFullscreen((v) => !v), [])
+
+  // Read URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('fs') === '1') setIsFullscreen(true)
+  }, [])
+
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen((current) => {
+      const next = !current
+      const params = new URLSearchParams(window.location.search)
+      if (next) {
+        params.set('fs', '1')
+      } else {
+        params.delete('fs')
+      }
+      const search = params.toString()
+      const newUrl = `${window.location.pathname}${search ? '?' + search : ''}${window.location.hash}`
+      window.history.pushState({}, '', newUrl)
+      return next
+    })
+  }, [])
+
+  // Escape key exits fullscreen
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) toggleFullscreen()
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [isFullscreen, toggleFullscreen])
+
+  // Popstate (browser back/forward)
+  useEffect(() => {
+    const handler = () => {
+      const params = new URLSearchParams(window.location.search)
+      setIsFullscreen(params.get('fs') === '1')
+    }
+    window.addEventListener('popstate', handler)
+    return () => window.removeEventListener('popstate', handler)
+  }, [])
 
   // ─── Save status ──────────────────────────────────────────────────────────
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Confirm save via mostRecentUpdate (fires after Payload persists the doc)
+  const prevUpdateRef = useRef(mostRecentUpdate)
+  useEffect(() => {
+    if (mostRecentUpdate !== prevUpdateRef.current) {
+      prevUpdateRef.current = mostRecentUpdate
+      if (saveStatus === 'saving') {
+        setSaveStatus('saved')
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+        saveTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2400)
+      }
+    }
+  }, [mostRecentUpdate, saveStatus])
+
   function triggerSave(publish = false) {
     setSaveStatus('saving')
-    // Find Payload's native save/publish buttons and click them
-    const btn = publish
-      ? (document.querySelector<HTMLButtonElement>('[id="action-publish"]') ??
-         document.querySelector<HTMLButtonElement>('[data-action="publish"]') ??
-         document.querySelector<HTMLButtonElement>('[aria-label*="publish" i]'))
-      : (document.querySelector<HTMLButtonElement>('[id="action-save"]') ??
-         document.querySelector<HTMLButtonElement>('[data-action="save"]') ??
-         document.querySelector<HTMLButtonElement>('[aria-label*="save draft" i]') ??
-         document.querySelector<HTMLButtonElement>('[aria-label*="save" i]'))
 
-    if (btn) {
-      btn.click()
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-      setSaveStatus('saved')
-      saveTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2400)
-    } else {
-      setSaveStatus('error')
-      saveTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2400)
+    const saveSelectors = [
+      '[id="action-save"]',
+      '[data-action="save-draft"]',
+      '[data-action="save"]',
+      'button[aria-label="Save draft"]',
+      'button[aria-label*="save draft" i]',
+      'button[aria-label*="save" i]',
+    ]
+    const publishSelectors = [
+      '[id="action-publish"]',
+      '[data-action="publish"]',
+      'button[aria-label="Publish"]',
+      'button[aria-label*="publish" i]',
+    ]
+
+    const selectors = publish ? publishSelectors : saveSelectors
+
+    for (const selector of selectors) {
+      try {
+        const btn = document.querySelector<HTMLButtonElement>(selector)
+        if (btn) {
+          btn.click()
+          // Confirmation comes via mostRecentUpdate effect above
+          // Fallback timeout if the event never fires
+          if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+          saveTimerRef.current = setTimeout(() => {
+            setSaveStatus((s) => (s === 'saving' ? 'error' : s))
+          }, 6000)
+          return
+        }
+      } catch {
+        // continue to next selector
+      }
     }
+
+    setSaveStatus('error')
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2400)
   }
 
-  // ─── postMessage bridge (mirrors LivePreviewWindow exactly) ─────────────────
+  // ─── postMessage bridge ───────────────────────────────────────────────────
   useEffect(() => {
     if (!isLivePreviewing || !appIsReady || !formState || !url) return
 
@@ -414,7 +528,6 @@ export const CustomLivePreview: React.FC = () => {
     loadedURL,
   ])
 
-  // SSR refresh event
   useEffect(() => {
     if (!isLivePreviewing || !appIsReady || !url) return
     const message = { type: 'payload-document-event' }
@@ -426,19 +539,17 @@ export const CustomLivePreview: React.FC = () => {
     }
   }, [mostRecentUpdate, iframeRef, popupRef, previewWindowType, url, isLivePreviewing, appIsReady])
 
-  // ─── Listen for messages from the preview iframe ─────────────────────────────
+  // ─── Listen for messages from the preview iframe ──────────────────────────
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (typeof event.data !== 'object' || event.data === null) return
 
-      // Field click-to-focus
       if (event.data.type === 'payload-field-focus') {
         const path = typeof event.data.path === 'string' ? event.data.path : null
         if (path) focusAdminField(path)
         return
       }
 
-      // Block reorder request from BlockOverlay
       if (event.data.type === 'payload-block-reorder') {
         const { from, to } = event.data as { from: number; to: number }
         if (typeof from === 'number' && typeof to === 'number' && to >= 0) {
@@ -447,7 +558,6 @@ export const CustomLivePreview: React.FC = () => {
         return
       }
 
-      // Inline editor field update
       if (event.data.type === 'payload-field-update') {
         const path = typeof event.data.path === 'string' ? event.data.path : null
         const value = typeof event.data.value === 'string' ? event.data.value : null
@@ -455,7 +565,6 @@ export const CustomLivePreview: React.FC = () => {
         return
       }
 
-      // Save/publish triggered from an in-iframe admin bar (if any)
       if (event.data.type === 'payload-preview-action') {
         const action = event.data.action as string
         if (action === 'save') triggerSave(false)
@@ -468,16 +577,8 @@ export const CustomLivePreview: React.FC = () => {
     return () => window.removeEventListener('message', handleMessage)
   }, [])
 
-  // ─── Field update from inline editor ─────────────────────────────────────────
-  //
-  // When the user saves an edit in the InlineEditor (iframe), it sends
-  // `payload-field-update { path, value }`. We push it into Payload's form
-  // via dispatchFields (UPDATE action). If that fails (e.g. Payload internals
-  // changed the action type) we fall back to the React controlled-input hack:
-  // find the DOM input, set its native value, and fire synthetic input/change
-  // events so React picks up the mutation.
+  // ─── Field update from inline editor ─────────────────────────────────────
   function updateFormField(path: string, value: string) {
-    // ── 1. Payload form dispatch ───────────────────────────────────────────
     try {
       dispatchFieldsRef.current({
         type: 'UPDATE',
@@ -489,8 +590,6 @@ export const CustomLivePreview: React.FC = () => {
       // fall through
     }
 
-    // ── 2. DOM / React controlled-input hack ──────────────────────────────
-    // For nested block paths, expand the row first so the input is in the DOM.
     const blockMatch = path.match(/^blocks\.(\d+)/)
     if (blockMatch) {
       const idx = parseInt(blockMatch[1] ?? '0', 10)
@@ -507,9 +606,8 @@ export const CustomLivePreview: React.FC = () => {
       for (const sel of selectors) {
         const el = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(sel)
         if (!el) continue
-        const proto = el.tagName === 'TEXTAREA'
-          ? HTMLTextAreaElement.prototype
-          : HTMLInputElement.prototype
+        const proto =
+          el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
         const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set
         if (nativeSetter) {
           nativeSetter.call(el, value)
@@ -518,7 +616,7 @@ export const CustomLivePreview: React.FC = () => {
         }
         return
       }
-    }, 120) // brief delay lets the block row expand
+    }, 120)
   }
 
   function expandBlockRow(index: number) {
@@ -529,8 +627,8 @@ export const CustomLivePreview: React.FC = () => {
       `[data-field-path="blocks"] [data-row-index="${index}"]`,
     ]
     for (const sel of rowSelectors) {
-      const row = blocksField.querySelector<HTMLElement>(sel) ??
-        document.querySelector<HTMLElement>(sel)
+      const row =
+        blocksField.querySelector<HTMLElement>(sel) ?? document.querySelector<HTMLElement>(sel)
       if (!row) continue
       const collapsed = row.querySelector<HTMLButtonElement>('button[aria-expanded="false"]')
       collapsed?.click()
@@ -538,29 +636,24 @@ export const CustomLivePreview: React.FC = () => {
     }
   }
 
-  // ─── Block reorder ───────────────────────────────────────────────────────────
-  //
-  // Payload stores blocks as an array in the form state. We swap the `from` and
-  // `to` positions by clicking Payload's native move-up / move-down row buttons
-  // inside the blocks array field UI. This is safer than directly dispatching
-  // into the form state since it respects Payload's internal row IDs.
+  // ─── Block reorder ────────────────────────────────────────────────────────
   function handleBlockReorder(from: number, to: number) {
     const blocksField = document.querySelector<HTMLElement>('[data-field-path="blocks"]')
     if (!blocksField) return
 
-    // Try to find the row at `from` and click the move button
     const direction = to < from ? 'up' : 'down'
     const steps = Math.abs(to - from)
 
-    // Payload renders move buttons with specific aria labels per row
     const rows = blocksField.querySelectorAll<HTMLElement>('[data-row]')
     const targetRow = rows[from]
     if (!targetRow) return
 
     const btnLabel = direction === 'up' ? /move up/i : /move down/i
-    const moveBtn = Array.from(
-      targetRow.querySelectorAll<HTMLButtonElement>('button'),
-    ).find((btn) => btnLabel.test(btn.getAttribute('aria-label') ?? btn.title ?? btn.textContent ?? ''))
+    const moveBtn = Array.from(targetRow.querySelectorAll<HTMLButtonElement>('button')).find((btn) =>
+      btnLabel.test(
+        btn.getAttribute('aria-label') ?? btn.title ?? btn.textContent ?? '',
+      ),
+    )
 
     if (moveBtn) {
       for (let i = 0; i < steps; i++) {
@@ -569,7 +662,7 @@ export const CustomLivePreview: React.FC = () => {
     }
   }
 
-  // ─── Panel width + drag-to-resize ────────────────────────────────────────────
+  // ─── Panel width + drag-to-resize ────────────────────────────────────────
   const panelRef = useRef<HTMLDivElement>(null)
   const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_PX)
   const isDragging = useRef(false)
@@ -580,29 +673,27 @@ export const CustomLivePreview: React.FC = () => {
   const deviceW = size?.width ?? 0
   const deviceH = size?.height ?? 0
 
-  // Auto-resize panel when breakpoint changes so the device fits at ~1:1
   useEffect(() => {
     if (isFullscreen) return
     const parent = panelRef.current?.parentElement
     const maxAvail = parent ? parent.clientWidth - MIN_FORM_PX - HANDLE_PX : 1200
-
-    const ideal = deviceW > 0
-      ? Math.min(deviceW + INSET_PX * 2, maxAvail)
-      : DEFAULT_PANEL_PX
-
+    const ideal =
+      deviceW > 0 ? Math.min(deviceW + INSET_PX * 2, maxAvail) : DEFAULT_PANEL_PX
     setPanelWidth(Math.max(MIN_PANEL_PX, ideal))
   }, [deviceW, isFullscreen])
 
-  // Drag handle mouse events
-  const onHandleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (isFullscreen) return
-    isDragging.current = true
-    dragStartX.current = e.clientX
-    dragStartWidth.current = panelWidth
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
-    e.preventDefault()
-  }, [panelWidth, isFullscreen])
+  const onHandleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (isFullscreen) return
+      isDragging.current = true
+      dragStartX.current = e.clientX
+      dragStartWidth.current = panelWidth
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+      e.preventDefault()
+    },
+    [panelWidth, isFullscreen],
+  )
 
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
@@ -627,7 +718,7 @@ export const CustomLivePreview: React.FC = () => {
     }
   }, [])
 
-  // ─── Device scaling ─────────────────────────────────────────────────────────
+  // ─── Device scaling ───────────────────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null)
   const [iframeStyle, setIframeStyle] = useState<React.CSSProperties>({
     height: '100%',
@@ -668,85 +759,24 @@ export const CustomLivePreview: React.FC = () => {
     return () => ro.disconnect()
   }, [computeScale])
 
-  // ─── Escape key exits fullscreen ─────────────────────────────────────────────
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isFullscreen) setIsFullscreen(false)
-    }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [isFullscreen])
-
   if (previewWindowType !== 'iframe') return null
 
-  // ─── Fullscreen mode: fixed overlay covering entire viewport ─────────────────
-  const fullscreenStyles: React.CSSProperties = isFullscreen
-    ? {
-        background: 'var(--theme-bg)',
-        bottom: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        left: 0,
-        position: 'fixed',
-        right: 0,
-        top: 0,
-        zIndex: 9999,
-      }
-    : {}
-
-  return (
-    <div
-      ref={panelRef}
-      style={{
-        background: 'var(--theme-bg)',
-        display: isLivePreviewing ? 'flex' : 'none',
-        flexDirection: 'column',
-        flexGrow: 0,
-        flexShrink: 0,
-        height: isFullscreen ? undefined : 'calc(100vh - var(--doc-controls-height))',
-        overflow: 'hidden',
-        position: isFullscreen ? undefined : 'sticky',
-        top: isFullscreen ? undefined : 'var(--doc-controls-height)',
-        width: isFullscreen ? undefined : panelWidth,
-        ...fullscreenStyles,
-      }}
-    >
-      {/* Drag handle on the left edge — hidden in fullscreen */}
-      {!isFullscreen && (
-        <div
-          onMouseDown={onHandleMouseDown}
-          style={{
-            background: 'var(--theme-elevation-100)',
-            bottom: 0,
-            cursor: 'col-resize',
-            left: 0,
-            position: 'absolute',
-            top: 0,
-            transition: 'background 0.15s',
-            width: HANDLE_PX,
-            zIndex: 10,
-          }}
-          onMouseEnter={(e) => {
-            ;(e.currentTarget as HTMLDivElement).style.background = 'var(--theme-elevation-300)'
-          }}
-          onMouseLeave={(e) => {
-            ;(e.currentTarget as HTMLDivElement).style.background = 'var(--theme-elevation-100)'
-          }}
-        />
-      )}
-
-      {/* Content (offset by handle width in normal mode) */}
+  // ─── Fullscreen: fixed overlay, only iframe + FAB ─────────────────────────
+  if (isFullscreen) {
+    return (
       <div
         style={{
-          display: 'flex',
-          flex: 1,
+          background: '#000',
+          bottom: 0,
+          display: isLivePreviewing ? 'flex' : 'none',
           flexDirection: 'column',
-          overflow: 'hidden',
-          paddingLeft: isFullscreen ? 0 : HANDLE_PX,
+          left: 0,
+          position: 'fixed',
+          right: 0,
+          top: 0,
+          zIndex: 9999,
         }}
       >
-        <BreakpointBar onFullscreen={toggleFullscreen} isFullscreen={isFullscreen} />
-
         <div
           ref={containerRef}
           style={{
@@ -773,14 +803,94 @@ export const CustomLivePreview: React.FC = () => {
             />
           )}
 
-          {/* Admin bar floats over the iframe at the bottom */}
-          <AdminBar
+          <FAB
             locale={locale.code}
             onSave={() => triggerSave(false)}
             onPublish={() => triggerSave(true)}
+            onExit={toggleFullscreen}
             isSaving={saveStatus === 'saving'}
             saveStatus={saveStatus}
           />
+        </div>
+      </div>
+    )
+  }
+
+  // ─── Normal mode: split form + preview panel ──────────────────────────────
+  return (
+    <div
+      ref={panelRef}
+      style={{
+        background: 'var(--theme-bg)',
+        display: isLivePreviewing ? 'flex' : 'none',
+        flexDirection: 'column',
+        flexGrow: 0,
+        flexShrink: 0,
+        height: 'calc(100vh - var(--doc-controls-height))',
+        overflow: 'hidden',
+        position: 'sticky',
+        top: 'var(--doc-controls-height)',
+        width: panelWidth,
+      }}
+    >
+      {/* Drag handle */}
+      <div
+        onMouseDown={onHandleMouseDown}
+        style={{
+          background: 'var(--theme-elevation-100)',
+          bottom: 0,
+          cursor: 'col-resize',
+          left: 0,
+          position: 'absolute',
+          top: 0,
+          transition: 'background 0.15s',
+          width: HANDLE_PX,
+          zIndex: 10,
+        }}
+        onMouseEnter={(e) => {
+          ;(e.currentTarget as HTMLDivElement).style.background = 'var(--theme-elevation-300)'
+        }}
+        onMouseLeave={(e) => {
+          ;(e.currentTarget as HTMLDivElement).style.background = 'var(--theme-elevation-100)'
+        }}
+      />
+
+      <div
+        style={{
+          display: 'flex',
+          flex: 1,
+          flexDirection: 'column',
+          overflow: 'hidden',
+          paddingLeft: HANDLE_PX,
+        }}
+      >
+        <BreakpointBar onFullscreen={toggleFullscreen} />
+
+        <div
+          ref={containerRef}
+          style={{
+            background: 'var(--theme-elevation-50)',
+            flex: 1,
+            overflow: 'hidden',
+            position: 'relative',
+          }}
+        >
+          {shouldRenderIframe && (
+            <iframe
+              id="live-preview-iframe"
+              onLoad={() => setLoadedURL(url)}
+              ref={iframeRef}
+              src={url}
+              style={{
+                border: 'none',
+                boxShadow: isResponsive
+                  ? 'none'
+                  : '0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)',
+                ...iframeStyle,
+              }}
+              title="Live Preview"
+            />
+          )}
         </div>
       </div>
     </div>
