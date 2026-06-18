@@ -451,39 +451,53 @@ export const CustomLivePreview: React.FC = () => {
     setSaveStatus('saving')
 
     const saveSelectors = [
+      '[id="action-save-draft"]',
       '[id="action-save"]',
       '[data-action="save-draft"]',
       '[data-action="save"]',
       'button[aria-label="Save draft"]',
       'button[aria-label*="save draft" i]',
+      'button[aria-label*="brouillon" i]',
       'button[aria-label*="save" i]',
     ]
     const publishSelectors = [
       '[id="action-publish"]',
+      '[id="action-publish-button"]',
       '[data-action="publish"]',
       'button[aria-label="Publish"]',
+      'button[aria-label="Publier"]',
       'button[aria-label*="publish" i]',
+      'button[aria-label*="publier" i]',
     ]
 
     const selectors = publish ? publishSelectors : saveSelectors
 
+    const clickAndWait = (btn: HTMLButtonElement) => {
+      btn.click()
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+      // Confirm via mostRecentUpdate; fall back to error after 8s
+      saveTimerRef.current = setTimeout(() => {
+        setSaveStatus((s) => (s === 'saving' ? 'error' : s))
+      }, 8000)
+    }
+
     for (const selector of selectors) {
       try {
         const btn = document.querySelector<HTMLButtonElement>(selector)
-        if (btn) {
-          btn.click()
-          // Confirmation comes via mostRecentUpdate effect above
-          // Fallback timeout if the event never fires
-          if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-          saveTimerRef.current = setTimeout(() => {
-            setSaveStatus((s) => (s === 'saving' ? 'error' : s))
-          }, 6000)
-          return
-        }
-      } catch {
-        // continue to next selector
-      }
+        if (btn) { clickAndWait(btn); return }
+      } catch { /* continue */ }
     }
+
+    // Last resort: match by visible button text
+    const textPatterns = publish
+      ? [/^publish$/i, /^publier$/i]
+      : [/^save draft$/i, /^save$/i, /^brouillon$/i, /^enregistrer/i]
+
+    const allButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
+    const match = allButtons.find((b) =>
+      !b.disabled && textPatterns.some((re) => re.test(b.textContent?.trim() ?? '')),
+    )
+    if (match) { clickAndWait(match); return }
 
     setSaveStatus('error')
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
