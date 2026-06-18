@@ -1,11 +1,13 @@
 'use client'
 
 import { useAllFormFields } from '@payloadcms/ui'
+import { useConfig } from '@payloadcms/ui'
 import { useDocumentEvents } from '@payloadcms/ui'
 import { useDocumentInfo } from '@payloadcms/ui'
+import { useForm } from '@payloadcms/ui'
 import { useLivePreviewContext } from '@payloadcms/ui'
 import { useLocale } from '@payloadcms/ui'
-import { reduceFieldsToValues } from 'payload/shared'
+import { formatAdminURL, reduceFieldsToValues } from 'payload/shared'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 const INSET_PX = 16
@@ -376,6 +378,12 @@ export const CustomLivePreview: React.FC = () => {
   const { mostRecentUpdate } = useDocumentEvents()
   const [formState, dispatchFields] = useAllFormFields()
   const { id, collectionSlug, globalSlug } = useDocumentInfo()
+  const { submit } = useForm()
+  const { config: { routes: { api } } } = useConfig()
+
+  // Keep a ref to the latest submit so the message-listener closure never goes stale
+  const submitRef = useRef(submit)
+  useEffect(() => { submitRef.current = submit })
 
   const dispatchFieldsRef = useRef(dispatchFields)
   useEffect(() => {
@@ -441,74 +449,48 @@ export const CustomLivePreview: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Confirm save via mostRecentUpdate (fires after Payload persists the doc)
-  const prevUpdateRef = useRef(mostRecentUpdate)
-  useEffect(() => {
-    if (mostRecentUpdate !== prevUpdateRef.current) {
-      prevUpdateRef.current = mostRecentUpdate
-      if (saveStatus === 'saving') {
-        setSaveStatus('saved')
-        if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-        saveTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2400)
-      }
-    }
-  }, [mostRecentUpdate, saveStatus])
-
   function triggerSave(publish = false) {
     setSaveStatus('saving')
-
-    const saveSelectors = [
-      '[id="action-save-draft"]',
-      '[id="action-save"]',
-      '[data-action="save-draft"]',
-      '[data-action="save"]',
-      'button[aria-label="Save draft"]',
-      'button[aria-label*="save draft" i]',
-      'button[aria-label*="brouillon" i]',
-      'button[aria-label*="save" i]',
-    ]
-    const publishSelectors = [
-      '[id="action-publish"]',
-      '[id="action-publish-button"]',
-      '[data-action="publish"]',
-      'button[aria-label="Publish"]',
-      'button[aria-label="Publier"]',
-      'button[aria-label*="publish" i]',
-      'button[aria-label*="publier" i]',
-    ]
-
-    const selectors = publish ? publishSelectors : saveSelectors
-
-    const clickAndWait = (btn: HTMLButtonElement) => {
-      btn.click()
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-      // Confirm via mostRecentUpdate; fall back to error after 8s
-      saveTimerRef.current = setTimeout(() => {
-        setSaveStatus((s) => (s === 'saving' ? 'error' : s))
-      }, 8000)
-    }
-
-    for (const selector of selectors) {
-      try {
-        const btn = document.querySelector<HTMLButtonElement>(selector)
-        if (btn) { clickAndWait(btn); return }
-      } catch { /* continue */ }
-    }
-
-    // Last resort: match by visible button text
-    const textPatterns = publish
-      ? [/^publish$/i, /^publier$/i]
-      : [/^save draft$/i, /^save$/i, /^brouillon$/i, /^enregistrer/i]
-
-    const allButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
-    const match = allButtons.find((b) =>
-      !b.disabled && textPatterns.some((re) => re.test(b.textContent?.trim() ?? '')),
-    )
-    if (match) { clickAndWait(match); return }
-
-    setSaveStatus('error')
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2400)
+
+    const localeCode = locale.code
+    const draftParams = `?locale=${localeCode}&depth=0&fallback-locale=null&draft=true`
+    const publishParams = `?locale=${localeCode}&depth=0`
+
+    let action: string
+    let method = 'POST'
+
+    if (collectionSlug) {
+      action = formatAdminURL({
+        apiRoute: api,
+        path: `/${collectionSlug}${id ? `/${id}` : ''}${publish ? publishParams : draftParams}`,
+      })
+      if (id) method = 'PATCH'
+    } else if (globalSlug) {
+      action = formatAdminURL({
+        apiRoute: api,
+        path: `/globals/${globalSlug}${publish ? publishParams : draftParams}`,
+      })
+    } else {
+      setSaveStatus('error')
+      saveTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2400)
+      return
+    }
+
+    submitRef.current({
+      action,
+      method,
+      overrides: { _status: publish ? 'published' : 'draft' },
+      skipValidation: !publish,
+    })
+      .then(() => {
+        setSaveStatus('saved')
+        saveTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2400)
+      })
+      .catch(() => {
+        setSaveStatus('error')
+        saveTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2400)
+      })
   }
 
   // ─── postMessage bridge ───────────────────────────────────────────────────
@@ -549,8 +531,12 @@ export const CustomLivePreview: React.FC = () => {
     loadedURL,
   ])
 
+  const prevUpdateRef = useRef(mostRecentUpdate)
   useEffect(() => {
     if (!isLivePreviewing || !appIsReady || !url) return
+    if (mostRecentUpdate === prevUpdateRef.current) return
+    prevUpdateRef.current = mostRecentUpdate
+
     const message = { type: 'payload-document-event' }
     if (previewWindowType === 'popup' && popupRef?.current) {
       popupRef.current.postMessage(message, url)
