@@ -6,6 +6,7 @@ import { HomeCategoryStrip } from "@/components/cms/HomeCategoryStrip";
 import { enrichFeaturedBlock, mapHomePageBlocks } from "@/lib/cms/blocks";
 import { getPreviewSiteUrl } from "@/lib/cms/generatePreviewPath";
 import { useLivePreviewFieldBridge } from "@/hooks/useLivePreviewFieldBridge";
+import { InlineEditor } from "@/components/cms/InlineEditor";
 import type { Page as PayloadPage } from "@/payload-types";
 import type { ContentLocale } from "@/lib/cms/types";
 
@@ -53,6 +54,7 @@ export function HomePageContent({ initialPage, locale, labels }: HomePageContent
     <main>
       <RenderBlocks blocks={blocks} quote={labels.quote} />
       <HomeCategoryStrip exploreLabel={labels.exploreLabel} categoryLinks={labels.categoryLinks} />
+      <InlineEditor />
     </main>
   );
 }

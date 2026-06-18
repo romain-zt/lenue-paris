@@ -11,6 +11,7 @@ import { getPreviewSiteUrl } from "@/lib/cms/generatePreviewPath";
 import { useLivePreviewFieldBridge } from "@/hooks/useLivePreviewFieldBridge";
 import type { Product as PayloadProduct } from "@/payload-types";
 import type { ContentLocale } from "@/lib/cms/types";
+import { InlineEditor } from "./InlineEditor";
 
 type ProductPageContentProps = {
   initialProduct: PayloadProduct;
@@ -87,6 +88,7 @@ export function ProductPageContent({ initialProduct, locale }: ProductPageConten
           <OrderCTA product={product} />
         </div>
       </div>
+      <InlineEditor />
     </main>
   );
 }

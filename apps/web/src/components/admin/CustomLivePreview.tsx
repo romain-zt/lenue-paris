@@ -331,8 +331,14 @@ export const CustomLivePreview: React.FC = () => {
 
   const locale = useLocale()
   const { mostRecentUpdate } = useDocumentEvents()
-  const [formState] = useAllFormFields()
+  const [formState, dispatchFields] = useAllFormFields()
   const { id, collectionSlug, globalSlug } = useDocumentInfo()
+
+  // Keep a stable ref so the message-handler closure always gets the latest dispatch
+  const dispatchFieldsRef = useRef(dispatchFields)
+  useEffect(() => {
+    dispatchFieldsRef.current = dispatchFields
+  })
 
   // Inject highlight style on mount
   useEffect(() => {
@@ -441,6 +447,14 @@ export const CustomLivePreview: React.FC = () => {
         return
       }
 
+      // Inline editor field update
+      if (event.data.type === 'payload-field-update') {
+        const path = typeof event.data.path === 'string' ? event.data.path : null
+        const value = typeof event.data.value === 'string' ? event.data.value : null
+        if (path !== null && value !== null) updateFormField(path, value)
+        return
+      }
+
       // Save/publish triggered from an in-iframe admin bar (if any)
       if (event.data.type === 'payload-preview-action') {
         const action = event.data.action as string
@@ -453,6 +467,76 @@ export const CustomLivePreview: React.FC = () => {
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
   }, [])
+
+  // ─── Field update from inline editor ─────────────────────────────────────────
+  //
+  // When the user saves an edit in the InlineEditor (iframe), it sends
+  // `payload-field-update { path, value }`. We push it into Payload's form
+  // via dispatchFields (UPDATE action). If that fails (e.g. Payload internals
+  // changed the action type) we fall back to the React controlled-input hack:
+  // find the DOM input, set its native value, and fire synthetic input/change
+  // events so React picks up the mutation.
+  function updateFormField(path: string, value: string) {
+    // ── 1. Payload form dispatch ───────────────────────────────────────────
+    try {
+      dispatchFieldsRef.current({
+        type: 'UPDATE',
+        path,
+        value,
+      } as Parameters<typeof dispatchFieldsRef.current>[0])
+      return
+    } catch {
+      // fall through
+    }
+
+    // ── 2. DOM / React controlled-input hack ──────────────────────────────
+    // For nested block paths, expand the row first so the input is in the DOM.
+    const blockMatch = path.match(/^blocks\.(\d+)/)
+    if (blockMatch) {
+      const idx = parseInt(blockMatch[1] ?? '0', 10)
+      expandBlockRow(idx)
+    }
+
+    setTimeout(() => {
+      const selectors = [
+        `input[name="${path}"]`,
+        `textarea[name="${path}"]`,
+        `[data-field-path="${path}"] input`,
+        `[data-field-path="${path}"] textarea`,
+      ]
+      for (const sel of selectors) {
+        const el = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(sel)
+        if (!el) continue
+        const proto = el.tagName === 'TEXTAREA'
+          ? HTMLTextAreaElement.prototype
+          : HTMLInputElement.prototype
+        const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set
+        if (nativeSetter) {
+          nativeSetter.call(el, value)
+          el.dispatchEvent(new Event('input', { bubbles: true }))
+          el.dispatchEvent(new Event('change', { bubbles: true }))
+        }
+        return
+      }
+    }, 120) // brief delay lets the block row expand
+  }
+
+  function expandBlockRow(index: number) {
+    const blocksField = document.querySelector<HTMLElement>('[data-field-path="blocks"]')
+    if (!blocksField) return
+    const rowSelectors = [
+      `[data-field-path="blocks.${index}"]`,
+      `[data-field-path="blocks"] [data-row-index="${index}"]`,
+    ]
+    for (const sel of rowSelectors) {
+      const row = blocksField.querySelector<HTMLElement>(sel) ??
+        document.querySelector<HTMLElement>(sel)
+      if (!row) continue
+      const collapsed = row.querySelector<HTMLButtonElement>('button[aria-expanded="false"]')
+      collapsed?.click()
+      return
+    }
+  }
 
   // ─── Block reorder ───────────────────────────────────────────────────────────
   //

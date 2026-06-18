@@ -9,6 +9,7 @@ import { resolveMediaAlt, resolveMediaUrl } from "@/lib/cms/media";
 import type { Collection as PayloadCollection } from "@/payload-types";
 import type { ContentLocale } from "@/lib/cms/types";
 import type { Product } from "@/types/product";
+import { InlineEditor } from "./InlineEditor";
 
 type CollectionPageContentProps = {
   initialCollection: PayloadCollection;
@@ -74,6 +75,7 @@ export function CollectionPageContent({ initialCollection, locale }: CollectionP
 
         <ProductGrid products={collection.products} />
       </section>
+      <InlineEditor />
     </main>
   );
 }
