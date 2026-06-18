@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps) {
 
   return buildPageMetadata({
     title: typeof page.title === 'string' ? page.title : String(page.title),
-    description: typeof page.body === 'string' ? page.body?.slice(0, 160) : undefined,
+    description: typeof page.body === 'string' ? page.body.slice(0, 160) : '',
     locale,
     pathname: `/${slug}`,
   })
