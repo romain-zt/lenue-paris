@@ -117,7 +117,7 @@ const MODEL_ORCHESTRATOR = {
   id: cappedModelId(process.env.CURSOR_MODEL_VISION_ID, "claude-sonnet-4-6"),
   params: [
     { id: "thinking", value: "true" },
-    { id: "context", value: "1m" },
+    // { id: "context", value: "1m" },
     { id: "effort", value: "medium" },
   ],
 };
