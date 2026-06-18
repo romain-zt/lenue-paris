@@ -6,6 +6,11 @@ import { getProductMainImageUrl } from "@/lib/productImages";
 import { FeaturedProductItem, FeaturedProductsScroll } from "@/components/home/FeaturedProductsScroll";
 import type { FeaturedProductsBlockProps } from "@/lib/cms/types";
 
+interface FeaturedProductsBlockComponentProps extends FeaturedProductsBlockProps {
+  /** Payload blocks array index — used to generate data-payload-path attributes for live preview. */
+  blockIndex?: number;
+}
+
 function FeaturedProductCard({
   product,
   formattedPrice,
@@ -61,9 +66,11 @@ export function FeaturedProductsBlock({
   products,
   locale,
   outOfStockBadge,
-}: FeaturedProductsBlockProps) {
+  blockIndex,
+}: FeaturedProductsBlockComponentProps) {
   const priceFormatter = (price: number) => formatPrice(price, locale);
   const collectionLink = collectionHref ?? "/catalogue";
+  const p = blockIndex !== undefined ? `blocks.${blockIndex}` : undefined;
 
   return (
     <section
@@ -77,13 +84,18 @@ export function FeaturedProductsBlock({
             {season ? (
               <p className="mb-1.5 text-[9px] font-medium uppercase tracking-[0.35em] text-stone-400">{season}</p>
             ) : null}
-            <h2 id="featured-heading" className="font-serif text-2xl font-light text-stone-900 sm:text-3xl">
+            <h2
+              id="featured-heading"
+              data-payload-path={p ? `${p}.title` : undefined}
+              className="font-serif text-2xl font-light text-stone-900 sm:text-3xl"
+            >
               {title}
             </h2>
           </div>
           {viewCollectionLabel ? (
             <Link
               href={collectionLink}
+              data-payload-path={p ? `${p}.viewCollectionLabel` : undefined}
               className="hidden text-[10px] font-medium uppercase tracking-[0.2em] text-stone-400 transition-colors hover:text-stone-800 sm:inline-flex"
             >
               {viewCollectionLabel}
@@ -91,6 +103,7 @@ export function FeaturedProductsBlock({
           ) : null}
         </div>
       </div>
+      <div data-payload-path={p ? `${p}.products` : undefined}>
       <FeaturedProductsScroll ariaLabel={title}>
         {products.map((product) => (
           <FeaturedProductItem key={product.slug}>
@@ -102,6 +115,7 @@ export function FeaturedProductsBlock({
           </FeaturedProductItem>
         ))}
       </FeaturedProductsScroll>
+      </div>
       {viewFullCollectionLabel ? (
         <div className="mx-auto max-w-screen-xl">
           <div className="mt-14 text-center sm:hidden">

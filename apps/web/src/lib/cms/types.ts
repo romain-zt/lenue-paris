@@ -41,9 +41,9 @@ export interface EditorialStripBlockProps {
 }
 
 export type MappedHomeBlock =
-  | { blockType: "hero"; props: HeroBlockProps }
-  | { blockType: "featuredProducts"; props: FeaturedProductsBlockProps }
-  | { blockType: "editorialStrip"; props: EditorialStripBlockProps };
+  | { blockType: "hero"; blockIndex: number; props: HeroBlockProps }
+  | { blockType: "featuredProducts"; blockIndex: number; props: FeaturedProductsBlockProps }
+  | { blockType: "editorialStrip"; blockIndex: number; props: EditorialStripBlockProps };
 
 export interface HomePageDto {
   id: number;

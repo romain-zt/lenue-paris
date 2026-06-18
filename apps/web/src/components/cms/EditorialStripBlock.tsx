@@ -2,6 +2,11 @@ import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import type { EditorialStripBlockProps } from "@/lib/cms/types";
 
+interface EditorialStripBlockComponentProps extends EditorialStripBlockProps {
+  /** Payload blocks array index — used to generate data-payload-path attributes for live preview. */
+  blockIndex?: number;
+}
+
 export function EditorialStripBlock({
   label,
   headline,
@@ -11,19 +16,37 @@ export function EditorialStripBlock({
   ctaLink,
   imageUrl,
   imageAlt,
-}: EditorialStripBlockProps) {
+  blockIndex,
+}: EditorialStripBlockComponentProps) {
+  const p = blockIndex !== undefined ? `blocks.${blockIndex}` : undefined;
+
   return (
     <section aria-label={label} className="overflow-hidden bg-[#f0ebe4] lg:flex">
       <div className="flex flex-col justify-center px-8 py-16 sm:px-12 sm:py-20 lg:w-[42%] lg:px-14 lg:py-24">
-        <p className="mb-6 text-[9px] font-medium uppercase tracking-[0.38em] text-stone-400">{label}</p>
+        <p
+          data-payload-path={p ? `${p}.label` : undefined}
+          className="mb-6 text-[9px] font-medium uppercase tracking-[0.38em] text-stone-400"
+        >
+          {label}
+        </p>
         <h2 className="font-serif text-3xl font-light leading-snug text-stone-800 sm:text-4xl lg:text-[2.6rem] lg:leading-snug">
-          {headline}
+          <span data-payload-path={p ? `${p}.headline` : undefined}>{headline}</span>
           <br />
-          <em className="font-light not-italic text-stone-600">{subline}</em>
+          <em
+            data-payload-path={p ? `${p}.subline` : undefined}
+            className="font-light not-italic text-stone-600"
+          >
+            {subline}
+          </em>
         </h2>
         <div className="my-8 h-px w-12 bg-stone-300" aria-hidden="true" />
-        <p className="max-w-xs text-sm leading-relaxed text-stone-500">{body}</p>
-        <div className="mt-10">
+        <p
+          data-payload-path={p ? `${p}.body` : undefined}
+          className="max-w-xs text-sm leading-relaxed text-stone-500"
+        >
+          {body}
+        </p>
+        <div className="mt-10" data-payload-path={p ? `${p}.ctaLabel` : undefined}>
           <Link
             href={ctaLink}
             className="group inline-flex items-center gap-2.5 text-[10px] font-medium uppercase tracking-[0.25em] text-stone-600 transition-colors hover:text-stone-900"
@@ -35,7 +58,10 @@ export function EditorialStripBlock({
           </Link>
         </div>
       </div>
-      <div className="relative aspect-[4/3] lg:aspect-auto lg:flex-1">
+      <div
+        className="relative aspect-[4/3] lg:aspect-auto lg:flex-1"
+        data-payload-path={p ? `${p}.image` : undefined}
+      >
         <Image
           src={imageUrl}
           alt={imageAlt}

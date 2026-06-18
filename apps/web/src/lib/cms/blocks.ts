@@ -100,12 +100,19 @@ export function mapHomePageBlocks(blocks: PayloadPage["blocks"]): MappedHomeBloc
 
   const mapped: MappedHomeBlock[] = [];
 
-  for (const block of blocks) {
+  // Use indexed loop so blockIndex always reflects the original Payload blocks array
+  // position — critical for data-payload-path accuracy across locales and filtered blocks.
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+    // Guard for noUncheckedIndexedAccess
+    if (!block) continue;
+
     if (block.blockType === "hero") {
       const heroImageUrl = resolveHeroImageUrl(block.heroImage);
       const heroVideoUrl = resolveHeroVideoUrl(block.heroVideo);
       mapped.push({
         blockType: "hero",
+        blockIndex: i,
         props: {
           season: block.season,
           tagline: block.tagline,
@@ -125,6 +132,7 @@ export function mapHomePageBlocks(blocks: PayloadPage["blocks"]): MappedHomeBloc
       if (products.length === 0) continue;
       mapped.push({
         blockType: "featuredProducts",
+        blockIndex: i,
         props: {
           season: "",
           title: block.title,
@@ -144,6 +152,7 @@ export function mapHomePageBlocks(blocks: PayloadPage["blocks"]): MappedHomeBloc
       if (!imageUrl) continue;
       mapped.push({
         blockType: "editorialStrip",
+        blockIndex: i,
         props: {
           label: block.label,
           headline: block.headline,
@@ -173,6 +182,7 @@ export function enrichFeaturedBlock(
 ): Extract<MappedHomeBlock, { blockType: "featuredProducts" }> {
   return {
     blockType: "featuredProducts",
+    blockIndex: block.blockIndex,
     props: {
       ...block.props,
       season: labels.season,

@@ -3,6 +3,11 @@ import { Link } from "@/i18n/navigation";
 import { CapsuleBadge } from "@/components/editorial/CapsuleBadge";
 import type { HeroBlockProps } from "@/lib/cms/types";
 
+interface HeroBlockComponentProps extends HeroBlockProps {
+  /** Payload blocks array index — used to generate data-payload-path attributes for live preview. */
+  blockIndex?: number;
+}
+
 export function HeroBlock({
   season,
   tagline,
@@ -12,8 +17,10 @@ export function HeroBlock({
   heroImageAlt,
   heroVideoUrl,
   capsuleBadgeLabel,
-}: HeroBlockProps) {
+  blockIndex,
+}: HeroBlockComponentProps) {
   const hasVideo = Boolean(heroVideoUrl);
+  const p = blockIndex !== undefined ? `blocks.${blockIndex}` : undefined;
 
   return (
     <section
@@ -21,7 +28,11 @@ export function HeroBlock({
       aria-labelledby="hero-heading"
       className="relative -mt-16 h-[100svh] min-h-[100dvh] overflow-hidden bg-stone-800 md:-mt-[72px]"
     >
-      <div className="absolute inset-0" data-maison="hero-image">
+      <div
+        className="absolute inset-0"
+        data-maison="hero-image"
+        data-payload-path={p ? `${p}.heroImage` : undefined}
+      >
         {hasVideo ? (
           <>
             <video
@@ -61,7 +72,12 @@ export function HeroBlock({
         {capsuleBadgeLabel ? (
           <CapsuleBadge className="mb-3 text-white/55">{capsuleBadgeLabel}</CapsuleBadge>
         ) : null}
-        <p className="mb-5 text-[10px] font-medium uppercase tracking-[0.35em] text-white/50">{season}</p>
+        <p
+          data-payload-path={p ? `${p}.season` : undefined}
+          className="mb-5 text-[10px] font-medium uppercase tracking-[0.35em] text-white/50"
+        >
+          {season}
+        </p>
         <h1
           id="hero-heading"
           className="font-serif text-5xl font-light leading-[0.95] tracking-wide text-white sm:text-6xl lg:text-7xl"
@@ -70,8 +86,16 @@ export function HeroBlock({
           <br />
           <span className="text-3xl tracking-[0.35em] text-white/80 sm:text-4xl lg:text-5xl">PARIS</span>
         </h1>
-        <p className="mt-5 max-w-xs text-sm font-light leading-relaxed text-white/60 sm:text-[15px]">{tagline}</p>
-        <div className="mt-8">
+        <p
+          data-payload-path={p ? `${p}.tagline` : undefined}
+          className="mt-5 max-w-xs text-sm font-light leading-relaxed text-white/60 sm:text-[15px]"
+        >
+          {tagline}
+        </p>
+        <div
+          className="mt-8"
+          data-payload-path={p ? `${p}.ctaLabel` : undefined}
+        >
           <Link
             href={ctaLink}
             className="group inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.25em] text-white/80 transition-colors hover:text-white"

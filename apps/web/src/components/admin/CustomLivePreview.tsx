@@ -16,7 +16,10 @@ const DEFAULT_PANEL_PX = 500
 
 // ─── Breakpoint selector ──────────────────────────────────────────────────────
 
-const BreakpointBar: React.FC = () => {
+const BreakpointBar: React.FC<{
+  onFullscreen: () => void
+  isFullscreen: boolean
+}> = ({ onFullscreen, isFullscreen }) => {
   const { breakpoint, breakpoints, setBreakpoint } = useLivePreviewContext()
 
   useEffect(() => {
@@ -36,6 +39,7 @@ const BreakpointBar: React.FC = () => {
         borderBottom: '1px solid var(--theme-elevation-100)',
         display: 'flex',
         flexShrink: 0,
+        gap: 8,
         padding: '6px 12px',
       }}
     >
@@ -62,49 +66,231 @@ const BreakpointBar: React.FC = () => {
       <span
         style={{
           color: 'var(--theme-elevation-500)',
+          flex: 1,
           fontSize: 11,
-          marginLeft: 12,
         }}
       >
         Click any field in the preview to focus it in the form
       </span>
+
+      <button
+        type="button"
+        title={isFullscreen ? 'Exit fullscreen preview' : 'Fullscreen preview'}
+        onClick={onFullscreen}
+        style={{
+          alignItems: 'center',
+          background: isFullscreen ? 'var(--theme-success-500, #22c55e)' : 'var(--theme-elevation-150)',
+          border: 'none',
+          borderRadius: 4,
+          color: isFullscreen ? '#fff' : 'var(--theme-text)',
+          cursor: 'pointer',
+          display: 'flex',
+          fontSize: 11,
+          fontWeight: 600,
+          gap: 5,
+          height: 26,
+          padding: '0 10px',
+          userSelect: 'none',
+        }}
+      >
+        {isFullscreen ? '✕ Exit' : '⛶ Full'}
+      </button>
     </div>
+  )
+}
+
+// ─── Admin bar — save / publish overlay on the preview ────────────────────────
+
+const AdminBar: React.FC<{
+  locale: string
+  onSave: () => void
+  onPublish: () => void
+  isSaving: boolean
+  saveStatus: 'idle' | 'saving' | 'saved' | 'error'
+}> = ({ locale, onSave, onPublish, isSaving, saveStatus }) => {
+  return (
+    <div
+      aria-label="Preview admin bar"
+      style={{
+        alignItems: 'center',
+        background: 'rgba(10,10,10,0.88)',
+        backdropFilter: 'blur(8px)',
+        borderTop: '1px solid rgba(255,255,255,0.08)',
+        bottom: 0,
+        display: 'flex',
+        flexShrink: 0,
+        gap: 8,
+        left: 0,
+        padding: '8px 12px',
+        position: 'absolute',
+        right: 0,
+        zIndex: 50,
+      }}
+    >
+      {/* Locale badge */}
+      <span
+        style={{
+          background: 'rgba(255,255,255,0.1)',
+          borderRadius: 4,
+          color: 'rgba(255,255,255,0.6)',
+          fontSize: 10,
+          fontWeight: 600,
+          letterSpacing: '0.06em',
+          padding: '3px 7px',
+          textTransform: 'uppercase',
+        }}
+      >
+        {locale}
+      </span>
+
+      {/* Status indicator */}
+      {saveStatus === 'saving' && (
+        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>Saving…</span>
+      )}
+      {saveStatus === 'saved' && (
+        <span style={{ color: '#22c55e', fontSize: 11 }}>✓ Saved</span>
+      )}
+      {saveStatus === 'error' && (
+        <span style={{ color: '#ef4444', fontSize: 11 }}>Save failed</span>
+      )}
+
+      <div style={{ flex: 1 }} />
+
+      <AdminBarButton onClick={onSave} disabled={isSaving} variant="secondary">
+        Save draft
+      </AdminBarButton>
+      <AdminBarButton onClick={onPublish} disabled={isSaving} variant="primary">
+        Publish
+      </AdminBarButton>
+    </div>
+  )
+}
+
+function AdminBarButton({
+  children,
+  onClick,
+  disabled,
+  variant,
+}: {
+  children: React.ReactNode
+  onClick: () => void
+  disabled?: boolean
+  variant: 'primary' | 'secondary'
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      style={{
+        alignItems: 'center',
+        background: variant === 'primary' ? '#6366f1' : 'rgba(255,255,255,0.12)',
+        border: 'none',
+        borderRadius: 5,
+        color: '#fff',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        display: 'flex',
+        fontSize: 12,
+        fontWeight: 600,
+        height: 30,
+        letterSpacing: '0.02em',
+        opacity: disabled ? 0.5 : 1,
+        padding: '0 14px',
+        userSelect: 'none',
+      }}
+    >
+      {children}
+    </button>
   )
 }
 
 // ─── Focus a form field in the admin panel ────────────────────────────────────
 
 function focusAdminField(fieldPath: string): void {
-  // Try direct input/textarea match first
-  const selectors = [
+  // Direct selectors
+  const directSelectors = [
+    `[data-field-path="${fieldPath}"]`,
     `input[name="${fieldPath}"]`,
     `textarea[name="${fieldPath}"]`,
-    `[data-field-path="${fieldPath}"]`,
     `[id^="field-${fieldPath}"]`,
   ]
 
-  for (const selector of selectors) {
+  for (const selector of directSelectors) {
     const el = document.querySelector<HTMLElement>(selector)
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      el.focus({ preventScroll: true })
-      el.classList.add('lp-field-highlight')
-      setTimeout(() => el.classList.remove('lp-field-highlight'), 1400)
+      scrollAndHighlight(el)
       return
     }
   }
 
-  // Fallback: try to find by dot-notation (e.g. "blocks.0.tagline" → "tagline")
-  const lastSegment = fieldPath.split('.').pop() ?? fieldPath
-  const fallback = document.querySelector<HTMLElement>(
-    `input[name="${lastSegment}"], textarea[name="${lastSegment}"]`,
-  )
-  if (fallback) {
-    fallback.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    fallback.focus({ preventScroll: true })
-    fallback.classList.add('lp-field-highlight')
-    setTimeout(() => fallback.classList.remove('lp-field-highlight'), 1400)
+  // For block-level paths like "blocks.0" — find the block row in Payload's
+  // blocks array UI and expand/highlight it.
+  const blockRowMatch = fieldPath.match(/^blocks\.(\d+)$/)
+  if (blockRowMatch) {
+    const index = parseInt(blockRowMatch[1] ?? '0', 10)
+
+    // Try Payload's block row selectors
+    const rowSelectors = [
+      `[data-field-path="blocks"] [data-row-index="${index}"]`,
+      `[data-field-path="blocks.${index}"]`,
+      `[data-array-row-index="${index}"]`,
+    ]
+    for (const selector of rowSelectors) {
+      const el = document.querySelector<HTMLElement>(selector)
+      if (el) {
+        // Expand collapsed block row if needed
+        const toggle = el.querySelector<HTMLElement>('[data-collapsed]') ??
+          el.querySelector<HTMLButtonElement>('button[aria-expanded="false"]')
+        toggle?.click()
+        scrollAndHighlight(el)
+        return
+      }
+    }
+
+    // Fallback: try to find the nth block row by counting collapsed rows
+    const allRows = document.querySelectorAll<HTMLElement>('[data-field-path^="blocks."]')
+    const row = Array.from(allRows).find((el) => {
+      return el.getAttribute('data-field-path') === `blocks.${index}`
+    })
+    if (row) {
+      scrollAndHighlight(row)
+      return
+    }
+
+    // Last resort: scroll to the blocks field itself
+    const blocksField = document.querySelector<HTMLElement>('[data-field-path="blocks"]')
+    if (blocksField) scrollAndHighlight(blocksField)
+    return
   }
+
+  // For nested field paths like "blocks.0.tagline" — try the field then fall
+  // back to the last path segment.
+  const segments = fieldPath.split('.')
+  if (segments.length > 1) {
+    // Try each increasingly shorter suffix
+    for (let i = 0; i < segments.length; i++) {
+      const suffix = segments.slice(i).join('.')
+      const candidates = [
+        `[data-field-path="${suffix}"]`,
+        `input[name="${suffix}"]`,
+        `textarea[name="${suffix}"]`,
+      ]
+      for (const selector of candidates) {
+        const el = document.querySelector<HTMLElement>(selector)
+        if (el) {
+          scrollAndHighlight(el)
+          return
+        }
+      }
+    }
+  }
+}
+
+function scrollAndHighlight(el: HTMLElement): void {
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  el.focus({ preventScroll: true })
+  el.classList.add('lp-field-highlight')
+  setTimeout(() => el.classList.remove('lp-field-highlight'), 1400)
 }
 
 // ─── Inject highlight CSS once ────────────────────────────────────────────────
@@ -152,6 +338,37 @@ export const CustomLivePreview: React.FC = () => {
   useEffect(() => {
     ensureHighlightStyle()
   }, [])
+
+  // ─── Fullscreen state ─────────────────────────────────────────────────────
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const toggleFullscreen = useCallback(() => setIsFullscreen((v) => !v), [])
+
+  // ─── Save status ──────────────────────────────────────────────────────────
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function triggerSave(publish = false) {
+    setSaveStatus('saving')
+    // Find Payload's native save/publish buttons and click them
+    const btn = publish
+      ? (document.querySelector<HTMLButtonElement>('[id="action-publish"]') ??
+         document.querySelector<HTMLButtonElement>('[data-action="publish"]') ??
+         document.querySelector<HTMLButtonElement>('[aria-label*="publish" i]'))
+      : (document.querySelector<HTMLButtonElement>('[id="action-save"]') ??
+         document.querySelector<HTMLButtonElement>('[data-action="save"]') ??
+         document.querySelector<HTMLButtonElement>('[aria-label*="save draft" i]') ??
+         document.querySelector<HTMLButtonElement>('[aria-label*="save" i]'))
+
+    if (btn) {
+      btn.click()
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+      setSaveStatus('saved')
+      saveTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2400)
+    } else {
+      setSaveStatus('error')
+      saveTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2400)
+    }
+  }
 
   // ─── postMessage bridge (mirrors LivePreviewWindow exactly) ─────────────────
   useEffect(() => {
@@ -203,21 +420,70 @@ export const CustomLivePreview: React.FC = () => {
     }
   }, [mostRecentUpdate, iframeRef, popupRef, previewWindowType, url, isLivePreviewing, appIsReady])
 
-  // ─── P1: listen for field-focus messages from the preview iframe ─────────────
+  // ─── Listen for messages from the preview iframe ─────────────────────────────
   useEffect(() => {
-    if (!iframeRef?.current) return
-
     const handleMessage = (event: MessageEvent) => {
       if (typeof event.data !== 'object' || event.data === null) return
-      if (event.data.type !== 'payload-field-focus') return
-      const path = typeof event.data.path === 'string' ? event.data.path : null
-      if (!path) return
-      focusAdminField(path)
+
+      // Field click-to-focus
+      if (event.data.type === 'payload-field-focus') {
+        const path = typeof event.data.path === 'string' ? event.data.path : null
+        if (path) focusAdminField(path)
+        return
+      }
+
+      // Block reorder request from BlockOverlay
+      if (event.data.type === 'payload-block-reorder') {
+        const { from, to } = event.data as { from: number; to: number }
+        if (typeof from === 'number' && typeof to === 'number' && to >= 0) {
+          handleBlockReorder(from, to)
+        }
+        return
+      }
+
+      // Save/publish triggered from an in-iframe admin bar (if any)
+      if (event.data.type === 'payload-preview-action') {
+        const action = event.data.action as string
+        if (action === 'save') triggerSave(false)
+        if (action === 'publish') triggerSave(true)
+        return
+      }
     }
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [iframeRef])
+  }, [])
+
+  // ─── Block reorder ───────────────────────────────────────────────────────────
+  //
+  // Payload stores blocks as an array in the form state. We swap the `from` and
+  // `to` positions by clicking Payload's native move-up / move-down row buttons
+  // inside the blocks array field UI. This is safer than directly dispatching
+  // into the form state since it respects Payload's internal row IDs.
+  function handleBlockReorder(from: number, to: number) {
+    const blocksField = document.querySelector<HTMLElement>('[data-field-path="blocks"]')
+    if (!blocksField) return
+
+    // Try to find the row at `from` and click the move button
+    const direction = to < from ? 'up' : 'down'
+    const steps = Math.abs(to - from)
+
+    // Payload renders move buttons with specific aria labels per row
+    const rows = blocksField.querySelectorAll<HTMLElement>('[data-row]')
+    const targetRow = rows[from]
+    if (!targetRow) return
+
+    const btnLabel = direction === 'up' ? /move up/i : /move down/i
+    const moveBtn = Array.from(
+      targetRow.querySelectorAll<HTMLButtonElement>('button'),
+    ).find((btn) => btnLabel.test(btn.getAttribute('aria-label') ?? btn.title ?? btn.textContent ?? ''))
+
+    if (moveBtn) {
+      for (let i = 0; i < steps; i++) {
+        moveBtn.click()
+      }
+    }
+  }
 
   // ─── Panel width + drag-to-resize ────────────────────────────────────────────
   const panelRef = useRef<HTMLDivElement>(null)
@@ -232,6 +498,7 @@ export const CustomLivePreview: React.FC = () => {
 
   // Auto-resize panel when breakpoint changes so the device fits at ~1:1
   useEffect(() => {
+    if (isFullscreen) return
     const parent = panelRef.current?.parentElement
     const maxAvail = parent ? parent.clientWidth - MIN_FORM_PX - HANDLE_PX : 1200
 
@@ -240,17 +507,18 @@ export const CustomLivePreview: React.FC = () => {
       : DEFAULT_PANEL_PX
 
     setPanelWidth(Math.max(MIN_PANEL_PX, ideal))
-  }, [deviceW])
+  }, [deviceW, isFullscreen])
 
   // Drag handle mouse events
   const onHandleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (isFullscreen) return
     isDragging.current = true
     dragStartX.current = e.clientX
     dragStartWidth.current = panelWidth
     document.body.style.cursor = 'col-resize'
     document.body.style.userSelect = 'none'
     e.preventDefault()
-  }, [panelWidth])
+  }, [panelWidth, isFullscreen])
 
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
@@ -316,7 +584,31 @@ export const CustomLivePreview: React.FC = () => {
     return () => ro.disconnect()
   }, [computeScale])
 
+  // ─── Escape key exits fullscreen ─────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) setIsFullscreen(false)
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [isFullscreen])
+
   if (previewWindowType !== 'iframe') return null
+
+  // ─── Fullscreen mode: fixed overlay covering entire viewport ─────────────────
+  const fullscreenStyles: React.CSSProperties = isFullscreen
+    ? {
+        background: 'var(--theme-bg)',
+        bottom: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        left: 0,
+        position: 'fixed',
+        right: 0,
+        top: 0,
+        zIndex: 9999,
+      }
+    : {}
 
   return (
     <div
@@ -327,38 +619,49 @@ export const CustomLivePreview: React.FC = () => {
         flexDirection: 'column',
         flexGrow: 0,
         flexShrink: 0,
-        height: 'calc(100vh - var(--doc-controls-height))',
+        height: isFullscreen ? undefined : 'calc(100vh - var(--doc-controls-height))',
         overflow: 'hidden',
-        position: 'sticky',
-        top: 'var(--doc-controls-height)',
-        width: panelWidth,
+        position: isFullscreen ? undefined : 'sticky',
+        top: isFullscreen ? undefined : 'var(--doc-controls-height)',
+        width: isFullscreen ? undefined : panelWidth,
+        ...fullscreenStyles,
       }}
     >
-      {/* Drag handle on the left edge */}
-      <div
-        onMouseDown={onHandleMouseDown}
-        style={{
-          background: 'var(--theme-elevation-100)',
-          bottom: 0,
-          cursor: 'col-resize',
-          left: 0,
-          position: 'absolute',
-          top: 0,
-          transition: 'background 0.15s',
-          width: HANDLE_PX,
-          zIndex: 10,
-        }}
-        onMouseEnter={(e) => {
-          ;(e.currentTarget as HTMLDivElement).style.background = 'var(--theme-elevation-300)'
-        }}
-        onMouseLeave={(e) => {
-          ;(e.currentTarget as HTMLDivElement).style.background = 'var(--theme-elevation-100)'
-        }}
-      />
+      {/* Drag handle on the left edge — hidden in fullscreen */}
+      {!isFullscreen && (
+        <div
+          onMouseDown={onHandleMouseDown}
+          style={{
+            background: 'var(--theme-elevation-100)',
+            bottom: 0,
+            cursor: 'col-resize',
+            left: 0,
+            position: 'absolute',
+            top: 0,
+            transition: 'background 0.15s',
+            width: HANDLE_PX,
+            zIndex: 10,
+          }}
+          onMouseEnter={(e) => {
+            ;(e.currentTarget as HTMLDivElement).style.background = 'var(--theme-elevation-300)'
+          }}
+          onMouseLeave={(e) => {
+            ;(e.currentTarget as HTMLDivElement).style.background = 'var(--theme-elevation-100)'
+          }}
+        />
+      )}
 
-      {/* Content offset by handle width */}
-      <div style={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden', paddingLeft: HANDLE_PX }}>
-        <BreakpointBar />
+      {/* Content (offset by handle width in normal mode) */}
+      <div
+        style={{
+          display: 'flex',
+          flex: 1,
+          flexDirection: 'column',
+          overflow: 'hidden',
+          paddingLeft: isFullscreen ? 0 : HANDLE_PX,
+        }}
+      >
+        <BreakpointBar onFullscreen={toggleFullscreen} isFullscreen={isFullscreen} />
 
         <div
           ref={containerRef}
@@ -385,6 +688,15 @@ export const CustomLivePreview: React.FC = () => {
               title="Live Preview"
             />
           )}
+
+          {/* Admin bar floats over the iframe at the bottom */}
+          <AdminBar
+            locale={locale.code}
+            onSave={() => triggerSave(false)}
+            onPublish={() => triggerSave(true)}
+            isSaving={saveStatus === 'saving'}
+            saveStatus={saveStatus}
+          />
         </div>
       </div>
     </div>

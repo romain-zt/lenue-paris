@@ -51,9 +51,7 @@ export function HomePageContent({ initialPage, locale, labels }: HomePageContent
 
   return (
     <main>
-      <div data-payload-path="blocks">
-        <RenderBlocks blocks={blocks} quote={labels.quote} />
-      </div>
+      <RenderBlocks blocks={blocks} quote={labels.quote} />
       <HomeCategoryStrip exploreLabel={labels.exploreLabel} categoryLinks={labels.categoryLinks} />
     </main>
   );
