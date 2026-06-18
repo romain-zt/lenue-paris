@@ -728,7 +728,7 @@ export const CustomLivePreview: React.FC = () => {
   const computeScale = useCallback(() => {
     if (!containerRef.current) return
 
-    if (isResponsive || !deviceW || !deviceH) {
+    if (isFullscreen || isResponsive || !deviceW || !deviceH) {
       setIframeStyle({ height: '100%', width: '100%' })
       return
     }
@@ -750,7 +750,7 @@ export const CustomLivePreview: React.FC = () => {
       transformOrigin: 'top left',
       width: deviceW,
     })
-  }, [isResponsive, deviceW, deviceH])
+  }, [isFullscreen, isResponsive, deviceW, deviceH])
 
   useEffect(() => {
     computeScale()
