@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { type NextRequest } from 'next/server'
 import type { UIMessage } from 'ai'
 import { revalidatePath } from 'next/cache'
+import { cookies } from 'next/headers'
 
 const cursor = createOpenAI({
   apiKey: process.env.CURSOR_API_KEY ?? '',
@@ -85,8 +86,15 @@ export async function POST(request: NextRequest) {
   }
 
   const { messages, context } = body
-  const cookie = request.headers.get('cookie') ?? ''
   const origin = new URL(request.url).origin
+
+  // Read the payload-token cookie explicitly so it's forwarded to internal
+  // Payload REST calls even when the request comes from the public site.
+  const cookieStore = await cookies()
+  const payloadToken = cookieStore.get('payload-token')?.value
+  const cookie = payloadToken
+    ? `payload-token=${payloadToken}`
+    : (request.headers.get('cookie') ?? '')
 
   const contextNote = context?.type === 'collection' && context.collection && context.id
     ? `\n\n## Contexte actuel\nL'utilisateur édite le document : collection="${context.collection}", id="${context.id}". Utilise ce document par défaut.`

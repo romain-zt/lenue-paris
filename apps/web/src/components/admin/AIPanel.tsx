@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import type { UIMessage } from 'ai'
-import { ensureHighlightStyle, focusAdminField } from './live-preview/utils'
+import { ensureHighlightStyle, focusAdminField, scrollAndHighlight } from './live-preview/utils'
 
 type DocContext = {
   type: 'collection' | 'global' | 'dashboard'
@@ -163,6 +163,25 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
   useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => { ensureHighlightStyle() }, [])
+
+  // When the admin page is opened via a deep-link like ?field=body, focus and
+  // highlight the matching form field after the form has had time to render.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const field = new URLSearchParams(window.location.search).get('field')
+    if (!field) return
+    const timer = setTimeout(() => {
+      focusAdminField(field)
+      // Also try scrollAndHighlight on the exact element if focusAdminField
+      // found it (focusAdminField calls scrollAndHighlight internally, so this
+      // is a no-op when the element is already focused by it).
+      const el = document.querySelector<HTMLElement>(
+        `[data-field-path="${field}"], input[name="${field}"], textarea[name="${field}"]`,
+      )
+      if (el) scrollAndHighlight(el)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     docContextRef.current = docContext

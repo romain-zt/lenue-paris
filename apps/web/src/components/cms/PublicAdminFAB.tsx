@@ -29,67 +29,80 @@ function parsePublicContext() {
   return { type: 'dashboard' as const }
 }
 
-async function resolveAdminUrl(): Promise<string> {
+async function resolveAdminUrl(fieldPath?: string): Promise<string> {
   if (typeof window === 'undefined') return '/admin'
+  const base = window.location.origin
   const parts = window.location.pathname.split('/').filter(Boolean)
   // parts[0] = locale, parts[1] = section, parts[2] = slug
   const seg1 = parts[1]
   const seg2 = parts[2]
 
+  const withField = (url: string) =>
+    fieldPath ? `${url}?field=${encodeURIComponent(fieldPath)}` : url
+
   try {
     // /[locale]/produits/[slug]
     if (seg1 === 'produits' && seg2) {
       const r = await fetch(
-        `/api/products?where[slug][equals]=${encodeURIComponent(seg2)}&limit=1&depth=0`,
+        `${base}/api/products?where[slug][equals]=${encodeURIComponent(seg2)}&limit=1&depth=0`,
         { credentials: 'include' },
       )
       if (r.ok) {
         const d = await r.json()
         const id = d.docs?.[0]?.id
-        if (id) return `/admin/collections/products/${id}`
+        if (id) return withField(`/admin/collections/products/${id}`)
+      } else {
+        console.error('[resolveAdminUrl] products lookup failed', r.status, await r.text().catch(() => ''))
       }
     }
 
     // /[locale]/collections/[slug]
     if (seg1 === 'collections' && seg2) {
       const r = await fetch(
-        `/api/collections?where[slug][equals]=${encodeURIComponent(seg2)}&limit=1&depth=0`,
+        `${base}/api/collections?where[slug][equals]=${encodeURIComponent(seg2)}&limit=1&depth=0`,
         { credentials: 'include' },
       )
       if (r.ok) {
         const d = await r.json()
         const id = d.docs?.[0]?.id
-        if (id) return `/admin/collections/collections/${id}`
+        if (id) return withField(`/admin/collections/collections/${id}`)
+      } else {
+        console.error('[resolveAdminUrl] collections lookup failed', r.status, await r.text().catch(() => ''))
       }
     }
 
     // /[locale]/[slug] — a page (livraison, contact, etc.)
     if (seg1 && !seg2) {
       const r = await fetch(
-        `/api/pages?where[slug][equals]=${encodeURIComponent(seg1)}&limit=1&depth=0`,
+        `${base}/api/pages?where[slug][equals]=${encodeURIComponent(seg1)}&limit=1&depth=0`,
         { credentials: 'include' },
       )
       if (r.ok) {
         const d = await r.json()
         const id = d.docs?.[0]?.id
-        if (id) return `/admin/collections/pages/${id}`
+        if (id) return withField(`/admin/collections/pages/${id}`)
+      } else {
+        console.error('[resolveAdminUrl] pages lookup failed', r.status, await r.text().catch(() => ''))
       }
     }
 
-    // /[locale] — homepage, find first page
+    // /[locale] — homepage, look for a page with a home-like slug
     if (!seg1) {
-      const r = await fetch(`/api/pages?limit=20&depth=0`, { credentials: 'include' })
+      const r = await fetch(`${base}/api/pages?limit=20&depth=0`, { credentials: 'include' })
       if (r.ok) {
         const d = await r.json()
-        const home = d.docs?.find(
-          (p: { slug: string }) =>
-            p.slug === 'home' || p.slug === 'accueil' || p.slug === 'index' || p.slug === '/',
-        ) ?? d.docs?.[0]
-        if (home?.id) return `/admin/collections/pages/${home.id}`
+        const home =
+          d.docs?.find(
+            (p: { slug: string }) =>
+              p.slug === 'home' || p.slug === 'homepage' || p.slug === 'accueil' || p.slug === 'index' || p.slug === '/',
+          ) ?? d.docs?.[0]
+        if (home?.id) return withField(`/admin/collections/pages/${home.id}`)
+      } else {
+        console.error('[resolveAdminUrl] homepage lookup failed', r.status, await r.text().catch(() => ''))
       }
     }
-  } catch {
-    // fall through to default
+  } catch (err) {
+    console.error('[resolveAdminUrl] unexpected error', err)
   }
 
   return '/admin'
@@ -122,6 +135,7 @@ function AIChatPanel({
     () =>
       new DefaultChatTransport({
         api: '/api/ai/chat',
+        credentials: 'include',
         prepareSendMessagesRequest: ({ body, messages: msgs, id: chatId }) => ({
           body: {
             messages: msgs,
@@ -442,9 +456,15 @@ export function PublicAdminFAB() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
-  const [adminUrl, setAdminUrl] = useState('/admin')
+  const [adminBaseUrl, setAdminBaseUrl] = useState('/admin')
+  const [selectedFieldPath, setSelectedFieldPath] = useState<string | undefined>()
   // pendingPrompt: set when a BlockOverlay ✦ click triggers the AI panel
   const [pendingPrompt, setPendingPrompt] = useState<string | undefined>()
+
+  // Derived admin URL: base URL + optional ?field= param for deep-linking
+  const adminUrl = selectedFieldPath
+    ? `${adminBaseUrl}?field=${encodeURIComponent(selectedFieldPath)}`
+    : adminBaseUrl
 
   // Check if current user is a Payload admin
   useEffect(() => {
@@ -459,7 +479,7 @@ export function PublicAdminFAB() {
 
   // Resolve the admin URL for the current public page
   useEffect(() => {
-    resolveAdminUrl().then(setAdminUrl).catch(() => {})
+    resolveAdminUrl().then(setAdminBaseUrl).catch(() => {})
   }, [])
 
   // Listen for AI-help messages from BlockOverlay ✦ clicks.
@@ -477,6 +497,8 @@ export function PublicAdminFAB() {
         const prompt = value
           ? `Aide-moi avec le champ "${fieldName}" (${path}).\n\nValeur actuelle :\n"${value}"`
           : `Explique-moi le champ "${fieldName}" (${path}) et aide-moi à le remplir.`
+        // Track which field was selected so the admin deep-link includes ?field=
+        setSelectedFieldPath(path)
         setPendingPrompt(prompt)
         setAiOpen(true)
         setMenuOpen(false)
