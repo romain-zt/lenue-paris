@@ -226,6 +226,11 @@ function AIChatPanel({
   // like /livraison that aren't handled by path matching alone).
   const contextRef = useRef(parsePublicContext(adminResolution))
 
+  // Stable chat ID keyed by the resolved document so history is per-page
+  const chatId = adminResolution?.url
+    ? `public-chat-${adminResolution.url.replace(/\//g, '-')}`
+    : 'public-ai-chat'
+
   // Keep context in sync when the admin URL resolves after mount
   useEffect(() => {
     if (adminResolution) {
@@ -248,15 +253,27 @@ function AIChatPanel({
     }
   }, [pendingPrompt])
 
+  // Load persisted messages from localStorage on first render
+  const [initialMessages] = useState<UIMessage[]>(() => {
+    if (typeof window === 'undefined') return []
+    try {
+      const raw = window.localStorage.getItem(chatId)
+      if (!raw) return []
+      return JSON.parse(raw) as UIMessage[]
+    } catch {
+      return []
+    }
+  })
+
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
         api: '/api/ai/chat',
         credentials: 'include',
-        prepareSendMessagesRequest: ({ body, messages: msgs, id: chatId }) => ({
+        prepareSendMessagesRequest: ({ body, messages: msgs, id: id_ }) => ({
           body: {
             messages: msgs,
-            id: chatId,
+            id: id_,
             ...(body as Record<string, unknown>),
             context: contextRef.current,
           },
@@ -266,12 +283,23 @@ function AIChatPanel({
   )
 
   const { messages, sendMessage, status, error } = useChat({
-    id: 'public-ai-chat',
+    id: chatId,
     transport,
+    initialMessages,
     onFinish: () => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     },
   })
+
+  // Persist messages to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window === 'undefined' || messages.length === 0) return
+    try {
+      window.localStorage.setItem(chatId, JSON.stringify(messages))
+    } catch {
+      // quota exceeded — ignore
+    }
+  }, [messages, chatId])
 
   // Scan ALL messages once the stream settles — identical to the fix in AIPanel.tsx
   // (Bug 1: onFinish only fires for the last step; patch_field lives in an earlier step

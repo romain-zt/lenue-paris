@@ -23,7 +23,7 @@ export function RenderBlocks({ blocks, quote, docId, docCollection, locale }: Re
         if (block.blockType === "hero") {
           return (
             <Fragment key={key}>
-              <BlockOverlay blockType="hero" blockIndex={block.blockIndex}>
+              <BlockOverlay blockType="hero" blockIndex={block.blockIndex} docId={docId} docCollection={docCollection}>
                 <HeroBlock
                   {...block.props}
                   blockIndex={block.blockIndex}
@@ -39,7 +39,7 @@ export function RenderBlocks({ blocks, quote, docId, docCollection, locale }: Re
 
         if (block.blockType === "featuredProducts") {
           return (
-            <BlockOverlay key={key} blockType="featuredProducts" blockIndex={block.blockIndex}>
+            <BlockOverlay key={key} blockType="featuredProducts" blockIndex={block.blockIndex} docId={docId} docCollection={docCollection}>
               <FeaturedProductsBlock
                 {...block.props}
                 blockIndex={block.blockIndex}
@@ -52,7 +52,7 @@ export function RenderBlocks({ blocks, quote, docId, docCollection, locale }: Re
 
         if (block.blockType === "editorialStrip") {
           return (
-            <BlockOverlay key={key} blockType="editorialStrip" blockIndex={block.blockIndex}>
+            <BlockOverlay key={key} blockType="editorialStrip" blockIndex={block.blockIndex} docId={docId} docCollection={docCollection}>
               <EditorialStripBlock
                 {...block.props}
                 blockIndex={block.blockIndex}

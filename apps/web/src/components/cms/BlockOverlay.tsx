@@ -29,20 +29,21 @@ interface BlockOverlayProps {
   blockType: string
   blockIndex: number
   children: React.ReactNode
+  /** Document ID — required to build the "Ouvrir dans l'admin" deep-link */
+  docId?: string
+  docCollection?: string
 }
 
 /**
- * Wraps a CMS block with a visual overlay only when rendered inside the Payload
- * admin live-preview iframe. Provides:
- *  - block type badge (always visible)
- *  - hover chrome: Edit / Move Up / Move Down controls
- *  - click "Edit" → postMessage payload-field-focus to parent admin
- *  - click "Move" → postMessage payload-block-reorder to parent admin
+ * Wraps a CMS block with a visual overlay when inside the Payload admin
+ * live-preview iframe OR when public edit mode is active (`admin-edit-mode`
+ * class on `<html>`). Provides:
+ *  - block type badge
+ *  - hover chrome with ✦ AI, Edit/Move controls (iframe) or ↗ Ouvrir dans l'admin (public)
  *
- * When NOT in an iframe this component is a transparent passthrough — zero
- * runtime cost in production / regular storefront.
+ * Zero runtime cost in production for regular shoppers.
  */
-export function BlockOverlay({ blockType, blockIndex, children }: BlockOverlayProps) {
+export function BlockOverlay({ blockType, blockIndex, children, docId, docCollection }: BlockOverlayProps) {
   const [isInIframe, setIsInIframe] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
@@ -63,12 +64,17 @@ export function BlockOverlay({ blockType, blockIndex, children }: BlockOverlayPr
   const isActive = isInIframe || isEditMode
 
   if (!isActive) {
-    // Passthrough — no overhead outside live preview / edit mode
     return <>{children}</>
   }
 
   const label = BLOCK_TYPE_LABELS[blockType] ?? blockType
   const fieldPath = `blocks.${blockIndex}`
+
+  function sendAIHelp() {
+    // Works for both iframe (parent admin) and same-window (public FAB listener)
+    const target = isInIframe ? window.parent : window
+    target.postMessage({ type: 'lp:ai-field-help', path: fieldPath, label }, '*')
+  }
 
   function focusBlock() {
     window.parent.postMessage({ type: 'payload-field-focus', path: fieldPath }, '*')
@@ -82,6 +88,12 @@ export function BlockOverlay({ blockType, blockIndex, children }: BlockOverlayPr
     )
   }
 
+  // Construct admin deep-link for public edit mode
+  const adminUrl =
+    docId && docCollection
+      ? `/admin/collections/${docCollection}/${docId}?field=${encodeURIComponent(fieldPath)}`
+      : null
+
   return (
     <div
       ref={ref}
@@ -89,13 +101,15 @@ export function BlockOverlay({ blockType, blockIndex, children }: BlockOverlayPr
       data-block-index={blockIndex}
       data-edit-block={fieldPath}
       data-payload-path={fieldPath}
+      data-payload-block={blockType}
+      data-payload-id={docId ?? ''}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{ position: 'relative' }}
     >
       {children}
 
-      {/* Block type badge — top-left corner, always visible in preview mode */}
+      {/* Block type badge — top-left, always visible in overlay mode */}
       <div
         aria-hidden="true"
         style={{
@@ -132,7 +146,6 @@ export function BlockOverlay({ blockType, blockIndex, children }: BlockOverlayPr
       {/* Hover chrome — outline + controls */}
       {isHovered && (
         <>
-          {/* Inset outline */}
           <div
             aria-hidden="true"
             style={{
@@ -148,7 +161,6 @@ export function BlockOverlay({ blockType, blockIndex, children }: BlockOverlayPr
             }}
           />
 
-          {/* Controls toolbar — top-right */}
           <div
             style={{
               alignItems: 'center',
@@ -160,35 +172,59 @@ export function BlockOverlay({ blockType, blockIndex, children }: BlockOverlayPr
               zIndex: 31,
             }}
           >
-            <OverlayButton
-              title="Demander à l'IA"
-              onClick={() => {
-                window.parent.postMessage(
-                  { type: 'lp:ai-field-help', path: fieldPath, label },
-                  '*',
-                )
-              }}
-            >
+            {/* ✦ AI — works in both iframe and public edit mode */}
+            <OverlayButton title="Modifier avec l'IA" onClick={sendAIHelp}>
               ✦
             </OverlayButton>
+
+            {/* Admin live-preview iframe controls */}
             {isInIframe && (
               <OverlayButton
-                title={`Edit ${label} (block ${blockIndex})`}
+                title={`Modifier ${label} (bloc ${blockIndex})`}
                 onClick={focusBlock}
                 primary
               >
-                Edit
+                Modifier
               </OverlayButton>
             )}
             {isInIframe && blockIndex > 0 && (
-              <OverlayButton title="Move block up" onClick={() => reorder('up')}>
-                ↑
-              </OverlayButton>
+              <OverlayButton title="Monter" onClick={() => reorder('up')}>↑</OverlayButton>
             )}
             {isInIframe && (
-              <OverlayButton title="Move block down" onClick={() => reorder('down')}>
-                ↓
-              </OverlayButton>
+              <OverlayButton title="Descendre" onClick={() => reorder('down')}>↓</OverlayButton>
+            )}
+
+            {/* Public edit mode — deep-link to admin */}
+            {isEditMode && !isInIframe && adminUrl && (
+              <a
+                href={adminUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Ouvrir dans l'admin"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  alignItems: 'center',
+                  background: 'rgba(15,15,15,0.72)',
+                  backdropFilter: 'blur(6px)',
+                  border: 'none',
+                  borderRadius: 4,
+                  color: '#fff',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  fontFamily: 'system-ui, sans-serif',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  height: 26,
+                  justifyContent: 'center',
+                  lineHeight: 1,
+                  padding: '0 8px',
+                  textDecoration: 'none',
+                  userSelect: 'none',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                ↗ Admin
+              </a>
             )}
           </div>
         </>

@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { type NextRequest } from 'next/server'
 import type { UIMessage } from 'ai'
 import { revalidatePath } from 'next/cache'
-import { cookies } from 'next/headers'
+import { cookies, draftMode } from 'next/headers'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 
@@ -226,6 +226,9 @@ export async function POST(request: NextRequest) {
                 locale: payloadLocale,
                 overrideAccess: true,
               })
+              // Ensure draft mode is active so the next page load picks up fresh data
+              const dm = await draftMode()
+              dm.enable()
               revalidatePath('/', 'layout')
               return { success: true, updatedFields: Object.keys(data), doc: result }
             }
@@ -238,6 +241,9 @@ export async function POST(request: NextRequest) {
               locale: payloadLocale,
               overrideAccess: true,
             })
+            // Ensure draft mode is active so the next page load picks up fresh data
+            const dm = await draftMode()
+            dm.enable()
             revalidatePath('/', 'layout')
             return { success: true, updatedFields: Object.keys(data), doc: result }
           } catch (err) {
