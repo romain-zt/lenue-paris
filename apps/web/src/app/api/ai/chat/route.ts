@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
         (k) =>
           !['id', 'createdAt', 'updatedAt', 'globalType'].includes(k),
       )
-      docSnapshot = `\n\nChamps disponibles sur ce document (utilisez exactement ces noms) :\n${fields.map((f) => `- ${f}: ${JSON.stringify((doc as Record<string, unknown>)[f])?.slice(0, 120)}`).join('\n')}\n\nRègle critique : pour modifier le titre, utilisez patch_field avec data={"title":"…"} — jamais "data.title" ni "hero.title".`
+      docSnapshot = `\n\nChamps disponibles sur ce document (utilisez exactement ces noms) :\n${fields.map((f) => `- ${f}: ${JSON.stringify((doc as unknown as Record<string, unknown>)[f])?.slice(0, 120)}`).join('\n')}\n\nRègle critique : pour modifier le titre, utilisez patch_field avec data={"title":"…"} — jamais "data.title" ni "hero.title".`
     } catch (err) {
       console.error('[/api/ai/chat] doc snapshot fetch failed:', err)
     }
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
       const fields = Object.keys(doc).filter(
         (k) => !['id', 'createdAt', 'updatedAt', 'globalType'].includes(k),
       )
-      docSnapshot = `\n\nChamps disponibles sur ce global (utilisez exactement ces noms) :\n${fields.map((f) => `- ${f}: ${JSON.stringify((doc as Record<string, unknown>)[f])?.slice(0, 120)}`).join('\n')}`
+      docSnapshot = `\n\nChamps disponibles sur ce global (utilisez exactement ces noms) :\n${fields.map((f) => `- ${f}: ${JSON.stringify((doc as unknown as Record<string, unknown>)[f])?.slice(0, 120)}`).join('\n')}`
     } catch (err) {
       console.error('[/api/ai/chat] global snapshot fetch failed:', err)
     }
