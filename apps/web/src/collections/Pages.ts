@@ -248,12 +248,7 @@ export const Pages: CollectionConfig = {
     delete: ({ req }) => Boolean(req.user),
   },
   versions: {
-    drafts: {
-      autosave: {
-        interval: 1000,
-        showSaveDraftButton: true,
-      },
-    },
+    drafts: true,
   },
   fields: [
     {
