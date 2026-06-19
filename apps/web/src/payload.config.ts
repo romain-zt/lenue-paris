@@ -43,6 +43,9 @@ export default buildConfig({
 
   admin: {
     user: Users.slug,
+    components: {
+      afterNavLinks: ['@/components/admin/AIPanel#AIPanel'],
+    },
     livePreview: {
       breakpoints: [
         { label: "Mobile", name: "mobile", width: 375, height: 667 },
