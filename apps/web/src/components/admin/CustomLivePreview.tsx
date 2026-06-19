@@ -55,6 +55,7 @@ export const CustomLivePreview: React.FC = () => {
   // ─── Fullscreen state — URL-driven (?fs=1) ────────────────────────────────
 
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [selectedField, setSelectedField] = useState<string | null>(null)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -206,7 +207,10 @@ export const CustomLivePreview: React.FC = () => {
 
       if (event.data.type === 'payload-field-focus') {
         const path = typeof event.data.path === 'string' ? event.data.path : null
-        if (path) focusAdminField(path)
+        if (path) {
+          focusAdminField(path)
+          setSelectedField(path)
+        }
         return
       }
 
@@ -521,6 +525,81 @@ export const CustomLivePreview: React.FC = () => {
         }}
       >
         <BreakpointBar onFullscreen={toggleFullscreen} />
+
+        {/* AI action bar — appears when a block is selected via the preview iframe */}
+        {selectedField && (
+          <div
+            style={{
+              alignItems: 'center',
+              background: 'rgba(99,102,241,0.07)',
+              borderBottom: '1px solid rgba(99,102,241,0.18)',
+              display: 'flex',
+              flexShrink: 0,
+              gap: 6,
+              padding: '4px 8px',
+            }}
+          >
+            <code
+              style={{
+                color: 'rgba(99,102,241,0.8)',
+                flex: 1,
+                fontFamily: 'monospace',
+                fontSize: 10,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {selectedField}
+            </code>
+            <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(
+                  new CustomEvent('aipanel:open', {
+                    detail: {
+                      fieldPath: selectedField,
+                      prompt: `Modifier le bloc : ${selectedField}`,
+                    },
+                  }),
+                )
+              }}
+              style={{
+                alignItems: 'center',
+                background: 'rgba(99,102,241,0.88)',
+                border: 'none',
+                borderRadius: 4,
+                color: '#fff',
+                cursor: 'pointer',
+                display: 'flex',
+                flexShrink: 0,
+                fontFamily: 'system-ui, sans-serif',
+                fontSize: 11,
+                fontWeight: 600,
+                gap: 3,
+                minHeight: 26,
+                padding: '0 8px',
+              }}
+            >
+              ✦ Modifier avec l&apos;IA
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedField(null)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'rgba(99,102,241,0.5)',
+                cursor: 'pointer',
+                fontSize: 14,
+                lineHeight: 1,
+                padding: 2,
+              }}
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         <div
           ref={containerRef}

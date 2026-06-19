@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import type { UIMessage } from 'ai'
+import { ensureHighlightStyle, focusAdminField } from './live-preview/utils'
 
 type DocContext = {
   type: 'collection' | 'global' | 'dashboard'
@@ -64,6 +65,7 @@ type ToolPart = {
   toolInvocation: {
     toolName: string
     state: string
+    result?: unknown
   }
 }
 
@@ -160,6 +162,8 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
 
   useEffect(() => { setMounted(true) }, [])
 
+  useEffect(() => { ensureHighlightStyle() }, [])
+
   useEffect(() => {
     docContextRef.current = docContext
   }, [docContext])
@@ -208,6 +212,23 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
     return () => window.removeEventListener('message', handleIframeMessage)
   }, [])
 
+  // Listen for aipanel:open from CustomLivePreview or BlockOverlay (same window)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ fieldPath?: string; prompt?: string }>).detail ?? {}
+      setOpen(true)
+      setActiveTab('contenu')
+      if (detail.prompt) {
+        setInput(detail.prompt)
+      } else if (detail.fieldPath) {
+        setInput(`Modifier le bloc : ${detail.fieldPath}`)
+      }
+      setTimeout(() => inputRef.current?.focus(), 200)
+    }
+    window.addEventListener('aipanel:open', handler)
+    return () => window.removeEventListener('aipanel:open', handler)
+  }, [])
+
   useEffect(() => {
     if (!lastEdit) return
     const tick = () => setTimeAgoDisplay(timeAgo(lastEdit.timestamp))
@@ -240,15 +261,27 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
     onFinish: ({ message }) => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
       const parts = (message as { parts?: MessagePart[] }).parts ?? []
-      const hasPatch = parts.some(
-        (p) => p.type === 'tool-invocation' &&
+      const patchParts = parts.filter(
+        (p): p is ToolPart =>
+          p.type === 'tool-invocation' &&
           (p as ToolPart).toolInvocation.toolName === 'patch_field' &&
-          (p as { toolInvocation: { state: string } }).toolInvocation.state === 'result'
+          (p as ToolPart).toolInvocation.state === 'result',
       )
-      if (hasPatch) {
-        setLastEdit({ fields: [], timestamp: new Date() })
+      if (patchParts.length > 0) {
+        const updatedFields = patchParts.flatMap((p) => {
+          const res = p.toolInvocation.result as { updatedFields?: string[] } | undefined
+          return res?.updatedFields ?? []
+        })
+        setLastEdit({ fields: updatedFields, timestamp: new Date() })
         setPatchDone(true)
+        // Notify Payload admin form to re-read the document
+        document.dispatchEvent(new CustomEvent('payload:document:refetch'))
         router.refresh()
+        // Highlight the first patched field in the admin form
+        if (updatedFields.length > 0 && updatedFields[0]) {
+          const field = updatedFields[0]
+          setTimeout(() => focusAdminField(field), 300)
+        }
       }
     },
   })
@@ -465,7 +498,9 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
             fontSize: 12,
             color: 'var(--theme-elevation-600, #666)',
           }}>
-            <span style={{ flex: 1 }}>Dernière modification · {timeAgoDisplay}</span>
+            <span style={{ flex: 1 }}>
+              Dernière modification{lastEdit.fields.length > 0 ? ` · ${lastEdit.fields.slice(0, 3).join(', ')}` : ''} · {timeAgoDisplay}
+            </span>
             <button
               onClick={() => setLastEdit(null)}
               style={{

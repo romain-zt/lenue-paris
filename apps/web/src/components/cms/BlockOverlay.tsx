@@ -9,6 +9,22 @@ const BLOCK_TYPE_LABELS: Record<string, string> = {
   productGrid: 'Product Grid',
 }
 
+let editModeStyleInjected = false
+
+function injectEditModeStyle() {
+  if (editModeStyleInjected || typeof document === 'undefined') return
+  editModeStyleInjected = true
+  const style = document.createElement('style')
+  style.textContent = `
+    html.admin-edit-mode [data-edit-block] {
+      outline: 2px solid rgba(99,102,241,0.4);
+      outline-offset: 0px;
+      cursor: pointer;
+    }
+  `
+  document.head.appendChild(style)
+}
+
 interface BlockOverlayProps {
   blockType: string
   blockIndex: number
@@ -35,6 +51,7 @@ export function BlockOverlay({ blockType, blockIndex, children }: BlockOverlayPr
   useEffect(() => {
     setIsInIframe(window.parent !== window)
     setIsEditMode(document.documentElement.classList.contains('admin-edit-mode'))
+    injectEditModeStyle()
 
     const handleEditMode = (e: Event) => {
       setIsEditMode((e as CustomEvent<{ enabled: boolean }>).detail.enabled)
@@ -70,6 +87,7 @@ export function BlockOverlay({ blockType, blockIndex, children }: BlockOverlayPr
       ref={ref}
       data-block-type={blockType}
       data-block-index={blockIndex}
+      data-edit-block={fieldPath}
       data-payload-path={fieldPath}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
