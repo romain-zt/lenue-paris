@@ -65,6 +65,7 @@ type ToolPart = {
   toolInvocation: {
     toolName: string
     state: string
+    args?: Record<string, unknown>
     result?: unknown
   }
 }
@@ -305,35 +306,60 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
   const { messages, sendMessage, status, setMessages } = useChat({
     id: storageKey,
     transport,
-    onFinish: ({ message }) => {
+    onFinish: () => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-      const parts = (message as { parts?: MessagePart[] }).parts ?? []
-      const patchParts = parts.filter(
-        (p): p is ToolPart =>
-          p.type === 'tool-invocation' &&
-          (p as ToolPart).toolInvocation.toolName === 'patch_field' &&
-          ((p as ToolPart).toolInvocation.state === 'result' ||
-            // AI SDK sometimes marks completed tool calls as 'call' in onFinish
-            (p as ToolPart).toolInvocation.state === 'call'),
-      )
-      if (patchParts.length > 0) {
-        const updatedFields = patchParts.flatMap((p) => {
-          const res = p.toolInvocation.result as { updatedFields?: string[] } | undefined
-          return res?.updatedFields ?? []
-        })
-        setLastEdit({ fields: updatedFields, timestamp: new Date() })
-        setPatchDone(true)
-        // Notify Payload admin form to re-read the document
-        document.dispatchEvent(new CustomEvent('payload:document:refetch'))
-        router.refresh()
-        // Highlight the first patched field in the admin form
-        if (updatedFields.length > 0 && updatedFields[0]) {
-          const field = updatedFields[0]
-          setTimeout(() => focusAdminField(field), 300)
-        }
-      }
     },
   })
+
+  // Track which message ids we've already processed to avoid double-firing.
+  // Scan ALL messages (not just the last one) because multi-step tool calling
+  // puts patch_field in an earlier step's message, not the final text reply.
+  const processedPatchIds = useRef(new Set<string>())
+
+  useEffect(() => {
+    // Only process once the stream is fully settled
+    if (status !== 'ready') return
+
+    for (const message of messages) {
+      if (message.role !== 'assistant') continue
+      if (processedPatchIds.current.has(message.id)) continue
+
+      const parts = (message as { parts?: MessagePart[] }).parts ?? []
+      const successfulPatches = parts.filter((p): p is ToolPart => {
+        if (p.type !== 'tool-invocation') return false
+        const tp = p as ToolPart
+        if (tp.toolInvocation.toolName !== 'patch_field') return false
+        if (tp.toolInvocation.state !== 'result') return false
+        const res = tp.toolInvocation.result as { success?: boolean } | undefined
+        return res?.success === true
+      })
+
+      // Mark processed regardless of whether patches were found
+      processedPatchIds.current.add(message.id)
+
+      if (successfulPatches.length === 0) continue
+
+      const updatedFields = successfulPatches.flatMap((p) => {
+        const res = p.toolInvocation.result as { updatedFields?: string[] } | undefined
+        return res?.updatedFields ?? []
+      })
+
+      setLastEdit({ fields: updatedFields, timestamp: new Date() })
+      setPatchDone(true)
+
+      // Signal live-preview iframe to reload immediately (no full page reload needed)
+      window.dispatchEvent(new CustomEvent('lp:ai-patch-done', { detail: { fields: updatedFields } }))
+
+      // Notify Payload admin form
+      document.dispatchEvent(new CustomEvent('payload:document:refetch'))
+      router.refresh()
+
+      if (updatedFields.length > 0 && updatedFields[0]) {
+        const field = updatedFields[0]
+        setTimeout(() => focusAdminField(field), 400)
+      }
+    }
+  }, [messages, status, router])
 
   const isLoading = status === 'submitted' || status === 'streaming'
 

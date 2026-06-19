@@ -156,6 +156,22 @@ export const CustomLivePreview: React.FC = () => {
       })
   }
 
+  // ─── Reload iframe when AI patches the DB (no full page reload needed) ──────
+
+  useEffect(() => {
+    const handle = () => {
+      if (!iframeRef.current) return
+      // Force reload by toggling src — works cross-origin unlike contentWindow.reload()
+      const src = iframeRef.current.src
+      iframeRef.current.src = ''
+      setTimeout(() => {
+        if (iframeRef.current) iframeRef.current.src = src
+      }, 80)
+    }
+    window.addEventListener('lp:ai-patch-done', handle)
+    return () => window.removeEventListener('lp:ai-patch-done', handle)
+  }, [iframeRef])
+
   // ─── postMessage: push form data to iframe ────────────────────────────────
 
   useEffect(() => {
@@ -470,6 +486,20 @@ export const CustomLivePreview: React.FC = () => {
             onExit={toggleFullscreen}
             isSaving={saveStatus === 'saving'}
             saveStatus={saveStatus}
+            selectedField={selectedField}
+            onAI={(fieldPath) => {
+              window.dispatchEvent(
+                new CustomEvent('aipanel:open', {
+                  detail: {
+                    fieldPath,
+                    prompt: fieldPath
+                      ? `Modifier le bloc : ${fieldPath}`
+                      : undefined,
+                  },
+                }),
+              )
+              setSelectedField(null)
+            }}
           />
         </div>
       </div>

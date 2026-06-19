@@ -50,9 +50,11 @@ interface FABProps {
   onExit: () => void
   isSaving: boolean
   saveStatus: SaveStatus
+  selectedField?: string | null
+  onAI?: (fieldPath?: string) => void
 }
 
-export const FAB: React.FC<FABProps> = ({ locale, onSave, onPublish, onExit, isSaving, saveStatus }) => {
+export const FAB: React.FC<FABProps> = ({ locale, onSave, onPublish, onExit, isSaving, saveStatus, selectedField, onAI }) => {
   const [open, setOpen] = useState(false)
 
   const statusColor =
@@ -105,10 +107,22 @@ export const FAB: React.FC<FABProps> = ({ locale, onSave, onPublish, onExit, isS
 
           <div style={{ background: 'rgba(255,255,255,0.06)', height: 1, margin: '2px 0' }} />
 
+          {onAI && (
+            <>
+              <FABMenuItem
+                onClick={() => { onAI(selectedField ?? undefined); setOpen(false) }}
+                primary
+              >
+                ✦ {selectedField ? 'Modifier avec l\'IA' : 'Assistant IA'}
+              </FABMenuItem>
+              <div style={{ background: 'rgba(255,255,255,0.06)', height: 1, margin: '2px 0' }} />
+            </>
+          )}
+
           <FABMenuItem onClick={() => { onSave(); setOpen(false) }} disabled={isSaving}>
             Save draft
           </FABMenuItem>
-          <FABMenuItem onClick={() => { onPublish(); setOpen(false) }} disabled={isSaving} primary>
+          <FABMenuItem onClick={() => { onPublish(); setOpen(false) }} disabled={isSaving}>
             Publish
           </FABMenuItem>
 
