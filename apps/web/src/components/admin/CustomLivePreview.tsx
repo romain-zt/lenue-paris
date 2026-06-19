@@ -222,6 +222,48 @@ export const CustomLivePreview: React.FC = () => {
     }
   }, [mostRecentUpdate, iframeRef, popupRef, previewWindowType, url, isLivePreviewing, appIsReady])
 
+  // ─── Field update from inline editor ─────────────────────────────────────
+  // Declared before the postMessage useEffect so it can be listed as a stable dep.
+  // Uses only refs internally — safe to memoize with empty deps.
+
+  const updateFormField = useCallback((path: string, value: string) => {
+    try {
+      dispatchFieldsRef.current({
+        type: 'UPDATE',
+        path,
+        value,
+      } as Parameters<typeof dispatchFieldsRef.current>[0])
+      return
+    } catch {
+      // fall through to DOM approach
+    }
+
+    const blockMatch = path.match(/^blocks\.(\d+)/)
+    if (blockMatch) expandBlockRow(parseInt(blockMatch[1] ?? '0', 10))
+
+    setTimeout(() => {
+      const selectors = [
+        `input[name="${path}"]`,
+        `textarea[name="${path}"]`,
+        `[data-field-path="${path}"] input`,
+        `[data-field-path="${path}"] textarea`,
+      ]
+      for (const sel of selectors) {
+        const el = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(sel)
+        if (!el) continue
+        const proto =
+          el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
+        const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set
+        if (nativeSetter) {
+          nativeSetter.call(el, value)
+          el.dispatchEvent(new Event('input', { bubbles: true }))
+          el.dispatchEvent(new Event('change', { bubbles: true }))
+        }
+        return
+      }
+    }, 120)
+  }, []) // refs only — stable across renders
+
   // ─── postMessage: receive field focus / block reorder / inline edit ───────
 
   useEffect(() => {
@@ -262,47 +304,7 @@ export const CustomLivePreview: React.FC = () => {
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [])
-
-  // ─── Field update from inline editor ─────────────────────────────────────
-
-  function updateFormField(path: string, value: string) {
-    try {
-      dispatchFieldsRef.current({
-        type: 'UPDATE',
-        path,
-        value,
-      } as Parameters<typeof dispatchFieldsRef.current>[0])
-      return
-    } catch {
-      // fall through to DOM approach
-    }
-
-    const blockMatch = path.match(/^blocks\.(\d+)/)
-    if (blockMatch) expandBlockRow(parseInt(blockMatch[1] ?? '0', 10))
-
-    setTimeout(() => {
-      const selectors = [
-        `input[name="${path}"]`,
-        `textarea[name="${path}"]`,
-        `[data-field-path="${path}"] input`,
-        `[data-field-path="${path}"] textarea`,
-      ]
-      for (const sel of selectors) {
-        const el = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(sel)
-        if (!el) continue
-        const proto =
-          el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
-        const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set
-        if (nativeSetter) {
-          nativeSetter.call(el, value)
-          el.dispatchEvent(new Event('input', { bubbles: true }))
-          el.dispatchEvent(new Event('change', { bubbles: true }))
-        }
-        return
-      }
-    }, 120)
-  }
+  }, [updateFormField])
 
   function expandBlockRow(index: number) {
     const blocksField = document.querySelector<HTMLElement>('[data-field-path="blocks"]')

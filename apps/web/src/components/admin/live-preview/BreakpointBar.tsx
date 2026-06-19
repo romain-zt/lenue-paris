@@ -12,7 +12,7 @@ export const BreakpointBar: React.FC<BreakpointBarProps> = ({ onFullscreen }) =>
 
   useEffect(() => {
     setBreakpoint('mobile')
-  }, [])
+  }, [setBreakpoint])
 
   const allBreakpoints = [
     { label: 'Responsive', name: 'responsive' },

@@ -74,7 +74,7 @@ export function InlineEditor() {
       el.focus()
       el.setSelectionRange(el.value.length, el.value.length)
     })
-  }, [state?.path]) // re-run when a new field opens
+  }, [state]) // re-run when the active field changes
 
   function close() {
     setState(null)

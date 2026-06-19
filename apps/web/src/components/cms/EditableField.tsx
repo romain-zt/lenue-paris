@@ -54,11 +54,9 @@ export function EditableField({
     if (!isEditing) setValue(currentValue)
   }, [currentValue, isEditing])
 
-  // Passthrough — zero cost for regular shoppers
-  if (!isEditModeActive) return <>{children}</>
-
   // Auto-grow to full content height as soon as the textarea mounts —
   // prevents a clipped 3-row view on first tap before the user types anything.
+  // Must be declared unconditionally (before any early return) — React Hooks rules.
   useLayoutEffect(() => {
     if (!isEditing || !textareaRef.current) return
     const t = textareaRef.current
@@ -67,6 +65,9 @@ export function EditableField({
     t.focus()
     t.select()
   }, [isEditing])
+
+  // Passthrough — zero cost for regular shoppers
+  if (!isEditModeActive) return <>{children}</>
 
   const handleClick = () => {
     if (isEditing || isPending) return
