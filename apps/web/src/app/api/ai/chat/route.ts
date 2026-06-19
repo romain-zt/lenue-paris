@@ -6,9 +6,8 @@ import type { UIMessage } from 'ai'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 
-const cursor = createOpenAI({
-  apiKey: process.env.CURSOR_API_KEY ?? '',
-  baseURL: process.env.CURSOR_API_BASE_URL ?? 'https://api.cursor.sh/v1',
+const openai = createOpenAI({
+  apiKey: process.env.OPENAI_API_KEY ?? '',
 })
 
 const SCHEMA_SUMMARY = `
@@ -98,14 +97,26 @@ export async function POST(request: NextRequest) {
   const { messages, context } = body
   const origin = new URL(request.url).origin
 
-  if (!process.env.CURSOR_API_KEY) {
-    console.error('[/api/ai/chat] CURSOR_API_KEY is not set — AI responses will fail')
+  if (!process.env.OPENAI_API_KEY) {
+    console.error('[/api/ai/chat] OPENAI_API_KEY is not set — AI responses will fail')
   }
 
-  // Read the payload-token cookie explicitly so it's forwarded to internal
-  // Payload REST calls even when the request comes from the public site.
+  // Require either a Payload session cookie or a valid editor share token
   const cookieStore = await cookies()
   const payloadToken = cookieStore.get('payload-token')?.value
+  const editorToken = cookieStore.get('editor_token')?.value
+  const isAuthorized =
+    !!payloadToken ||
+    (!!editorToken && editorToken === process.env.EDITOR_SHARE_TOKEN)
+
+  if (!isAuthorized) {
+    return new Response(JSON.stringify({ error: 'Non autorisé' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  // Forward the appropriate auth cookie to internal Payload REST calls
   const cookie = payloadToken
     ? `payload-token=${payloadToken}`
     : (request.headers.get('cookie') ?? '')
@@ -120,7 +131,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = streamText({
-      model: cursor(process.env.CURSOR_MODEL ?? 'gpt-4o'),
+      model: openai(process.env.OPENAI_MODEL ?? 'gpt-4o'),
       system: SYSTEM_PROMPT + contextNote,
       messages: modelMessages,
       stopWhen: stepCountIs(8),

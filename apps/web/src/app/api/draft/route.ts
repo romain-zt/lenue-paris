@@ -4,7 +4,13 @@ import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
   const cookieStore = await cookies()
-  if (!cookieStore.get('payload-token')) {
+  const payloadToken = cookieStore.get('payload-token')?.value
+  const editorToken = cookieStore.get('editor_token')?.value
+  const isAuthorized =
+    !!payloadToken ||
+    (!!editorToken && editorToken === process.env.EDITOR_SHARE_TOKEN)
+
+  if (!isAuthorized) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
 

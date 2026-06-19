@@ -501,7 +501,7 @@ function AIChatPanel({
           >
             ⚠ {error?.message
               ? error.message
-              : <>Erreur de connexion à l&apos;IA. Vérifiez que <code style={{ fontFamily: 'monospace', fontSize: 10 }}>CURSOR_API_KEY</code> est configuré côté serveur.</>
+              : <>Erreur de connexion à l&apos;IA. Vérifiez que <code style={{ fontFamily: 'monospace', fontSize: 10 }}>OPENAI_API_KEY</code> est configuré côté serveur.</>
             }
           </div>
         )}
@@ -600,12 +600,21 @@ function AIChatPanel({
   )
 }
 
+// ─── Editor token helpers ─────────────────────────────────────────────────────
+
+function getEditorTokenFromCookie(): string | null {
+  if (typeof document === 'undefined') return null
+  const match = document.cookie.match(/(?:^|;\s*)editor_token=([^;]+)/)
+  return match?.[1] ?? null
+}
+
 // ─── Main FAB component ───────────────────────────────────────────────────────
 
 export function PublicAdminFAB() {
   const pathname = usePathname()
   const [user, setUser] = useState<PayloadUser | null>(null)
   const [checking, setChecking] = useState(true)
+  const [isEditorToken, setIsEditorToken] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
@@ -648,6 +657,33 @@ export function PublicAdminFAB() {
       document.documentElement.classList.add('admin-edit-mode')
       document.dispatchEvent(new CustomEvent('admin-edit-mode', { detail: { enabled: true } }))
     }
+  }, [])
+
+  // Handle ?editor_token= query param: exchange for HttpOnly cookie then reload clean
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const tokenParam = params.get('editor_token')
+    if (!tokenParam) return
+
+    const clean = new URL(window.location.href)
+    clean.searchParams.delete('editor_token')
+
+    fetch(`/api/editor-token?token=${encodeURIComponent(tokenParam)}&redirect=${encodeURIComponent(clean.pathname + clean.search)}`, {
+      redirect: 'manual',
+    })
+      .then(() => {
+        window.location.replace(clean.toString())
+      })
+      .catch(() => {
+        window.location.replace(clean.toString())
+      })
+  }, [])
+
+  // Check for editor_token cookie — shows FAB for share-link collaborators
+  useEffect(() => {
+    const token = getEditorTokenFromCookie()
+    if (token) setIsEditorToken(true)
   }, [])
 
   // Check if current user is a Payload admin
@@ -767,7 +803,7 @@ export function PublicAdminFAB() {
     }
   }, [editMode])
 
-  if (checking || !user) return null
+  if (checking || (!user && !isEditorToken)) return null
 
   return (
     <>
@@ -802,7 +838,7 @@ export function PublicAdminFAB() {
         >
           <div
             style={{
-              color: 'rgba(255,255,255,0.35)',
+              color: isEditorToken && !user ? 'rgba(165,180,252,0.7)' : 'rgba(255,255,255,0.35)',
               fontSize: 10,
               fontWeight: 700,
               letterSpacing: '0.07em',
@@ -810,7 +846,7 @@ export function PublicAdminFAB() {
               textTransform: 'uppercase',
             }}
           >
-            Admin · {user.email.split('@')[0]}
+            {isEditorToken && !user ? 'Mode Collaborateur' : `Admin · ${user?.email.split('@')[0]}`}
           </div>
 
           <div style={{ background: 'rgba(255,255,255,0.06)', height: 1, margin: '2px 0' }} />

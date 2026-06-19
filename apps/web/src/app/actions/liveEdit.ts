@@ -5,6 +5,14 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { revalidatePath } from 'next/cache'
 
+type CookieStore = Awaited<ReturnType<typeof cookies>>
+
+async function isEditorAuthorized(cookieStore: CookieStore): Promise<boolean> {
+  if (cookieStore.get('payload-token')) return true
+  const editorToken = cookieStore.get('editor_token')?.value
+  return !!editorToken && editorToken === process.env.EDITOR_SHARE_TOKEN
+}
+
 export async function updateLiveField({
   collection,
   id,
@@ -19,7 +27,7 @@ export async function updateLiveField({
   locale?: string
 }) {
   const cookieStore = await cookies()
-  if (!cookieStore.get('payload-token')) {
+  if (!(await isEditorAuthorized(cookieStore))) {
     throw new Error('Non autorisé — connexion admin requise')
   }
 
@@ -80,7 +88,7 @@ export async function publishDocument({
   id: string
 }) {
   const cookieStore = await cookies()
-  if (!cookieStore.get('payload-token')) {
+  if (!(await isEditorAuthorized(cookieStore))) {
     throw new Error('Non autorisé — connexion admin requise')
   }
 
