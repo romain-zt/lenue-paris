@@ -455,7 +455,7 @@ export function PublicAdminFAB() {
               ;(e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.5)'
             }}
           >
-            ↗ Ouvrir l'admin
+            {`↗ Ouvrir l'admin`}
           </a>
         </div>
       )}
