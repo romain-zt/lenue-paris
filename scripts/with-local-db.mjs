@@ -16,7 +16,7 @@ function readComposeValue(content, key) {
 }
 
 export function applyLocalDockerEnv() {
-  if (process.env.VERCEL || !fs.existsSync(composePath)) return
+  if (process.env.VERCEL || process.env.CI || !fs.existsSync(composePath)) return
 
   const content = fs.readFileSync(composePath, 'utf8')
   const user = readComposeValue(content, 'POSTGRES_USER') ?? 'app'
