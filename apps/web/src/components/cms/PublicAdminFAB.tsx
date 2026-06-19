@@ -251,11 +251,20 @@ function AIChatPanel({
   const { messages, sendMessage, status } = useChat({
     id: 'public-ai-chat',
     transport,
-    onFinish: ({ message }) => {
+    onFinish: () => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-      // Dispatch lp:field-patched for every completed patch_field tool call
-      // so the FAB strip stays in sync with AI edits.
-      // Read from both args (call parameters) and result (execution output).
+    },
+  })
+
+  // Scan ALL messages once the stream settles — identical to the fix in AIPanel.tsx
+  // (Bug 1: onFinish only fires for the last step; patch_field lives in an earlier step
+  // in multi-step chains, so onFinish always missed it.)
+  const processedPatchIds = useRef(new Set<string>())
+  useEffect(() => {
+    if (status !== 'ready') return
+    for (const message of messages) {
+      if (message.role !== 'assistant') continue
+      if (processedPatchIds.current.has(message.id)) continue
       const parts = (message as { parts?: MessagePart[] }).parts ?? []
       for (const p of parts) {
         if (p.type !== 'tool-invocation') continue
@@ -288,8 +297,9 @@ function AIChatPanel({
           )
         }
       }
-    },
-  })
+      processedPatchIds.current.add(message.id)
+    }
+  }, [messages, status])
 
   const isLoading = status === 'submitted' || status === 'streaming'
 
