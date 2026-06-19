@@ -226,10 +226,13 @@ function AIChatPanel({
   // like /livraison that aren't handled by path matching alone).
   const contextRef = useRef(parsePublicContext(adminResolution))
 
-  // Stable chat ID keyed by the resolved document so history is per-page
-  const chatId = adminResolution?.url
-    ? `public-chat-${adminResolution.url.replace(/\//g, '-')}`
-    : 'public-ai-chat'
+  // Stable chat ID keyed by the current public URL path so history is per-page.
+  // Uses pathname (immediately available) rather than the async adminResolution
+  // so the key is stable from first render — no re-initialization on resolution.
+  const pathname = typeof window !== 'undefined'
+    ? window.location.pathname
+    : 'unknown'
+  const chatId = `public-chat-${pathname.replace(/\//g, '-').replace(/^-/, '')}`
 
   // Keep context in sync when the admin URL resolves after mount
   useEffect(() => {
@@ -253,7 +256,9 @@ function AIChatPanel({
     }
   }, [pendingPrompt])
 
-  // Load persisted messages from localStorage on first render
+  // Load persisted messages from localStorage on first render.
+  // chatId is derived from window.location.pathname (stable on mount) so this
+  // always loads from the correct per-page key.
   const [initialMessages] = useState<UIMessage[]>(() => {
     if (typeof window === 'undefined') return []
     try {
@@ -285,6 +290,8 @@ function AIChatPanel({
   const { messages, sendMessage, status, error, setMessages } = useChat({
     id: chatId,
     transport,
+    // `messages` is the AI SDK v6 way to provide initial messages (initialMessages doesn't exist)
+    messages: initialMessages,
     onFinish: () => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     },
@@ -859,8 +866,9 @@ export function PublicAdminFAB() {
 
   return (
     <>
-      {/* AI Chat panel — always mounted to preserve useChat history across open/close */}
+      {/* AI Chat panel — key on pathname so it remounts (and reloads localStorage) on page navigation */}
       <AIChatPanel
+        key={pathname}
         onClose={() => setAiOpen(false)}
         pendingPrompt={pendingPrompt}
         adminResolution={adminResolution}

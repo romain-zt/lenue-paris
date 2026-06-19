@@ -8,9 +8,18 @@ import { cookies, draftMode } from 'next/headers'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 
+// CURSOR_API_KEY retired — api.cursor.sh does not resolve from Vercel.
+// Use OPENAI_API_KEY directly. Route by tab: Contenu → gpt-4o-mini, Développement → gpt-4o.
 const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY ?? '',
 })
+
+function resolveModel(tab: 'contenu' | 'developpement' | undefined) {
+  if (tab === 'developpement') {
+    return openai(process.env.AI_MODEL_DEV ?? 'gpt-4o')
+  }
+  return openai(process.env.AI_MODEL_CONTENU ?? 'gpt-4o-mini')
+}
 
 const SCHEMA_SUMMARY = `
 ## Collections disponibles
@@ -78,6 +87,7 @@ ${SCHEMA_SUMMARY}
 export async function POST(request: NextRequest) {
   let body: {
     messages: UIMessage[]
+    tab?: 'contenu' | 'developpement'
     context?: {
       type: 'collection' | 'global' | 'dashboard'
       collection?: string
@@ -96,7 +106,7 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  const { messages, context } = body
+  const { messages, tab, context } = body
 
   if (!process.env.OPENAI_API_KEY) {
     console.error('[/api/ai/chat] OPENAI_API_KEY is not set — AI responses will fail')
@@ -163,10 +173,13 @@ export async function POST(request: NextRequest) {
       : ''
 
   const modelMessages = await convertToModelMessages(messages)
+  const resolvedTab = tab ?? 'contenu'
+  const model = resolveModel(resolvedTab)
+  const logStart = Date.now()
 
   try {
     const result = streamText({
-      model: openai(process.env.OPENAI_MODEL ?? 'gpt-4o'),
+      model,
       system: SYSTEM_PROMPT + contextNote,
       messages: modelMessages,
       stopWhen: stepCountIs(8),
@@ -304,9 +317,21 @@ export async function POST(request: NextRequest) {
       }),
     },
     })
+    console.log('[ai/chat]', {
+      tab: resolvedTab,
+      model: resolvedTab === 'developpement'
+        ? (process.env.AI_MODEL_DEV ?? 'gpt-4o')
+        : (process.env.AI_MODEL_CONTENU ?? 'gpt-4o-mini'),
+      contextType: context?.type,
+      latencyMs: Date.now() - logStart,
+    })
     return result.toUIMessageStreamResponse()
   } catch (err) {
-    console.error('[/api/ai/chat] streamText setup error:', err)
+    console.error('[ai/chat]', {
+      tab: resolvedTab,
+      error: err instanceof Error ? err.message : String(err),
+      latencyMs: Date.now() - logStart,
+    })
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : 'Erreur interne du serveur' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } },
