@@ -1051,8 +1051,8 @@ export function PublicAdminFAB() {
         {menuOpen || aiOpen ? '✕' : '✦'}
       </button>
 
-      {/* Edit mode indicator bar */}
-      {editMode && (
+      {/* Edit mode indicator bar — only shown after a modification to avoid blocking the site header */}
+      {editMode && lastPatch && (
         <div
           style={{
             alignItems: 'center',

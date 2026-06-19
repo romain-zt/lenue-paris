@@ -146,7 +146,7 @@ export function EditableField({
           onBlur={handleSave}
           onKeyDown={handleKeyDown}
           disabled={isPending}
-          rows={Math.max(1, value.split('\n').length)}
+          rows={Math.max(3, value.split('\n').length)}
           style={{
             background: 'rgba(99,102,241,0.06)',
             border: 'none',
@@ -154,13 +154,17 @@ export function EditableField({
             color: 'inherit',
             display: 'block',
             font: 'inherit',
+            // Minimum 16px so iOS doesn't auto-zoom on focus
+            fontSize: 'max(16px, 1em)',
             letterSpacing: 'inherit',
             lineHeight: 'inherit',
             margin: 0,
-            minHeight: '1.4em',
+            // Reasonable minimum so the text is actually readable on mobile
+            minHeight: '5em',
             outline: 'none',
-            padding: '2px 0',
-            resize: 'none',
+            padding: '4px 0',
+            resize: 'vertical',
+            touchAction: 'manipulation',
             width: '100%',
           }}
         />

@@ -5,6 +5,8 @@ import { type NextRequest } from 'next/server'
 import type { UIMessage } from 'ai'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
+import { getPayload } from 'payload'
+import config from '@payload-config'
 
 const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY ?? '',
@@ -95,7 +97,6 @@ export async function POST(request: NextRequest) {
   }
 
   const { messages, context } = body
-  const origin = new URL(request.url).origin
 
   if (!process.env.OPENAI_API_KEY) {
     console.error('[/api/ai/chat] OPENAI_API_KEY is not set — AI responses will fail')
@@ -115,11 +116,6 @@ export async function POST(request: NextRequest) {
       headers: { 'Content-Type': 'application/json' },
     })
   }
-
-  // Forward the appropriate auth cookie to internal Payload REST calls
-  const cookie = payloadToken
-    ? `payload-token=${payloadToken}`
-    : (request.headers.get('cookie') ?? '')
 
   const contextNote = context?.type === 'collection' && context.collection && context.id
     ? `\n\n## Contexte actuel\nL'utilisateur édite le document : collection="${context.collection}", id="${context.id}". Utilise ce document par défaut.`
@@ -145,13 +141,28 @@ export async function POST(request: NextRequest) {
           isGlobal: z.boolean().optional().describe("Vrai si c'est un global (ex: site-settings)"),
         })),
         execute: async ({ collection, id, locale, isGlobal }) => {
-          const params = locale ? `?locale=${locale}` : ''
-          const url = isGlobal
-            ? `${origin}/api/globals/${collection}${params}`
-            : `${origin}/api/${collection}/${id}${params}`
-          const res = await fetch(url, { headers: { cookie } })
-          if (!res.ok) return { error: `HTTP ${res.status} — ${await res.text()}` }
-          return res.json()
+          try {
+            const payload = await getPayload({ config })
+            if (isGlobal) {
+              const doc = await payload.findGlobal({
+                slug: collection as Parameters<typeof payload.findGlobal>[0]['slug'],
+                locale: (locale as 'fr' | 'en' | 'ru' | undefined) ?? 'fr',
+                overrideAccess: true,
+              })
+              return doc
+            }
+            if (!id) return { error: 'id requis pour les collections' }
+            const doc = await payload.findByID({
+              collection: collection as Parameters<typeof payload.findByID>[0]['collection'],
+              id: parseInt(id, 10),
+              locale: (locale as 'fr' | 'en' | 'ru' | undefined) ?? 'fr',
+              depth: 1,
+              overrideAccess: true,
+            })
+            return doc
+          } catch (err) {
+            return { error: err instanceof Error ? err.message : 'Erreur de lecture' }
+          }
         },
       }),
 
@@ -165,21 +176,34 @@ export async function POST(request: NextRequest) {
           isGlobal: z.boolean().optional().describe('Vrai pour modifier un global'),
         })),
         execute: async ({ collection, id, data, locale, isGlobal }) => {
-          const params = locale ? `?locale=${locale}` : ''
-          const url = isGlobal
-            ? `${origin}/api/globals/${collection}${params}`
-            : `${origin}/api/${collection}/${id}${params}`
-          const method = isGlobal ? 'POST' : 'PATCH'
-          const res = await fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json', cookie },
-            body: JSON.stringify(data),
-          })
-          if (!res.ok) return { error: `HTTP ${res.status} — ${await res.text()}` }
-          const result = await res.json()
-          // Invalidate Next.js RSC cache so the public site reflects the change on next load
-          revalidatePath('/', 'layout')
-          return { success: true, updatedFields: Object.keys(data), doc: result.doc ?? result }
+          try {
+            const payload = await getPayload({ config })
+            const payloadLocale = (locale as 'fr' | 'en' | 'ru' | undefined) ?? 'fr'
+
+            if (isGlobal) {
+              const result = await payload.updateGlobal({
+                slug: collection as Parameters<typeof payload.updateGlobal>[0]['slug'],
+                data: data as Record<string, unknown>,
+                locale: payloadLocale,
+                overrideAccess: true,
+              })
+              revalidatePath('/', 'layout')
+              return { success: true, updatedFields: Object.keys(data), doc: result }
+            }
+
+            if (!id) return { error: 'id requis pour les collections' }
+            const result = await payload.update({
+              collection: collection as Parameters<typeof payload.update>[0]['collection'],
+              id: parseInt(id, 10),
+              data: data as Record<string, unknown>,
+              locale: payloadLocale,
+              overrideAccess: true,
+            })
+            revalidatePath('/', 'layout')
+            return { success: true, updatedFields: Object.keys(data), doc: result }
+          } catch (err) {
+            return { error: err instanceof Error ? err.message : 'Erreur de modification' }
+          }
         },
       }),
 
