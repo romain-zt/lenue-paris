@@ -80,7 +80,7 @@ interface BlockOverlayProps {
   children: React.ReactNode
   /** Document ID — required to build the "Ouvrir dans l'admin" deep-link */
   docId?: string
-  docCollection?: 'pages' | 'products'
+  docCollection?: 'pages' | 'products' | 'collections'
 }
 
 /**

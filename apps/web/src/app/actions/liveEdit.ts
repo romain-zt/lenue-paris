@@ -84,7 +84,7 @@ export async function updateLiveField({
 
 // ─── Block structural mutations ───────────────────────────────────────────────
 
-type BlockCollection = 'pages' | 'products'
+type BlockCollection = 'pages' | 'products' | 'collections'
 
 async function fetchBlocks(
   payload: Awaited<ReturnType<typeof getPayload>>,
