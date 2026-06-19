@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import type { UIMessage } from 'ai'
@@ -15,7 +16,6 @@ type DocContext = {
 type LastEdit = {
   fields: string[]
   timestamp: Date
-  previousData?: Record<string, unknown>
 }
 
 function parseAdminPath(pathname: string): DocContext {
@@ -60,10 +60,11 @@ const TONE_CHIPS = [
 ]
 
 type ToolPart = {
-  type: 'dynamic-tool'
-  toolName: string
-  toolCallId: string
-  state: string
+  type: 'tool-invocation'
+  toolInvocation: {
+    toolName: string
+    state: string
+  }
 }
 
 type MessagePart = { type: 'text'; text: string } | ToolPart | { type: string }
@@ -75,7 +76,7 @@ function ToolCallCard({ toolName, state }: { toolName: string; state: string }) 
     list_schema: 'Récupération du schéma',
     push_to_github: 'Push vers GitHub',
   }
-  const isLoading = state === 'input-streaming' || state === 'input-available'
+  const isLoading = state === 'partial-call' || state === 'call'
   return (
     <div style={{
       padding: '8px 12px',
@@ -127,26 +128,35 @@ function MessageBubble({ message }: { message: UIMessage }) {
             </div>
           )
         }
-        if (part.type === 'dynamic-tool') {
+        if (part.type === 'tool-invocation') {
           const toolPart = part as ToolPart
-          return <ToolCallCard key={i} toolName={toolPart.toolName} state={toolPart.state} />
+          return (
+            <ToolCallCard
+              key={i}
+              toolName={toolPart.toolInvocation.toolName}
+              state={toolPart.toolInvocation.state}
+            />
+          )
         }
         return null
-      }      ) : null}
+      }) : null}
     </div>
   )
 }
 
-export const AIPanel: React.FC = () => {
+export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [open, setOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'contenu' | 'dev'>('contenu')
   const [docContext, setDocContext] = useState<DocContext>({ type: 'dashboard' })
   const [input, setInput] = useState('')
   const [lastEdit, setLastEdit] = useState<LastEdit | null>(null)
   const [timeAgoDisplay, setTimeAgoDisplay] = useState('')
+  const [mounted, setMounted] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const docContextRef = useRef(docContext)
+
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     docContextRef.current = docContext
@@ -208,10 +218,11 @@ export const AIPanel: React.FC = () => {
     onFinish: ({ message }) => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
       const parts = (message as { parts?: MessagePart[] }).parts ?? []
-      const patchPart = parts.find(
-        (p): p is ToolPart => p.type === 'dynamic-tool' && (p as ToolPart).toolName === 'patch_field' && (p as ToolPart).state === 'output-available'
+      const hasPatch = parts.some(
+        (p) => p.type === 'tool-invocation' &&
+          (p as ToolPart).toolInvocation.toolName === 'patch_field'
       )
-      if (patchPart) {
+      if (hasPatch) {
         setLastEdit({ fields: [], timestamp: new Date() })
       }
     },
@@ -247,12 +258,9 @@ export const AIPanel: React.FC = () => {
   }
 
   const sendQuickAction = useCallback((prompt: string) => {
+    setOpen(true)
     sendMessage({ text: prompt })
   }, [sendMessage])
-
-  const undoLastEdit = useCallback(() => {
-    setLastEdit(null)
-  }, [])
 
   const contextLabel = docContext.type === 'collection'
     ? `${docContext.collection} · ${docContext.id?.slice(0, 8)}…`
@@ -260,41 +268,50 @@ export const AIPanel: React.FC = () => {
       ? `global · ${docContext.slug}`
       : 'Tableau de bord'
 
-  return (
+  const panel = mounted ? createPortal(
     <>
-      {/* Trigger button in nav */}
-      <div style={{ padding: '8px 16px 16px' }}>
-        <button
-          onClick={() => setOpen(true)}
-          title="Assistant IA (⌘K)"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            width: '100%',
-            padding: '10px 12px',
-            background: 'var(--theme-elevation-100, rgba(255,255,255,0.06))',
-            border: '1px solid var(--theme-elevation-200, rgba(255,255,255,0.1))',
-            borderRadius: 8,
-            color: 'var(--theme-elevation-700, #ccc)',
-            cursor: 'pointer',
-            fontSize: 13,
-            transition: 'background 0.15s, border-color 0.15s',
-          }}
-          onMouseEnter={e => { (e.currentTarget).style.background = 'var(--theme-elevation-150, rgba(255,255,255,0.1))' }}
-          onMouseLeave={e => { (e.currentTarget).style.background = 'var(--theme-elevation-100, rgba(255,255,255,0.06))' }}
-        >
-          <span style={{ fontSize: 16 }}>✦</span>
-          <span style={{ flex: 1, textAlign: 'left' }}>Assistant IA</span>
-          <span style={{
-            fontSize: 10,
-            padding: '2px 6px',
-            background: 'var(--theme-elevation-200, rgba(255,255,255,0.1))',
-            borderRadius: 4,
-            fontFamily: 'monospace',
-          }}>⌘K</span>
-        </button>
-      </div>
+      {/* Floating trigger button — always visible */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        title="Assistant IA (⌘K)"
+        style={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          zIndex: 9997,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '10px 16px',
+          background: 'var(--theme-text, #1a1a1a)',
+          border: 'none',
+          borderRadius: 40,
+          color: '#fff',
+          cursor: 'pointer',
+          fontSize: 13,
+          fontWeight: 500,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+          transition: 'transform 0.15s, box-shadow 0.15s',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.transform = 'translateY(-1px)'
+          e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.25)'
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.2)'
+        }}
+      >
+        <span style={{ fontSize: 16, lineHeight: 1 }}>✦</span>
+        <span>Assistant IA</span>
+        <span style={{
+          fontSize: 10,
+          padding: '1px 5px',
+          background: 'rgba(255,255,255,0.15)',
+          borderRadius: 4,
+          fontFamily: 'monospace',
+        }}>⌘K</span>
+      </button>
 
       {/* Backdrop */}
       {open && (
@@ -316,7 +333,7 @@ export const AIPanel: React.FC = () => {
         top: 0,
         right: 0,
         bottom: 0,
-        width: 420,
+        width: 440,
         maxWidth: '100vw',
         background: 'var(--theme-elevation-0, #fff)',
         borderLeft: '1px solid var(--theme-elevation-200, #e0e0e0)',
@@ -423,11 +440,9 @@ export const AIPanel: React.FC = () => {
             fontSize: 12,
             color: 'var(--theme-elevation-600, #666)',
           }}>
-            <span style={{ flex: 1 }}>
-              Dernière modification · {timeAgoDisplay}
-            </span>
+            <span style={{ flex: 1 }}>Dernière modification · {timeAgoDisplay}</span>
             <button
-              onClick={undoLastEdit}
+              onClick={() => setLastEdit(null)}
               style={{
                 background: 'none',
                 border: '1px solid var(--theme-elevation-300, #ccc)',
@@ -485,8 +500,7 @@ export const AIPanel: React.FC = () => {
               <button
                 key={chip.label}
                 onClick={() => {
-                  const prefix = chip.modifier
-                  const text = input.trim() ? prefix + input : prefix
+                  const text = input.trim() ? chip.modifier + input : chip.modifier
                   setInput(text)
                   inputRef.current?.focus()
                 }}
@@ -625,6 +639,14 @@ export const AIPanel: React.FC = () => {
           to { transform: rotate(360deg); }
         }
       `}</style>
+    </>,
+    document.body
+  ) : null
+
+  return (
+    <>
+      {children}
+      {panel}
     </>
   )
 }

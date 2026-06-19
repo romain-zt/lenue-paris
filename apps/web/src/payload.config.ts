@@ -44,7 +44,7 @@ export default buildConfig({
   admin: {
     user: Users.slug,
     components: {
-      afterNavLinks: ['@/components/admin/AIPanel#AIPanel'],
+      providers: ['@/components/admin/AIPanel#AIPanel'],
     },
     livePreview: {
       breakpoints: [
