@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import type { UIMessage } from 'ai'
@@ -268,7 +267,7 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
       ? `global · ${docContext.slug}`
       : 'Tableau de bord'
 
-  const panel = mounted ? createPortal(
+  const panel = mounted ? (
     <>
       {/* Floating trigger button — always visible */}
       <button
@@ -639,8 +638,7 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
           to { transform: rotate(360deg); }
         }
       `}</style>
-    </>,
-    document.body
+    </>
   ) : null
 
   return (
