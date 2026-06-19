@@ -29,28 +29,34 @@ function parsePublicContext() {
   return { type: 'dashboard' as const }
 }
 
-async function resolveAdminUrl(fieldPath?: string): Promise<string> {
-  if (typeof window === 'undefined') return '/admin'
+type AdminResolution = { url: string; title?: string }
+
+async function resolveAdminUrl(): Promise<AdminResolution> {
+  if (typeof window === 'undefined') return { url: '/admin' }
   const base = window.location.origin
   const parts = window.location.pathname.split('/').filter(Boolean)
-  // parts[0] = locale, parts[1] = section, parts[2] = slug
-  const seg1 = parts[1]
-  const seg2 = parts[2]
+  // parts[0] = locale (e.g. 'en', 'fr'), parts[1] = section/slug, parts[2] = item slug
+  const locale = parts[0] ?? 'en'
+  const seg1 = parts[1]  // undefined when on /[locale] root
+  const seg2 = parts[2]  // defined only for /[locale]/[section]/[slug]
 
-  const withField = (url: string) =>
-    fieldPath ? `${url}?field=${encodeURIComponent(fieldPath)}` : url
+  const lp = `&locale=${encodeURIComponent(locale)}`
 
   try {
     // /[locale]/produits/[slug]
     if (seg1 === 'produits' && seg2) {
       const r = await fetch(
-        `${base}/api/products?where[slug][equals]=${encodeURIComponent(seg2)}&limit=1&depth=0`,
+        `${base}/api/products?where[slug][equals]=${encodeURIComponent(seg2)}&limit=1&depth=0${lp}`,
         { credentials: 'include' },
       )
       if (r.ok) {
         const d = await r.json()
-        const id = d.docs?.[0]?.id
-        if (id) return withField(`/admin/collections/products/${id}`)
+        const doc = d.docs?.[0]
+        if (doc?.id) {
+          console.log('[resolveAdminUrl] resolved product', doc.id)
+          return { url: `/admin/collections/products/${doc.id}`, title: doc.title }
+        }
+        console.warn('[resolveAdminUrl] products lookup returned no docs for slug:', seg2)
       } else {
         console.error('[resolveAdminUrl] products lookup failed', r.status, await r.text().catch(() => ''))
       }
@@ -59,53 +65,76 @@ async function resolveAdminUrl(fieldPath?: string): Promise<string> {
     // /[locale]/collections/[slug]
     if (seg1 === 'collections' && seg2) {
       const r = await fetch(
-        `${base}/api/collections?where[slug][equals]=${encodeURIComponent(seg2)}&limit=1&depth=0`,
+        `${base}/api/collections?where[slug][equals]=${encodeURIComponent(seg2)}&limit=1&depth=0${lp}`,
         { credentials: 'include' },
       )
       if (r.ok) {
         const d = await r.json()
-        const id = d.docs?.[0]?.id
-        if (id) return withField(`/admin/collections/collections/${id}`)
+        const doc = d.docs?.[0]
+        if (doc?.id) {
+          console.log('[resolveAdminUrl] resolved collection', doc.id)
+          return { url: `/admin/collections/collections/${doc.id}`, title: doc.title ?? doc.name }
+        }
+        console.warn('[resolveAdminUrl] collections lookup returned no docs for slug:', seg2)
       } else {
         console.error('[resolveAdminUrl] collections lookup failed', r.status, await r.text().catch(() => ''))
       }
     }
 
-    // /[locale]/[slug] — a page (livraison, contact, etc.)
-    if (seg1 && !seg2) {
+    // /[locale]/[slug] — a simple page (livraison, contact, etc.)
+    // seg1 is the slug after stripping the locale prefix
+    if (seg1 && !seg2 && seg1 !== 'produits' && seg1 !== 'collections') {
       const r = await fetch(
-        `${base}/api/pages?where[slug][equals]=${encodeURIComponent(seg1)}&limit=1&depth=0`,
+        `${base}/api/pages?where[slug][equals]=${encodeURIComponent(seg1)}&limit=1&depth=0${lp}`,
         { credentials: 'include' },
       )
       if (r.ok) {
         const d = await r.json()
-        const id = d.docs?.[0]?.id
-        if (id) return withField(`/admin/collections/pages/${id}`)
+        const doc = d.docs?.[0]
+        if (doc?.id) {
+          console.log('[resolveAdminUrl] resolved page', doc.id, 'for slug:', seg1)
+          return { url: `/admin/collections/pages/${doc.id}`, title: doc.title }
+        }
+        console.warn('[resolveAdminUrl] pages lookup returned no docs for slug:', seg1)
       } else {
         console.error('[resolveAdminUrl] pages lookup failed', r.status, await r.text().catch(() => ''))
       }
     }
 
-    // /[locale] — homepage, look for a page with a home-like slug
+    // /[locale] or / — homepage: try known home slugs in order
     if (!seg1) {
-      const r = await fetch(`${base}/api/pages?limit=20&depth=0`, { credentials: 'include' })
+      for (const homeSlug of ['home', 'homepage', 'accueil', 'index']) {
+        const r = await fetch(
+          `${base}/api/pages?where[slug][equals]=${encodeURIComponent(homeSlug)}&limit=1&depth=0${lp}`,
+          { credentials: 'include' },
+        )
+        if (r.ok) {
+          const d = await r.json()
+          const doc = d.docs?.[0]
+          if (doc?.id) {
+            console.log('[resolveAdminUrl] resolved homepage via slug:', homeSlug, doc.id)
+            return { url: `/admin/collections/pages/${doc.id}`, title: doc.title }
+          }
+        }
+      }
+      // Last resort: first page in the collection
+      const r = await fetch(`${base}/api/pages?limit=1&depth=0${lp}`, { credentials: 'include' })
       if (r.ok) {
         const d = await r.json()
-        const home =
-          d.docs?.find(
-            (p: { slug: string }) =>
-              p.slug === 'home' || p.slug === 'homepage' || p.slug === 'accueil' || p.slug === 'index' || p.slug === '/',
-          ) ?? d.docs?.[0]
-        if (home?.id) return withField(`/admin/collections/pages/${home.id}`)
-      } else {
-        console.error('[resolveAdminUrl] homepage lookup failed', r.status, await r.text().catch(() => ''))
+        const doc = d.docs?.[0]
+        if (doc?.id) {
+          console.log('[resolveAdminUrl] resolved homepage via first page', doc.id)
+          return { url: `/admin/collections/pages/${doc.id}`, title: doc.title }
+        }
       }
+      console.warn('[resolveAdminUrl] homepage lookup: no pages found')
     }
   } catch (err) {
     console.error('[resolveAdminUrl] unexpected error', err)
   }
 
-  return '/admin'
+  console.warn('[resolveAdminUrl] falling back to /admin for path:', window.location.pathname)
+  return { url: '/admin' }
 }
 
 // ─── AI Chat panel embedded in the FAB ───────────────────────────────────────
@@ -457,6 +486,7 @@ export function PublicAdminFAB() {
   const [aiOpen, setAiOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [adminBaseUrl, setAdminBaseUrl] = useState('/admin')
+  const [adminPageTitle, setAdminPageTitle] = useState<string | undefined>()
   const [selectedFieldPath, setSelectedFieldPath] = useState<string | undefined>()
   // pendingPrompt: set when a BlockOverlay ✦ click triggers the AI panel
   const [pendingPrompt, setPendingPrompt] = useState<string | undefined>()
@@ -465,6 +495,13 @@ export function PublicAdminFAB() {
   const adminUrl = selectedFieldPath
     ? `${adminBaseUrl}?field=${encodeURIComponent(selectedFieldPath)}`
     : adminBaseUrl
+
+  // Dynamic label for the "open in admin" link
+  const adminLinkLabel = selectedFieldPath
+    ? `↗ Ce paragraphe dans l'admin`
+    : adminPageTitle
+      ? `↗ ${adminPageTitle} dans l'admin`
+      : `↗ Ouvrir dans l'admin`
 
   // Check if current user is a Payload admin
   useEffect(() => {
@@ -479,7 +516,12 @@ export function PublicAdminFAB() {
 
   // Resolve the admin URL for the current public page
   useEffect(() => {
-    resolveAdminUrl().then(setAdminBaseUrl).catch(() => {})
+    resolveAdminUrl()
+      .then(({ url, title }) => {
+        setAdminBaseUrl(url)
+        setAdminPageTitle(title)
+      })
+      .catch(() => {})
   }, [])
 
   // Listen for AI-help messages from BlockOverlay ✦ clicks.
@@ -674,7 +716,7 @@ export function PublicAdminFAB() {
               ;(e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.5)'
             }}
           >
-            {`↗ Ouvrir dans l'admin`}
+            {adminLinkLabel}
           </a>
         </div>
       )}
