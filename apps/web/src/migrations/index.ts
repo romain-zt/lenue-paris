@@ -4,6 +4,7 @@ import * as migration_20260616_121945_collections_product_grid from './20260616_
 import * as migration_20260616_190000_hero_video from './20260616_190000_hero_video';
 import * as migration_20260617_120000_capsule_limited_series from './20260617_120000_capsule_limited_series';
 import * as migration_20260618_200000_site_settings_global from './20260618_200000_site_settings_global';
+import * as migration_20260619_160000_pages_v_autosave from './20260619_160000_pages_v_autosave';
 
 export const migrations = [
   {
@@ -35,5 +36,10 @@ export const migrations = [
     up: migration_20260618_200000_site_settings_global.up,
     down: migration_20260618_200000_site_settings_global.down,
     name: '20260618_200000_site_settings_global',
+  },
+  {
+    up: migration_20260619_160000_pages_v_autosave.up,
+    down: migration_20260619_160000_pages_v_autosave.down,
+    name: '20260619_160000_pages_v_autosave',
   },
 ];
