@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState, useTransition } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState, useTransition } from 'react'
 import { updateLiveField } from '@/app/actions/liveEdit'
 
 interface EditableFieldProps {
@@ -57,14 +57,21 @@ export function EditableField({
   // Passthrough — zero cost for regular shoppers
   if (!isEditModeActive) return <>{children}</>
 
+  // Auto-grow to full content height as soon as the textarea mounts —
+  // prevents a clipped 3-row view on first tap before the user types anything.
+  useLayoutEffect(() => {
+    if (!isEditing || !textareaRef.current) return
+    const t = textareaRef.current
+    t.style.height = 'auto'
+    t.style.height = t.scrollHeight + 'px'
+    t.focus()
+    t.select()
+  }, [isEditing])
+
   const handleClick = () => {
     if (isEditing || isPending) return
     setSaved(false)
     setIsEditing(true)
-    setTimeout(() => {
-      textareaRef.current?.focus()
-      textareaRef.current?.select()
-    }, 0)
   }
 
   const handleSave = () => {
