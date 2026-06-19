@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { ProductCard } from "./ProductCard";
 import { ProductCardSkeleton } from "./ProductCardSkeleton";
+import type { ContentLocale } from "@/lib/cms/types";
 import type { Product } from "@/types/product";
 
 interface ProductGridProps {
@@ -10,6 +11,7 @@ interface ProductGridProps {
   isLoading?: boolean;
   error?: string | null;
   emptyMessage?: string;
+  contentLocale?: ContentLocale;
 }
 
 const SKELETON_COUNT = 8;
@@ -19,6 +21,7 @@ export function ProductGrid({
   isLoading = false,
   error = null,
   emptyMessage,
+  contentLocale,
 }: ProductGridProps) {
   const t = useTranslations("catalogue");
 
@@ -67,7 +70,7 @@ export function ProductGrid({
   return (
     <div className={gridClass}>
       {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
+        <ProductCard key={product.id} product={product} contentLocale={contentLocale} />
       ))}
     </div>
   );

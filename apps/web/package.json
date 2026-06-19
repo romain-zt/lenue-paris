@@ -9,15 +9,15 @@
     "vercel-build": "echo 'y' | payload migrate && next build",
     "generate:importmap": "payload generate:importmap",
     "start": "echo 'y' | payload migrate && next start -p 3001",
-    "migrate": "echo 'y' | payload migrate",
+    "migrate": "node ../../scripts/with-local-db.mjs \"echo y | payload migrate\"",
+    "seed": "node ../../scripts/with-local-db.mjs \"tsx --env-file=../../.env src/seed.ts\"",
     "lint": "next lint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "check:assets": "tsx scripts/check-assets.ts",
     "test:e2e": "playwright test",
     "test:maison-hooks": "playwright test e2e/maison-hooks.spec.ts && vitest run src/components/product/__tests__/OrderCTA.maison.test.tsx",
-    "generate:types": "payload generate:types",
-    "seed": "tsx --env-file=../../.env src/seed.ts"
+    "generate:types": "payload generate:types"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.73",

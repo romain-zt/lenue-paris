@@ -1,6 +1,8 @@
 "use client";
 
 import { buildWhatsAppUrl } from "@/lib/whatsapp/config";
+import { EditableField } from "@/components/cms/EditableField";
+import type { ContentLocale } from "@/lib/cms/types";
 
 interface ContactPageContentProps {
   title: string;
@@ -8,11 +10,22 @@ interface ContactPageContentProps {
   whatsAppLabel: string;
   whatsAppMessage: string;
   instagramUrl: string;
+  docId?: string;
+  locale?: ContentLocale;
 }
 
-export function ContactPageContent({ title, body, whatsAppLabel, whatsAppMessage, instagramUrl }: ContactPageContentProps) {
+export function ContactPageContent({
+  title,
+  body,
+  whatsAppLabel,
+  whatsAppMessage,
+  instagramUrl,
+  docId,
+  locale,
+}: ContactPageContentProps) {
   const paragraphs = body.split("\n\n").filter(Boolean);
   const whatsAppUrl = buildWhatsAppUrl(whatsAppMessage);
+  const canEdit = Boolean(docId);
 
   return (
     <main>
@@ -23,26 +36,67 @@ export function ContactPageContent({ title, body, whatsAppLabel, whatsAppMessage
       </header>
 
       <article className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
-        {title && (
+        {title ? (
           <h1 className="mb-8 font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">
-            {title}
+            {canEdit ? (
+              <EditableField
+                collection="pages"
+                id={docId!}
+                field="title"
+                fieldLabel="Titre"
+                currentValue={title}
+                locale={locale}
+              >
+                {title}
+              </EditableField>
+            ) : (
+              title
+            )}
           </h1>
+        ) : null}
+        {canEdit ? (
+          <EditableField
+            collection="pages"
+            id={docId!}
+            field="body"
+            fieldLabel="Corps du texte"
+            currentValue={body}
+            locale={locale}
+            multiline
+          >
+            <div className="space-y-6">
+              {paragraphs.map((paragraph, i) => {
+                const lines = paragraph.split("\n");
+                return (
+                  <p key={i} className="text-base leading-relaxed text-stone-700 sm:text-lg">
+                    {lines.map((line, j) => (
+                      <span key={j}>
+                        {line}
+                        {j < lines.length - 1 && <br />}
+                      </span>
+                    ))}
+                  </p>
+                );
+              })}
+            </div>
+          </EditableField>
+        ) : (
+          <div className="space-y-6">
+            {paragraphs.map((paragraph, i) => {
+              const lines = paragraph.split("\n");
+              return (
+                <p key={i} className="text-base leading-relaxed text-stone-700 sm:text-lg">
+                  {lines.map((line, j) => (
+                    <span key={j}>
+                      {line}
+                      {j < lines.length - 1 && <br />}
+                    </span>
+                  ))}
+                </p>
+              );
+            })}
+          </div>
         )}
-        <div className="space-y-6">
-          {paragraphs.map((paragraph, i) => {
-            const lines = paragraph.split("\n");
-            return (
-              <p key={i} className="text-base leading-relaxed text-stone-700 sm:text-lg">
-                {lines.map((line, j) => (
-                  <span key={j}>
-                    {line}
-                    {j < lines.length - 1 && <br />}
-                  </span>
-                ))}
-              </p>
-            );
-          })}
-        </div>
 
         <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
           <a

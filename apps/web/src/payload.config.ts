@@ -1,6 +1,9 @@
 import path from "path";
 import { fileURLToPath } from "url";
+import { loadRootEnv } from "./lib/loadRootEnv";
 import { buildConfig } from "payload";
+
+loadRootEnv();
 import { postgresAdapter } from "@payloadcms/db-postgres";
 import { lexicalEditor } from "@payloadcms/richtext-lexical";
 import { s3Storage } from "@payloadcms/storage-s3";

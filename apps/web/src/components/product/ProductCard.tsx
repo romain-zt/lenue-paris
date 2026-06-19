@@ -4,14 +4,17 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { AddToSelectionButton } from "@/components/selection/AddToSelectionButton";
+import { EditableField } from "@/components/cms/EditableField";
 import { getProductMainImageUrl } from "@/lib/productImages";
+import type { ContentLocale } from "@/lib/cms/types";
 import type { Product } from "@/types/product";
 
 interface ProductCardProps {
   product: Product;
+  contentLocale?: ContentLocale;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, contentLocale }: ProductCardProps) {
   const t = useTranslations("product");
   const imageUrl = getProductMainImageUrl(product.slug, product.mainImage?.url);
   const isOutOfStock = product.inStock === false;
@@ -80,7 +83,22 @@ export function ProductCard({ product }: ProductCardProps) {
         aria-hidden="true"
       >
         <div className="mt-3 space-y-1 px-0.5">
-          <p className="text-sm font-medium leading-snug text-stone-900">{product.title}</p>
+          <p className="text-sm font-medium leading-snug text-stone-900">
+            {contentLocale ? (
+              <EditableField
+                collection="products"
+                id={product.id}
+                field="title"
+                fieldLabel="Titre produit"
+                currentValue={product.title}
+                locale={contentLocale}
+              >
+                {product.title}
+              </EditableField>
+            ) : (
+              product.title
+            )}
+          </p>
           <p className="text-sm font-light text-stone-400">{formattedPrice}</p>
         </div>
       </Link>

@@ -10,8 +10,9 @@
   },
   "scripts": {
     "seed": "pnpm --filter web seed",
-    "dev": "turbo run dev",
-    "build": "turbo run build",
+    "setup": "docker compose up -d && pnpm --filter web migrate && pnpm --filter web seed",
+    "dev": "turbo run dev --filter=web",
+    "build": "turbo run build --filter=web",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",

@@ -3,13 +3,14 @@ import { Link } from "@/i18n/navigation";
 import { CapsuleBadge } from "@/components/editorial/CapsuleBadge";
 import { EditableField } from "@/components/cms/EditableField";
 import type { HeroBlockProps } from "@/lib/cms/types";
+import type { EditableCollection } from "@/lib/cms/editable";
 
 interface HeroBlockComponentProps extends HeroBlockProps {
   /** Payload blocks array index — used to generate data-payload-path attributes for live preview. */
   blockIndex?: number;
   /** Payload document ID — required for inline editing via EditableField. */
   docId?: string;
-  docCollection?: 'pages' | 'products';
+  docCollection?: EditableCollection;
   locale?: string;
 }
 
@@ -77,7 +78,7 @@ export function HeroBlock({
       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" aria-hidden="true" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-transparent" aria-hidden="true" />
 
-      <div className="absolute bottom-0 left-0 px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16">
+      <div className="absolute bottom-0 left-0 z-10 px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16">
         {capsuleBadgeLabel ? (
           <CapsuleBadge className="mb-3 text-white/55">{capsuleBadgeLabel}</CapsuleBadge>
         ) : null}
@@ -106,7 +107,7 @@ export function HeroBlock({
           <br />
           <span className="text-3xl tracking-[0.35em] text-white/80 sm:text-4xl lg:text-5xl">PARIS</span>
         </h1>
-        <p
+        <div
           data-payload-path={p ? `${p}.tagline` : undefined}
           className="mt-5 max-w-xs text-sm font-light leading-relaxed text-white/60 sm:text-[15px]"
         >
@@ -122,8 +123,10 @@ export function HeroBlock({
             >
               {tagline}
             </EditableField>
-          ) : tagline}
-        </p>
+          ) : (
+            tagline
+          )}
+        </div>
         <div
           className="mt-8"
           data-payload-path={p ? `${p}.ctaLabel` : undefined}
@@ -148,6 +151,21 @@ export function HeroBlock({
             </span>
             <span aria-hidden="true">→</span>
           </Link>
+          {canEdit ? (
+            <div className="mt-2 text-[9px] uppercase tracking-[0.2em] text-white/40">
+              <span>Lien : </span>
+              <EditableField
+                collection={docCollection}
+                id={docId!}
+                field={`${p}.ctaLink`}
+                fieldLabel="URL du bouton (héro)"
+                currentValue={ctaLink}
+                locale={locale}
+              >
+                {ctaLink}
+              </EditableField>
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

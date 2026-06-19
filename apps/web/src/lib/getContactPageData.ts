@@ -5,6 +5,7 @@ import type { Page as PayloadPage } from "@/payload-types";
 export interface ContactPageData {
   title: string;
   body: string;
+  docId?: string;
 }
 
 const CONTACT_SLUG = "contact";
@@ -34,6 +35,7 @@ export async function getContactPageData(locale: string = "fr"): Promise<Contact
     return {
       title: page.title ?? "",
       body: (page.body as string | null | undefined) ?? "",
+      docId: String(page.id),
     };
   } catch {
     return { title: "", body: "" };
