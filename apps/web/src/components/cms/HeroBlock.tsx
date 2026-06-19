@@ -1,11 +1,16 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { CapsuleBadge } from "@/components/editorial/CapsuleBadge";
+import { EditableField } from "@/components/cms/EditableField";
 import type { HeroBlockProps } from "@/lib/cms/types";
 
 interface HeroBlockComponentProps extends HeroBlockProps {
   /** Payload blocks array index — used to generate data-payload-path attributes for live preview. */
   blockIndex?: number;
+  /** Payload document ID — required for inline editing via EditableField. */
+  docId?: string;
+  docCollection?: 'pages' | 'products';
+  locale?: string;
 }
 
 export function HeroBlock({
@@ -18,9 +23,13 @@ export function HeroBlock({
   heroVideoUrl,
   capsuleBadgeLabel,
   blockIndex,
+  docId,
+  docCollection = 'pages',
+  locale,
 }: HeroBlockComponentProps) {
   const hasVideo = Boolean(heroVideoUrl);
   const p = blockIndex !== undefined ? `blocks.${blockIndex}` : undefined;
+  const canEdit = Boolean(docId && blockIndex !== undefined);
 
   return (
     <section
@@ -76,7 +85,18 @@ export function HeroBlock({
           data-payload-path={p ? `${p}.season` : undefined}
           className="mb-5 text-[10px] font-medium uppercase tracking-[0.35em] text-white/50"
         >
-          {season}
+          {canEdit ? (
+            <EditableField
+              collection={docCollection}
+              id={docId!}
+              field={`${p}.season`}
+              fieldLabel="Saison (héro)"
+              currentValue={season}
+              locale={locale}
+            >
+              {season}
+            </EditableField>
+          ) : season}
         </p>
         <h1
           id="hero-heading"
@@ -90,7 +110,19 @@ export function HeroBlock({
           data-payload-path={p ? `${p}.tagline` : undefined}
           className="mt-5 max-w-xs text-sm font-light leading-relaxed text-white/60 sm:text-[15px]"
         >
-          {tagline}
+          {canEdit ? (
+            <EditableField
+              collection={docCollection}
+              id={docId!}
+              field={`${p}.tagline`}
+              fieldLabel="Tagline (héro)"
+              currentValue={tagline}
+              locale={locale}
+              multiline
+            >
+              {tagline}
+            </EditableField>
+          ) : tagline}
         </p>
         <div
           className="mt-8"
@@ -101,7 +133,18 @@ export function HeroBlock({
             className="group inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.25em] text-white/80 transition-colors hover:text-white"
           >
             <span className="border-b border-white/40 pb-px transition-colors group-hover:border-white/90">
-              {ctaLabel}
+              {canEdit ? (
+                <EditableField
+                  collection={docCollection}
+                  id={docId!}
+                  field={`${p}.ctaLabel`}
+                  fieldLabel="Bouton CTA (héro)"
+                  currentValue={ctaLabel}
+                  locale={locale}
+                >
+                  {ctaLabel}
+                </EditableField>
+              ) : ctaLabel}
             </span>
             <span aria-hidden="true">→</span>
           </Link>

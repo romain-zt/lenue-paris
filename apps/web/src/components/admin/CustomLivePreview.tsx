@@ -50,6 +50,10 @@ export const CustomLivePreview: React.FC = () => {
   const dispatchFieldsRef = useRef(dispatchFields)
   useEffect(() => { dispatchFieldsRef.current = dispatchFields })
 
+  // Keep a stable ref to triggerSave so the message handler (with [] deps) always
+  // calls the latest version — avoids stale closure over locale / collectionSlug etc.
+  const triggerSaveRef = useRef<(publish?: boolean) => void>(() => {})
+
   useEffect(() => { ensureHighlightStyle() }, [])
 
   // ─── Fullscreen state — URL-driven (?fs=1) ────────────────────────────────
@@ -156,6 +160,9 @@ export const CustomLivePreview: React.FC = () => {
       })
   }
 
+  // Keep triggerSaveRef in sync so the message handler always uses the latest version
+  useEffect(() => { triggerSaveRef.current = triggerSave })
+
   // ─── Reload iframe when AI patches the DB (no full page reload needed) ──────
 
   useEffect(() => {
@@ -247,8 +254,8 @@ export const CustomLivePreview: React.FC = () => {
 
       if (event.data.type === 'payload-preview-action') {
         const action = event.data.action as string
-        if (action === 'save') triggerSave(false)
-        if (action === 'publish') triggerSave(true)
+        if (action === 'save') triggerSaveRef.current(false)
+        if (action === 'publish') triggerSaveRef.current(true)
         return
       }
     }

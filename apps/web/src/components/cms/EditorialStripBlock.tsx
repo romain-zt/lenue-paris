@@ -1,10 +1,15 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
+import { EditableField } from "@/components/cms/EditableField";
 import type { EditorialStripBlockProps } from "@/lib/cms/types";
 
 interface EditorialStripBlockComponentProps extends EditorialStripBlockProps {
   /** Payload blocks array index — used to generate data-payload-path attributes for live preview. */
   blockIndex?: number;
+  /** Payload document ID — required for inline editing via EditableField. */
+  docId?: string;
+  docCollection?: 'pages' | 'products';
+  locale?: string;
 }
 
 export function EditorialStripBlock({
@@ -17,8 +22,12 @@ export function EditorialStripBlock({
   imageUrl,
   imageAlt,
   blockIndex,
+  docId,
+  docCollection = 'pages',
+  locale,
 }: EditorialStripBlockComponentProps) {
   const p = blockIndex !== undefined ? `blocks.${blockIndex}` : undefined;
+  const canEdit = Boolean(docId && blockIndex !== undefined);
 
   return (
     <section aria-label={label} className="overflow-hidden bg-[#f0ebe4] lg:flex">
@@ -27,16 +36,51 @@ export function EditorialStripBlock({
           data-payload-path={p ? `${p}.label` : undefined}
           className="mb-6 text-[9px] font-medium uppercase tracking-[0.38em] text-stone-400"
         >
-          {label}
+          {canEdit ? (
+            <EditableField
+              collection={docCollection}
+              id={docId!}
+              field={`${p}.label`}
+              fieldLabel="Label (bande éditoriale)"
+              currentValue={label}
+              locale={locale}
+            >
+              {label}
+            </EditableField>
+          ) : label}
         </p>
         <h2 className="font-serif text-3xl font-light leading-snug text-stone-800 sm:text-4xl lg:text-[2.6rem] lg:leading-snug">
-          <span data-payload-path={p ? `${p}.headline` : undefined}>{headline}</span>
+          <span data-payload-path={p ? `${p}.headline` : undefined}>
+            {canEdit ? (
+              <EditableField
+                collection={docCollection}
+                id={docId!}
+                field={`${p}.headline`}
+                fieldLabel="Titre principal (bande éditoriale)"
+                currentValue={headline}
+                locale={locale}
+              >
+                {headline}
+              </EditableField>
+            ) : headline}
+          </span>
           <br />
           <em
             data-payload-path={p ? `${p}.subline` : undefined}
             className="font-light not-italic text-stone-600"
           >
-            {subline}
+            {canEdit ? (
+              <EditableField
+                collection={docCollection}
+                id={docId!}
+                field={`${p}.subline`}
+                fieldLabel="Sous-titre (bande éditoriale)"
+                currentValue={subline}
+                locale={locale}
+              >
+                {subline}
+              </EditableField>
+            ) : subline}
           </em>
         </h2>
         <div className="my-8 h-px w-12 bg-stone-300" aria-hidden="true" />
@@ -44,7 +88,19 @@ export function EditorialStripBlock({
           data-payload-path={p ? `${p}.body` : undefined}
           className="max-w-xs text-sm leading-relaxed text-stone-500"
         >
-          {body}
+          {canEdit ? (
+            <EditableField
+              collection={docCollection}
+              id={docId!}
+              field={`${p}.body`}
+              fieldLabel="Corps du texte (bande éditoriale)"
+              currentValue={body}
+              locale={locale}
+              multiline
+            >
+              {body}
+            </EditableField>
+          ) : body}
         </p>
         <div className="mt-10" data-payload-path={p ? `${p}.ctaLabel` : undefined}>
           <Link
@@ -52,7 +108,18 @@ export function EditorialStripBlock({
             className="group inline-flex items-center gap-2.5 text-[10px] font-medium uppercase tracking-[0.25em] text-stone-600 transition-colors hover:text-stone-900"
           >
             <span className="border-b border-stone-400 pb-px transition-colors group-hover:border-stone-900">
-              {ctaLabel}
+              {canEdit ? (
+                <EditableField
+                  collection={docCollection}
+                  id={docId!}
+                  field={`${p}.ctaLabel`}
+                  fieldLabel="Bouton CTA (bande éditoriale)"
+                  currentValue={ctaLabel}
+                  locale={locale}
+                >
+                  {ctaLabel}
+                </EditableField>
+              ) : ctaLabel}
             </span>
             <span aria-hidden="true">→</span>
           </Link>

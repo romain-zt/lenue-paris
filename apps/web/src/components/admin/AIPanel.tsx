@@ -293,6 +293,7 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
 
   const transport = useMemo(() => new DefaultChatTransport({
     api: '/api/ai/chat',
+    credentials: 'include',
     prepareSendMessagesRequest: ({ body, messages: msgs, id: chatId }) => ({
       body: {
         messages: msgs,
@@ -303,7 +304,7 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
     }),
   }), [])
 
-  const { messages, sendMessage, status, setMessages } = useChat({
+  const { messages, sendMessage, status, setMessages, error } = useChat({
     id: storageKey,
     transport,
     onFinish: () => {
@@ -752,6 +753,29 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
               <span style={{ letterSpacing: 2 }}>···</span>
             </div>
           )}
+          {status === 'error' && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 8,
+              padding: '10px 12px',
+              marginBottom: 8,
+              background: 'rgba(239,68,68,0.08)',
+              border: '1px solid rgba(239,68,68,0.25)',
+              borderRadius: 8,
+              fontSize: 12,
+              color: '#b91c1c',
+              lineHeight: 1.5,
+            }}>
+              <span style={{ flexShrink: 0 }}>⚠</span>
+              <span>
+                {error?.message
+                  ? error.message
+                  : <>Une erreur s&apos;est produite lors de la communication avec l&apos;IA. Vérifiez que <code style={{ fontFamily: 'monospace', fontSize: 11 }}>CURSOR_API_KEY</code> est configuré et réessayez.</>
+                }
+              </span>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
@@ -761,14 +785,28 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
           borderTop: '1px solid var(--theme-elevation-200, #e0e0e0)',
           flexShrink: 0,
         }}>
+          {isLoading && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              marginBottom: 6,
+              fontSize: 11,
+              color: 'var(--theme-elevation-500, #888)',
+            }}>
+              <span style={{ display: 'inline-block', animation: 'ai-spin 1s linear infinite', fontSize: 13 }}>⏳</span>
+              <span>{status === 'submitted' ? 'Envoi en cours…' : 'Génération…'}</span>
+            </div>
+          )}
           <div style={{
             display: 'flex',
             gap: 8,
             alignItems: 'flex-end',
             background: 'var(--theme-elevation-100, #f5f5f5)',
             borderRadius: 12,
-            border: '1px solid var(--theme-elevation-200, #e0e0e0)',
+            border: `1px solid ${isLoading ? 'rgba(99,102,241,0.4)' : 'var(--theme-elevation-200, #e0e0e0)'}`,
             padding: '8px 12px',
+            transition: 'border-color 0.15s',
           }}>
             <textarea
               ref={inputRef}

@@ -52,7 +52,13 @@ export function HomePageContent({ initialPage, locale, labels }: HomePageContent
 
   return (
     <main>
-      <RenderBlocks blocks={blocks} quote={labels.quote} />
+      <RenderBlocks
+        blocks={blocks}
+        quote={labels.quote}
+        docId={String(page.id)}
+        docCollection="pages"
+        locale={locale}
+      />
       <HomeCategoryStrip exploreLabel={labels.exploreLabel} categoryLinks={labels.categoryLinks} />
       <InlineEditor />
     </main>

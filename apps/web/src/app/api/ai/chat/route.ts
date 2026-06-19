@@ -75,7 +75,7 @@ ${SCHEMA_SUMMARY}
 - Sois concis et direct`
 
 export async function POST(request: NextRequest) {
-  const body = await request.json() as {
+  let body: {
     messages: UIMessage[]
     context?: {
       type: 'collection' | 'global' | 'dashboard'
@@ -85,8 +85,22 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  try {
+    body = await request.json() as typeof body
+  } catch (err) {
+    console.error('[/api/ai/chat] Failed to parse request body:', err)
+    return new Response(JSON.stringify({ error: 'Invalid request body' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   const { messages, context } = body
   const origin = new URL(request.url).origin
+
+  if (!process.env.CURSOR_API_KEY) {
+    console.error('[/api/ai/chat] CURSOR_API_KEY is not set — AI responses will fail')
+  }
 
   // Read the payload-token cookie explicitly so it's forwarded to internal
   // Payload REST calls even when the request comes from the public site.
@@ -104,12 +118,13 @@ export async function POST(request: NextRequest) {
 
   const modelMessages = await convertToModelMessages(messages)
 
-  const result = streamText({
-    model: cursor(process.env.CURSOR_MODEL ?? 'gpt-4o'),
-    system: SYSTEM_PROMPT + contextNote,
-    messages: modelMessages,
-    stopWhen: stepCountIs(8),
-    tools: {
+  try {
+    const result = streamText({
+      model: cursor(process.env.CURSOR_MODEL ?? 'gpt-4o'),
+      system: SYSTEM_PROMPT + contextNote,
+      messages: modelMessages,
+      stopWhen: stepCountIs(8),
+      tools: {
       get_document: tool({
         description: 'Lire un document depuis Payload CMS',
         inputSchema: zodSchema(z.object({
@@ -208,7 +223,13 @@ export async function POST(request: NextRequest) {
         },
       }),
     },
-  })
-
-  return result.toUIMessageStreamResponse()
+    })
+    return result.toUIMessageStreamResponse()
+  } catch (err) {
+    console.error('[/api/ai/chat] streamText setup error:', err)
+    return new Response(
+      JSON.stringify({ error: err instanceof Error ? err.message : 'Erreur interne du serveur' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } },
+    )
+  }
 }

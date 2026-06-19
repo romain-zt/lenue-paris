@@ -4,11 +4,15 @@ import type { Product } from "@/types/product";
 import { formatPrice } from "@/lib/formatPrice";
 import { getProductMainImageUrl } from "@/lib/productImages";
 import { FeaturedProductItem, FeaturedProductsScroll } from "@/components/home/FeaturedProductsScroll";
+import { EditableField } from "@/components/cms/EditableField";
 import type { FeaturedProductsBlockProps } from "@/lib/cms/types";
 
 interface FeaturedProductsBlockComponentProps extends FeaturedProductsBlockProps {
   /** Payload blocks array index — used to generate data-payload-path attributes for live preview. */
   blockIndex?: number;
+  /** Payload document ID — required for inline editing via EditableField. */
+  docId?: string;
+  docCollection?: 'pages' | 'products';
 }
 
 function FeaturedProductCard({
@@ -67,10 +71,13 @@ export function FeaturedProductsBlock({
   locale,
   outOfStockBadge,
   blockIndex,
+  docId,
+  docCollection = 'pages',
 }: FeaturedProductsBlockComponentProps) {
   const priceFormatter = (price: number) => formatPrice(price, locale);
   const collectionLink = collectionHref ?? "/catalogue";
   const p = blockIndex !== undefined ? `blocks.${blockIndex}` : undefined;
+  const canEdit = Boolean(docId && blockIndex !== undefined);
 
   return (
     <section
@@ -89,7 +96,18 @@ export function FeaturedProductsBlock({
               data-payload-path={p ? `${p}.title` : undefined}
               className="font-serif text-2xl font-light text-stone-900 sm:text-3xl"
             >
-              {title}
+              {canEdit ? (
+                <EditableField
+                  collection={docCollection}
+                  id={docId!}
+                  field={`${p}.title`}
+                  fieldLabel="Titre (produits vedettes)"
+                  currentValue={title}
+                  locale={locale}
+                >
+                  {title}
+                </EditableField>
+              ) : title}
             </h2>
           </div>
           {viewCollectionLabel ? (
@@ -98,7 +116,18 @@ export function FeaturedProductsBlock({
               data-payload-path={p ? `${p}.viewCollectionLabel` : undefined}
               className="hidden text-[10px] font-medium uppercase tracking-[0.2em] text-stone-400 transition-colors hover:text-stone-800 sm:inline-flex"
             >
-              {viewCollectionLabel}
+              {canEdit ? (
+                <EditableField
+                  collection={docCollection}
+                  id={docId!}
+                  field={`${p}.viewCollectionLabel`}
+                  fieldLabel="Lien collection (produits vedettes)"
+                  currentValue={viewCollectionLabel}
+                  locale={locale}
+                >
+                  {viewCollectionLabel}
+                </EditableField>
+              ) : viewCollectionLabel}
             </Link>
           ) : null}
         </div>

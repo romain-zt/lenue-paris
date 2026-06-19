@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import type { MappedHomeBlock } from "@/lib/cms/types";
+import type { ContentLocale, MappedHomeBlock } from "@/lib/cms/types";
 import { HeroBlock } from "./HeroBlock";
 import { FeaturedProductsBlock } from "./FeaturedProductsBlock";
 import { EditorialStripBlock } from "./EditorialStripBlock";
@@ -9,9 +9,12 @@ import { BlockOverlay } from "./BlockOverlay";
 interface RenderBlocksProps {
   blocks: MappedHomeBlock[];
   quote: string;
+  docId?: string;
+  docCollection?: 'pages' | 'products';
+  locale?: ContentLocale;
 }
 
-export function RenderBlocks({ blocks, quote }: RenderBlocksProps) {
+export function RenderBlocks({ blocks, quote, docId, docCollection, locale }: RenderBlocksProps) {
   return (
     <>
       {blocks.map((block) => {
@@ -21,7 +24,13 @@ export function RenderBlocks({ blocks, quote }: RenderBlocksProps) {
           return (
             <Fragment key={key}>
               <BlockOverlay blockType="hero" blockIndex={block.blockIndex}>
-                <HeroBlock {...block.props} blockIndex={block.blockIndex} />
+                <HeroBlock
+                  {...block.props}
+                  blockIndex={block.blockIndex}
+                  docId={docId}
+                  docCollection={docCollection}
+                  locale={locale}
+                />
               </BlockOverlay>
               <HomeQuoteSection quote={quote} />
             </Fragment>
@@ -31,7 +40,12 @@ export function RenderBlocks({ blocks, quote }: RenderBlocksProps) {
         if (block.blockType === "featuredProducts") {
           return (
             <BlockOverlay key={key} blockType="featuredProducts" blockIndex={block.blockIndex}>
-              <FeaturedProductsBlock {...block.props} blockIndex={block.blockIndex} />
+              <FeaturedProductsBlock
+                {...block.props}
+                blockIndex={block.blockIndex}
+                docId={docId}
+                docCollection={docCollection}
+              />
             </BlockOverlay>
           );
         }
@@ -39,7 +53,13 @@ export function RenderBlocks({ blocks, quote }: RenderBlocksProps) {
         if (block.blockType === "editorialStrip") {
           return (
             <BlockOverlay key={key} blockType="editorialStrip" blockIndex={block.blockIndex}>
-              <EditorialStripBlock {...block.props} blockIndex={block.blockIndex} />
+              <EditorialStripBlock
+                {...block.props}
+                blockIndex={block.blockIndex}
+                docId={docId}
+                docCollection={docCollection}
+                locale={locale}
+              />
             </BlockOverlay>
           );
         }

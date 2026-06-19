@@ -47,8 +47,9 @@ export function focusAdminField(fieldPath: string): void {
   if (blockRowMatch) {
     const index = parseInt(blockRowMatch[1] ?? '0', 10)
     const rowSelectors = [
-      `[data-field-path="blocks"] [data-row-index="${index}"]`,
       `[data-field-path="blocks.${index}"]`,
+      `[data-field-path="blocks"] [data-row-index="${index}"]`,
+      `[data-field-path="blocks"] [data-row]:nth-child(${index + 1})`,
       `[data-array-row-index="${index}"]`,
     ]
     for (const selector of rowSelectors) {
@@ -62,10 +63,15 @@ export function focusAdminField(fieldPath: string): void {
         return
       }
     }
+    // Fallback: find any block row by iterating elements with data-field-path starting with "blocks."
     const row = Array.from(
       document.querySelectorAll<HTMLElement>('[data-field-path^="blocks."]'),
     ).find((el) => el.getAttribute('data-field-path') === `blocks.${index}`)
     if (row) {
+      const toggle =
+        row.querySelector<HTMLElement>('[data-collapsed]') ??
+        row.querySelector<HTMLButtonElement>('button[aria-expanded="false"]')
+      toggle?.click()
       scrollAndHighlight(row)
       return
     }

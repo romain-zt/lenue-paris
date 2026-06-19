@@ -1,10 +1,11 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import type { UIMessage } from 'ai'
-import { updateLiveField } from '@/app/actions/liveEdit'
+import { updateLiveField, publishDocument } from '@/app/actions/liveEdit'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -264,7 +265,7 @@ function AIChatPanel({
     [],
   )
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, error } = useChat({
     id: 'public-ai-chat',
     transport,
     onFinish: () => {
@@ -486,6 +487,24 @@ function AIChatPanel({
             ···
           </div>
         )}
+        {status === 'error' && (
+          <div
+            style={{
+              background: 'rgba(239,68,68,0.12)',
+              border: '1px solid rgba(239,68,68,0.3)',
+              borderRadius: 8,
+              color: '#fca5a5',
+              fontSize: 11,
+              lineHeight: 1.5,
+              padding: '8px 10px',
+            }}
+          >
+            ⚠ {error?.message
+              ? error.message
+              : <>Erreur de connexion à l&apos;IA. Vérifiez que <code style={{ fontFamily: 'monospace', fontSize: 10 }}>CURSOR_API_KEY</code> est configuré côté serveur.</>
+            }
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -494,12 +513,23 @@ function AIChatPanel({
         style={{
           padding: '10px 12px',
           borderTop: '1px solid rgba(255,255,255,0.07)',
-          display: 'flex',
-          gap: 8,
-          alignItems: 'flex-end',
           flexShrink: 0,
         }}
       >
+        {isLoading && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            marginBottom: 6,
+            fontSize: 10,
+            color: 'rgba(255,255,255,0.35)',
+          }}>
+            <span style={{ display: 'inline-block', animation: 'fab-spin 1s linear infinite' }}>⏳</span>
+            <span>{status === 'submitted' ? 'Envoi…' : 'Génération…'}</span>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
         <textarea
           ref={inputRef}
           value={input}
@@ -554,7 +584,18 @@ function AIChatPanel({
         >
           {isLoading ? '…' : '↑'}
         </button>
+        </div>
       </div>
+      <style>{`
+        @keyframes fab-spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes fab-fade-in {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   )
 }
@@ -562,6 +603,7 @@ function AIChatPanel({
 // ─── Main FAB component ───────────────────────────────────────────────────────
 
 export function PublicAdminFAB() {
+  const pathname = usePathname()
   const [user, setUser] = useState<PayloadUser | null>(null)
   const [checking, setChecking] = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -575,6 +617,11 @@ export function PublicAdminFAB() {
   const [selectedFieldPath, setSelectedFieldPath] = useState<string | undefined>()
   // pendingPrompt: set when a BlockOverlay ✦ click triggers the AI panel
   const [pendingPrompt, setPendingPrompt] = useState<string | undefined>()
+  // publish state for the strip
+  const [publishState, setPublishState] = useState<'idle' | 'publishing' | 'published'>('idle')
+  // toast shown for 2s when page context switches on navigation
+  const [pageToast, setPageToast] = useState<string | null>(null)
+  const isFirstResolution = useRef(true)
 
   const adminBaseUrl = adminResolution?.url ?? '/admin'
   const adminPageTitle = adminResolution?.title
@@ -614,16 +661,23 @@ export function PublicAdminFAB() {
       .finally(() => setChecking(false))
   }, [])
 
-  // Resolve the admin URL for the current public page
+  // Resolve the admin URL for the current public page — re-runs on client navigation
   useEffect(() => {
     setResolving(true)
+    setAdminResolution(null)
     resolveAdminUrl()
       .then((resolution) => {
         setAdminResolution(resolution)
+        // Show a brief toast when the page context changes (skip on first mount)
+        if (!isFirstResolution.current && resolution.title) {
+          setPageToast(`Page mise à jour : ${resolution.title}`)
+          setTimeout(() => setPageToast(null), 2000)
+        }
+        isFirstResolution.current = false
       })
       .catch(() => {})
       .finally(() => setResolving(false))
-  }, [])
+  }, [pathname])
 
   // Tick every 15 s to keep relative time display fresh
   useEffect(() => {
@@ -894,6 +948,35 @@ export function PublicAdminFAB() {
         </div>
       )}
 
+      {/* Page context update toast */}
+      {pageToast && (
+        <div
+          style={{
+            alignItems: 'center',
+            background: 'rgba(99,102,241,0.92)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: 8,
+            bottom: 76,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+            color: '#fff',
+            display: 'flex',
+            fontSize: 11,
+            fontFamily: 'system-ui, sans-serif',
+            fontWeight: 500,
+            gap: 6,
+            maxWidth: 280,
+            padding: '7px 12px',
+            position: 'fixed',
+            right: 20,
+            zIndex: 9996,
+            animation: 'fab-fade-in 0.2s ease',
+          }}
+        >
+          <span style={{ fontSize: 13 }}>↗</span>
+          <span>{pageToast}</span>
+        </div>
+      )}
+
       {/* Circle trigger */}
       <button
         type="button"
@@ -1042,16 +1125,19 @@ export function PublicAdminFAB() {
             </button>
           </div>
 
-          {/* Draft notice */}
+          {/* Draft notice or published confirmation */}
           <p
             style={{
-              color: 'rgba(255,255,255,0.35)',
+              color: publishState === 'published' ? 'rgba(134,239,172,0.9)' : 'rgba(255,255,255,0.35)',
               fontSize: 10,
               lineHeight: 1.4,
               margin: 0,
+              transition: 'color 0.3s',
             }}
           >
-            Brouillon enregistré · les visiteurs voient la version publiée
+            {publishState === 'published'
+              ? 'Publié ✓ — la page est maintenant visible par les visiteurs'
+              : 'Brouillon enregistré · les visiteurs voient la version publiée'}
           </p>
 
           {/* Actions row */}
@@ -1067,6 +1153,7 @@ export function PublicAdminFAB() {
                 fontSize: 10,
                 fontWeight: 700,
                 padding: '4px 10px',
+                flexShrink: 0,
               }}
             >
               Recharger
@@ -1103,6 +1190,7 @@ export function PublicAdminFAB() {
                   fontSize: 10,
                   fontWeight: 600,
                   padding: '4px 10px',
+                  flexShrink: 0,
                 }}
               >
                 {isUndoing ? '…' : 'Annuler'}
@@ -1113,6 +1201,53 @@ export function PublicAdminFAB() {
               </span>
             )}
 
+            {/* Publish now button — visible when adminResolution has a collection + id */}
+            {!resolving && adminResolution && adminResolution.url !== '/admin' && (() => {
+              const ctx = contextFromAdminUrl(adminResolution.url)
+              if (ctx.type !== 'collection') return null
+              const isPublishing = publishState === 'publishing'
+              const isPublished = publishState === 'published'
+              return (
+                <button
+                  disabled={isPublishing || isPublished}
+                  onClick={async () => {
+                    setPublishState('publishing')
+                    try {
+                      await publishDocument({
+                        collection: ctx.collection as 'pages' | 'products' | 'globals',
+                        id: ctx.id,
+                      })
+                      setPublishState('published')
+                      setTimeout(() => setPublishState('idle'), 3000)
+                    } catch {
+                      setPublishState('idle')
+                    }
+                  }}
+                  style={{
+                    background: isPublished
+                      ? 'rgba(34,197,94,0.2)'
+                      : isPublishing
+                        ? 'rgba(234,179,8,0.15)'
+                        : 'rgba(234,179,8,0.9)',
+                    border: isPublished ? '1px solid rgba(34,197,94,0.5)' : 'none',
+                    borderRadius: 5,
+                    color: isPublished ? 'rgba(134,239,172,0.9)' : '#000',
+                    cursor: isPublishing || isPublished ? 'not-allowed' : 'pointer',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    marginLeft: 'auto',
+                    opacity: isPublishing ? 0.6 : 1,
+                    padding: '4px 10px',
+                    flexShrink: 0,
+                    transition: 'background 0.3s, color 0.3s',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {isPublished ? 'Publié ✓' : isPublishing ? 'Publication…' : 'Publier maintenant'}
+                </button>
+              )
+            })()}
+
             {!resolving && adminResolution && adminResolution.url !== '/admin' && (
               <a
                 href={adminResolution.url}
@@ -1121,9 +1256,9 @@ export function PublicAdminFAB() {
                 style={{
                   color: 'rgba(255,255,255,0.4)',
                   fontSize: 10,
-                  marginLeft: 'auto',
                   textDecoration: 'none',
                   whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
                 onMouseEnter={(e) => {
                   ;(e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.75)'
@@ -1132,7 +1267,7 @@ export function PublicAdminFAB() {
                   ;(e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.4)'
                 }}
               >
-                Publier dans l&apos;admin ↗
+                Ouvrir dans l&apos;admin ↗
               </a>
             )}
           </div>
