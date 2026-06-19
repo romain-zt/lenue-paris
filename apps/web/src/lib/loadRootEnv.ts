@@ -12,7 +12,7 @@ function readComposeValue(content: string, key: string): string | undefined {
 
 /** Override stale .env DB vars with docker-compose credentials for local dev. */
 function applyLocalDockerDatabaseEnv(repoRoot: string): void {
-  if (process.env.VERCEL) return
+  if (process.env.VERCEL || process.env.CI) return
 
   const composePath = path.join(repoRoot, 'docker-compose.yml')
   if (!fs.existsSync(composePath)) return

@@ -15,7 +15,7 @@ function readComposeValue(content, key) {
 }
 
 function applyLocalDockerEnv() {
-  if (process.env.VERCEL) return;
+  if (process.env.VERCEL || process.env.CI) return;
   const composePath = path.join(repoRoot, "docker-compose.yml");
   try {
     const content = fs.readFileSync(composePath, "utf8");
