@@ -1,32 +1,32 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: composite-postgres
+    container_name: lenueparis-postgres
     restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: composite
-      POSTGRES_USER: composite
-      POSTGRES_PASSWORD: composite
+      POSTGRES_DB: lenueparis
+      POSTGRES_USER: lenueparis
+      POSTGRES_PASSWORD: lenueparis
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U composite -d composite"]
+      test: ["CMD-SHELL", "pg_isready -U lenueparis -d lenueparis"]
       interval: 5s
       timeout: 5s
       retries: 10
 
   minio:
     image: minio/minio:latest
-    container_name: composite-minio
+    container_name: lenueparis-minio
     restart: unless-stopped
     ports:
       - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: composite
-      MINIO_ROOT_PASSWORD: composite123
+      MINIO_ROOT_USER: lenueparis
+      MINIO_ROOT_PASSWORD: lenueparis123
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
