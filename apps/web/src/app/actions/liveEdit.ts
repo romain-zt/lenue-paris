@@ -104,12 +104,15 @@ async function saveBlocks(
   collection: BlockCollection,
   id: number,
   blocks: unknown[],
+  locale?: string,
 ) {
   await payload.update({
     collection,
     id,
     data: { blocks } as Record<string, unknown>,
     overrideAccess: true,
+    draft: true,
+    ...(locale ? { locale: locale as 'fr' | 'en' | 'ru' } : {}),
   })
   revalidatePath('/', 'layout')
 }
@@ -119,11 +122,13 @@ export async function reorderBlock({
   id,
   blockIndex,
   direction,
+  locales,
 }: {
   collection: BlockCollection
   id: string
   blockIndex: number
   direction: 'up' | 'down'
+  locales?: string[]
 }) {
   const cookieStore = await cookies()
   if (!(await isEditorAuthorized(cookieStore))) {
@@ -132,27 +137,31 @@ export async function reorderBlock({
 
   const payload = await getPayload({ config })
   const payloadId = parseInt(id, 10)
-  const blocks = await fetchBlocks(payload, collection, payloadId)
+  const localesToWrite = locales && locales.length > 0 ? locales : [undefined]
 
-  const targetIndex = direction === 'up' ? blockIndex - 1 : blockIndex + 1
-  if (targetIndex < 0 || targetIndex >= blocks.length) return
+  for (const locale of localesToWrite) {
+    const blocks = await fetchBlocks(payload, collection, payloadId)
+    const targetIndex = direction === 'up' ? blockIndex - 1 : blockIndex + 1
+    if (targetIndex < 0 || targetIndex >= blocks.length) continue
 
-  // Swap
-  const tmp = blocks[blockIndex]
-  blocks[blockIndex] = blocks[targetIndex]!
-  blocks[targetIndex] = tmp!
+    const tmp = blocks[blockIndex]
+    blocks[blockIndex] = blocks[targetIndex]!
+    blocks[targetIndex] = tmp!
 
-  await saveBlocks(payload, collection, payloadId, blocks)
+    await saveBlocks(payload, collection, payloadId, blocks, locale)
+  }
 }
 
 export async function removeBlock({
   collection,
   id,
   blockIndex,
+  locales,
 }: {
   collection: BlockCollection
   id: string
   blockIndex: number
+  locales?: string[]
 }) {
   const cookieStore = await cookies()
   if (!(await isEditorAuthorized(cookieStore))) {
@@ -161,23 +170,20 @@ export async function removeBlock({
 
   const payload = await getPayload({ config })
   const payloadId = parseInt(id, 10)
-  const blocks = await fetchBlocks(payload, collection, payloadId)
+  const localesToWrite = locales && locales.length > 0 ? locales : [undefined]
 
-  if (blockIndex < 0 || blockIndex >= blocks.length) return
-
-  blocks.splice(blockIndex, 1)
-  await saveBlocks(payload, collection, payloadId, blocks)
+  for (const locale of localesToWrite) {
+    const blocks = await fetchBlocks(payload, collection, payloadId)
+    if (blockIndex < 0 || blockIndex >= blocks.length) continue
+    blocks.splice(blockIndex, 1)
+    await saveBlocks(payload, collection, payloadId, blocks, locale)
+  }
 }
 
-// Blank templates for each block type — minimum required fields
+// Starter templates — only include block types that pass Payload validation without manual input.
+// Hero is excluded: it requires an image (a media relation) which cannot be set to a placeholder string.
+// Editors who want a Hero block should use ↗ Admin where the media picker is available.
 const BLANK_BLOCKS: Record<string, Record<string, unknown>> = {
-  hero: {
-    blockType: 'hero',
-    season: 'Nouvelle saison',
-    tagline: 'Votre accroche ici',
-    ctaLabel: 'Découvrir',
-    ctaLink: '/fr/collections',
-  },
   featuredProducts: {
     blockType: 'featuredProducts',
     title: 'Produits mis en avant',
@@ -204,11 +210,13 @@ export async function addBlock({
   id,
   afterIndex,
   blockType,
+  locales,
 }: {
   collection: BlockCollection
   id: string
   afterIndex: number
   blockType: string
+  locales?: string[]
 }) {
   const cookieStore = await cookies()
   if (!(await isEditorAuthorized(cookieStore))) {
@@ -220,13 +228,14 @@ export async function addBlock({
 
   const payload = await getPayload({ config })
   const payloadId = parseInt(id, 10)
-  const blocks = await fetchBlocks(payload, collection, payloadId)
+  const localesToWrite = locales && locales.length > 0 ? locales : [undefined]
 
-  // Insert after the given index (or at the end)
-  const insertAt = Math.min(afterIndex + 1, blocks.length)
-  blocks.splice(insertAt, 0, { ...blank })
-
-  await saveBlocks(payload, collection, payloadId, blocks)
+  for (const locale of localesToWrite) {
+    const blocks = await fetchBlocks(payload, collection, payloadId)
+    const insertAt = Math.min(afterIndex + 1, blocks.length)
+    blocks.splice(insertAt, 0, { ...blank })
+    await saveBlocks(payload, collection, payloadId, blocks, locale)
+  }
 }
 
 export async function publishDocument({

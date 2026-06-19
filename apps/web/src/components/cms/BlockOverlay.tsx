@@ -10,13 +10,34 @@ const BLOCK_TYPE_LABELS: Record<string, string> = {
   productGrid: 'Grille produits',
 }
 
-// Human-readable names shown in the "Add a block" picker
+// Human-readable names shown in the "Add a block" picker.
+// Hero is intentionally excluded — it requires an image (media relation) that cannot be set
+// from a blank object. Editors must use ↗ Admin to create Hero blocks.
 const ADDABLE_BLOCKS: { type: string; label: string; description: string }[] = [
-  { type: 'hero', label: 'Hero', description: 'Grande image + accroche + CTA' },
-  { type: 'featuredProducts', label: 'Produits mis en avant', description: 'Sélection manuelle ou par collection' },
   { type: 'editorialStrip', label: 'Bandeau éditorial', description: 'Image + texte + lien' },
+  { type: 'featuredProducts', label: 'Produits mis en avant', description: 'Sélection manuelle ou par collection' },
   { type: 'productGrid', label: 'Grille produits', description: 'Tous les produits ou par collection' },
 ]
+
+const ALL_LOCALES = ['fr', 'en', 'ru'] as const
+type Locale = typeof ALL_LOCALES[number]
+const LOCALE_LABELS: Record<Locale, string> = { fr: 'FR', en: 'EN', ru: 'RU' }
+
+/** Build a human-readable receipt string for the dark strip, e.g. "EN + FR · RU inchangé" */
+function buildLocaleReceipt(selected: Locale[]): string {
+  if (selected.length === ALL_LOCALES.length) return 'Toutes les langues'
+  const unchanged = ALL_LOCALES.filter((l) => !selected.includes(l))
+  const changed = selected.map((l) => LOCALE_LABELS[l]).join(' + ')
+  if (unchanged.length === 0) return changed
+  return `${changed} · ${unchanged.map((l) => LOCALE_LABELS[l]).join('/')} inchangé`
+}
+
+/** Derive the current locale from the URL (first path segment if it's a known locale). */
+function currentLocaleFromUrl(): Locale {
+  if (typeof window === 'undefined') return 'fr'
+  const seg = window.location.pathname.split('/').filter(Boolean)[0] ?? 'fr'
+  return (ALL_LOCALES as readonly string[]).includes(seg) ? (seg as Locale) : 'fr'
+}
 
 let editModeStyleInjected = false
 
@@ -68,6 +89,8 @@ export function BlockOverlay({ blockType, blockIndex, children, docId, docCollec
   const [showAddModal, setShowAddModal] = useState(false)
   const [isPending, startTransition] = useTransition()
   const ref = useRef<HTMLDivElement>(null)
+  // Locale selection — default to current URL locale only
+  const [selectedLocales, setSelectedLocales] = useState<Locale[]>(() => [currentLocaleFromUrl()])
 
   useEffect(() => {
     setIsInIframe(window.parent !== window)
@@ -105,10 +128,12 @@ export function BlockOverlay({ blockType, blockIndex, children, docId, docCollec
   }
 
   /** Dispatch the event that updates the FAB strip + banner, then pulse this block */
-  function notifyMutation(actionLabel: string) {
+  function notifyMutation(actionLabel: string, locales?: Locale[]) {
+    const receipt = locales && locales.length > 0 ? buildLocaleReceipt(locales) : null
+    const label = receipt ? `${actionLabel} · ${receipt}` : actionLabel
     window.dispatchEvent(
       new CustomEvent('lp:field-patched', {
-        detail: { label: actionLabel, field: fieldPath },
+        detail: { label, field: fieldPath },
       }),
     )
     // Auto-scroll into view and pulse gold
@@ -126,8 +151,8 @@ export function BlockOverlay({ blockType, blockIndex, children, docId, docCollec
   function handleReorder(direction: 'up' | 'down') {
     if (!docId || !docCollection) return
     startTransition(async () => {
-      await reorderBlock({ collection: docCollection, id: docId, blockIndex, direction })
-      notifyMutation(direction === 'up' ? `${label} · déplacé vers le haut` : `${label} · déplacé vers le bas`)
+      await reorderBlock({ collection: docCollection, id: docId, blockIndex, direction, locales: selectedLocales })
+      notifyMutation(direction === 'up' ? `${label} · déplacé vers le haut` : `${label} · déplacé vers le bas`, selectedLocales)
       window.location.reload()
     })
   }
@@ -135,8 +160,8 @@ export function BlockOverlay({ blockType, blockIndex, children, docId, docCollec
   function handleRemove() {
     if (!docId || !docCollection) return
     startTransition(async () => {
-      await removeBlock({ collection: docCollection, id: docId, blockIndex })
-      notifyMutation(`${label} · supprimé`)
+      await removeBlock({ collection: docCollection, id: docId, blockIndex, locales: selectedLocales })
+      notifyMutation(`${label} · supprimé`, selectedLocales)
       window.location.reload()
     })
   }
@@ -145,9 +170,9 @@ export function BlockOverlay({ blockType, blockIndex, children, docId, docCollec
     if (!docId || !docCollection) return
     setShowAddModal(false)
     startTransition(async () => {
-      await addBlock({ collection: docCollection, id: docId, afterIndex: blockIndex, blockType: newBlockType })
+      await addBlock({ collection: docCollection, id: docId, afterIndex: blockIndex, blockType: newBlockType, locales: selectedLocales })
       const newLabel = BLOCK_TYPE_LABELS[newBlockType] ?? newBlockType
-      notifyMutation(`${newLabel} · section ajoutée`)
+      notifyMutation(`${newLabel} · section ajoutée`, selectedLocales)
       window.location.reload()
     })
   }
@@ -353,7 +378,7 @@ export function BlockOverlay({ blockType, blockIndex, children, docId, docCollec
             boxShadow: '0 16px 48px rgba(0,0,0,0.7)',
             fontFamily: 'system-ui, sans-serif',
             left: '50%',
-            maxWidth: 320,
+            maxWidth: 340,
             padding: 16,
             position: 'absolute',
             top: '50%',
@@ -363,26 +388,79 @@ export function BlockOverlay({ blockType, blockIndex, children, docId, docCollec
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div style={{ alignItems: 'center', display: 'flex', gap: 8, marginBottom: 12 }}>
+          <div style={{ alignItems: 'center', display: 'flex', gap: 8, marginBottom: 4 }}>
             <span style={{ color: '#a5b4fc', flex: 1, fontSize: 13, fontWeight: 700 }}>
               Ajouter une section · brouillon uniquement
             </span>
             <button
               type="button"
               onClick={() => setShowAddModal(false)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'rgba(255,255,255,0.4)',
-                cursor: 'pointer',
-                fontSize: 16,
-                lineHeight: 1,
-                padding: 2,
-              }}
+              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 2 }}
             >
               ×
             </button>
           </div>
+
+          {/* Locale chips */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', marginBottom: 6, textTransform: 'uppercase' }}>
+              Langues à modifier
+            </div>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              {ALL_LOCALES.map((l) => {
+                const active = selectedLocales.includes(l)
+                return (
+                  <button
+                    key={l}
+                    type="button"
+                    onClick={() => {
+                      setSelectedLocales((prev) =>
+                        active && prev.length > 1
+                          ? prev.filter((x) => x !== l)
+                          : active
+                            ? prev
+                            : [...prev, l],
+                      )
+                    }}
+                    style={{
+                      background: active ? 'rgba(99,102,241,0.8)' : 'rgba(255,255,255,0.08)',
+                      border: active ? '1px solid rgba(99,102,241,0.9)' : '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: 4,
+                      color: active ? '#fff' : 'rgba(255,255,255,0.5)',
+                      cursor: 'pointer',
+                      fontFamily: 'system-ui, sans-serif',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: '3px 10px',
+                    }}
+                  >
+                    {LOCALE_LABELS[l]}
+                  </button>
+                )
+              })}
+              <button
+                type="button"
+                onClick={() => setSelectedLocales([...ALL_LOCALES])}
+                style={{
+                  background: selectedLocales.length === ALL_LOCALES.length ? 'rgba(99,102,241,0.8)' : 'rgba(255,255,255,0.08)',
+                  border: selectedLocales.length === ALL_LOCALES.length ? '1px solid rgba(99,102,241,0.9)' : '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: 4,
+                  color: selectedLocales.length === ALL_LOCALES.length ? '#fff' : 'rgba(255,255,255,0.5)',
+                  cursor: 'pointer',
+                  fontFamily: 'system-ui, sans-serif',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  padding: '3px 10px',
+                }}
+              >
+                Toutes
+              </button>
+            </div>
+            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, marginTop: 4 }}>
+              {buildLocaleReceipt(selectedLocales)}
+            </div>
+          </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {ADDABLE_BLOCKS.map((b) => (
               <button
@@ -415,6 +493,32 @@ export function BlockOverlay({ blockType, blockIndex, children, docId, docCollec
                 <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>{b.description}</span>
               </button>
             ))}
+            {/* Hero — disabled, requires image via admin */}
+            {docId && docCollection && (
+              <a
+                href={`/admin/collections/${docCollection}/${docId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  alignItems: 'flex-start',
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 8,
+                  color: 'rgba(255,255,255,0.35)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
+                  padding: '10px 12px',
+                  textDecoration: 'none',
+                  width: '100%',
+                }}
+              >
+                <span style={{ fontSize: 12, fontWeight: 600 }}>Hero · image requise</span>
+                <span style={{ fontSize: 10 }}>↗ Compléter dans l&apos;admin (image obligatoire)</span>
+              </a>
+            )}
           </div>
         </div>
       )}
