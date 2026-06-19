@@ -1011,41 +1011,45 @@ export function PublicAdminFAB() {
             </button>
 
             {lastPatch.previousValue !== undefined &&
-              lastPatch.collection &&
-              lastPatch.id &&
-              lastPatch.field && (
-                <button
-                  disabled={isUndoing}
-                  onClick={async () => {
-                    if (!lastPatch.collection || !lastPatch.id || !lastPatch.field) return
-                    setIsUndoing(true)
-                    try {
-                      await updateLiveField({
-                        collection: lastPatch.collection,
-                        id: lastPatch.id,
-                        field: lastPatch.field,
-                        value: lastPatch.previousValue!,
-                        locale: lastPatch.locale,
-                      })
-                      setLastPatch(null)
-                    } finally {
-                      setIsUndoing(false)
-                    }
-                  }}
-                  style={{
-                    background: 'rgba(255,255,255,0.08)',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    borderRadius: 5,
-                    color: isUndoing ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.7)',
-                    cursor: isUndoing ? 'not-allowed' : 'pointer',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    padding: '4px 10px',
-                  }}
-                >
-                  {isUndoing ? '…' : 'Annuler'}
-                </button>
-              )}
+            lastPatch.collection &&
+            lastPatch.id &&
+            lastPatch.field ? (
+              <button
+                disabled={isUndoing}
+                onClick={async () => {
+                  if (!lastPatch.collection || !lastPatch.id || !lastPatch.field) return
+                  setIsUndoing(true)
+                  try {
+                    await updateLiveField({
+                      collection: lastPatch.collection,
+                      id: lastPatch.id,
+                      field: lastPatch.field,
+                      value: lastPatch.previousValue!,
+                      locale: lastPatch.locale,
+                    })
+                    setLastPatch(null)
+                  } finally {
+                    setIsUndoing(false)
+                  }
+                }}
+                style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: 5,
+                  color: isUndoing ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.7)',
+                  cursor: isUndoing ? 'not-allowed' : 'pointer',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  padding: '4px 10px',
+                }}
+              >
+                {isUndoing ? '…' : 'Annuler'}
+              </button>
+            ) : (
+              <span style={{ color: 'rgba(255,255,255,0.22)', fontSize: 10, fontStyle: 'italic' }}>
+                Modification IA · pas d&apos;annulation rapide
+              </span>
+            )}
 
             {!resolving && adminResolution && adminResolution.url !== '/admin' && (
               <a

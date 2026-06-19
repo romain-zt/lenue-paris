@@ -520,19 +520,22 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
             <span style={{ flex: 1 }}>
               Dernière modification{lastEdit.fields.length > 0 ? ` · ${lastEdit.fields.slice(0, 3).join(', ')}` : ''} · {timeAgoDisplay}
             </span>
+            <span style={{ color: 'var(--theme-elevation-400, #aaa)', fontSize: 11, fontStyle: 'italic' }}>
+              Modification IA · pas d&apos;annulation rapide
+            </span>
             <button
               onClick={() => setLastEdit(null)}
               style={{
                 background: 'none',
-                border: '1px solid var(--theme-elevation-300, #ccc)',
-                borderRadius: 4,
-                padding: '2px 8px',
-                fontSize: 11,
+                border: 'none',
                 cursor: 'pointer',
-                color: 'var(--theme-elevation-600, #666)',
+                color: 'var(--theme-elevation-400, #aaa)',
+                fontSize: 14,
+                lineHeight: 1,
+                padding: '0 2px',
               }}
             >
-              Annuler
+              ×
             </button>
           </div>
         )}
