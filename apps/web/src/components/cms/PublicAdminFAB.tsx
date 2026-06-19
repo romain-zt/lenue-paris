@@ -511,6 +511,7 @@ export function PublicAdminFAB() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
+  const [inlinePatched, setInlinePatched] = useState(false)
   const [adminResolution, setAdminResolution] = useState<AdminResolution | null>(null)
   const [resolving, setResolving] = useState(true)
   const [selectedFieldPath, setSelectedFieldPath] = useState<string | undefined>()
@@ -535,6 +536,15 @@ export function PublicAdminFAB() {
         ? `↗ ${adminPageTitle} dans l'admin`
         : `↗ Ouvrir dans l'admin`
 
+  // Restore edit mode state after page reloads (e.g. after draftMode toggle)
+  useEffect(() => {
+    if (sessionStorage.getItem('lp-edit-mode') === '1') {
+      setEditMode(true)
+      document.documentElement.classList.add('admin-edit-mode')
+      document.dispatchEvent(new CustomEvent('admin-edit-mode', { detail: { enabled: true } }))
+    }
+  }, [])
+
   // Check if current user is a Payload admin
   useEffect(() => {
     fetch('/api/users/me', { credentials: 'include' })
@@ -555,6 +565,13 @@ export function PublicAdminFAB() {
       })
       .catch(() => {})
       .finally(() => setResolving(false))
+  }, [])
+
+  // Show "Recharger" hint when EditableField saves inline
+  useEffect(() => {
+    const handle = () => setInlinePatched(true)
+    window.addEventListener('lp:field-patched', handle)
+    return () => window.removeEventListener('lp:field-patched', handle)
   }, [])
 
   // Listen for AI-help messages from BlockOverlay ✦ clicks.
@@ -583,19 +600,36 @@ export function PublicAdminFAB() {
     return () => window.removeEventListener('message', handle)
   }, [])
 
-  // Toggle edit mode: add CSS class + dispatch event for BlockOverlay
-  const toggleEditMode = useCallback(() => {
-    setEditMode((prev) => {
-      const next = !prev
-      if (next) {
-        document.documentElement.classList.add('admin-edit-mode')
-      } else {
-        document.documentElement.classList.remove('admin-edit-mode')
-      }
-      document.dispatchEvent(new CustomEvent('admin-edit-mode', { detail: { enabled: next } }))
-      return next
-    })
-  }, [])
+  // Toggle edit mode: enable draftMode on server + persist state + reload for fresh RSC content
+  const toggleEditMode = useCallback(async () => {
+    const next = !editMode
+    setEditMode(next)
+    setMenuOpen(false)
+
+    if (next) {
+      sessionStorage.setItem('lp-edit-mode', '1')
+      document.documentElement.classList.add('admin-edit-mode')
+      document.dispatchEvent(new CustomEvent('admin-edit-mode', { detail: { enabled: true } }))
+    } else {
+      sessionStorage.removeItem('lp-edit-mode')
+      document.documentElement.classList.remove('admin-edit-mode')
+      document.dispatchEvent(new CustomEvent('admin-edit-mode', { detail: { enabled: false } }))
+    }
+
+    // Enable/disable Next.js draftMode so RSCs bypass the cache and serve fresh Payload content
+    try {
+      await fetch('/api/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: next ? 'enable' : 'disable' }),
+        credentials: 'include',
+      })
+      window.location.reload()
+    } catch {
+      // draftMode toggle failed — CSS class still active, reload anyway
+      window.location.reload()
+    }
+  }, [editMode])
 
   if (checking || !user) return null
 
@@ -814,6 +848,62 @@ export function PublicAdminFAB() {
       >
         {menuOpen || aiOpen ? '✕' : '✦'}
       </button>
+
+      {/* Inline-edit save hint */}
+      {inlinePatched && (
+        <div
+          style={{
+            background: 'rgba(34,197,94,0.9)',
+            backdropFilter: 'blur(6px)',
+            borderBottom: '1px solid rgba(34,197,94,0.5)',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            fontFamily: 'system-ui, sans-serif',
+            fontSize: 11,
+            fontWeight: 600,
+            left: 0,
+            padding: '5px 16px',
+            position: 'fixed',
+            right: 0,
+            top: 0,
+            zIndex: 9996,
+          }}
+        >
+          <span style={{ flex: 1 }}>
+            ✅ Modification enregistrée · Rechargez pour voir les changements
+          </span>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              background: 'rgba(255,255,255,0.25)',
+              border: 'none',
+              borderRadius: 4,
+              color: '#fff',
+              cursor: 'pointer',
+              fontSize: 10,
+              fontWeight: 700,
+              padding: '3px 10px',
+            }}
+          >
+            Recharger
+          </button>
+          <button
+            onClick={() => setInlinePatched(false)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'rgba(255,255,255,0.7)',
+              cursor: 'pointer',
+              fontSize: 14,
+              padding: '0 4px',
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Edit mode indicator bar */}
       {editMode && (

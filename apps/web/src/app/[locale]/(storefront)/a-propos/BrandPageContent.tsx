@@ -2,15 +2,21 @@
 
 import Image from "next/image";
 import type { PageCover } from "@/types/page";
+import { EditableField } from "@/components/cms/EditableField";
 
 export interface BrandPageContentProps {
   title: string;
   body: string;
   cover: PageCover | null;
+  /** Payload document ID — enables inline editing in admin edit mode */
+  docId?: string;
+  /** Locale of the content */
+  locale?: string;
 }
 
-export function BrandPageContent({ title, body, cover }: BrandPageContentProps) {
+export function BrandPageContent({ title, body, cover, docId, locale }: BrandPageContentProps) {
   const paragraphs = body.split("\n\n").filter(Boolean);
+  const canEdit = Boolean(docId);
 
   return (
     <main>
@@ -35,25 +41,69 @@ export function BrandPageContent({ title, body, cover }: BrandPageContentProps) 
 
       <article className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
         {title && (
-          <h1 className="mb-8 font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">
-            {title}
-          </h1>
+          canEdit ? (
+            <EditableField
+              collection="pages"
+              id={docId!}
+              field="title"
+              fieldLabel="Titre"
+              currentValue={title}
+              locale={locale}
+            >
+              <h1 className="mb-8 font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">
+                {title}
+              </h1>
+            </EditableField>
+          ) : (
+            <h1 className="mb-8 font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">
+              {title}
+            </h1>
+          )
         )}
-        <div className="space-y-6">
-          {paragraphs.map((paragraph, i) => {
-            const lines = paragraph.split("\n");
-            return (
-              <p key={i} className="text-base leading-relaxed text-stone-700 sm:text-lg">
-                {lines.map((line, j) => (
-                  <span key={j}>
-                    {line}
-                    {j < lines.length - 1 && <br />}
-                  </span>
-                ))}
-              </p>
-            );
-          })}
-        </div>
+
+        {canEdit ? (
+          <EditableField
+            collection="pages"
+            id={docId!}
+            field="body"
+            fieldLabel="Corps du texte"
+            currentValue={body}
+            locale={locale}
+            multiline
+          >
+            <div className="space-y-6">
+              {paragraphs.map((paragraph, i) => {
+                const lines = paragraph.split("\n");
+                return (
+                  <p key={i} className="text-base leading-relaxed text-stone-700 sm:text-lg">
+                    {lines.map((line, j) => (
+                      <span key={j}>
+                        {line}
+                        {j < lines.length - 1 && <br />}
+                      </span>
+                    ))}
+                  </p>
+                );
+              })}
+            </div>
+          </EditableField>
+        ) : (
+          <div className="space-y-6">
+            {paragraphs.map((paragraph, i) => {
+              const lines = paragraph.split("\n");
+              return (
+                <p key={i} className="text-base leading-relaxed text-stone-700 sm:text-lg">
+                  {lines.map((line, j) => (
+                    <span key={j}>
+                      {line}
+                      {j < lines.length - 1 && <br />}
+                    </span>
+                  ))}
+                </p>
+              );
+            })}
+          </div>
+        )}
       </article>
     </main>
   );

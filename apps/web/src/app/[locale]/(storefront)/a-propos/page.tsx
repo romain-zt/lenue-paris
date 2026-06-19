@@ -22,5 +22,5 @@ export default async function BrandPage({ params }: BrandPageProps) {
 
   const data = await getBrandPageData(locale);
 
-  return <BrandPageContent {...data} />;
+  return <BrandPageContent {...data} locale={locale} />;
 }

@@ -41,6 +41,7 @@ export async function getBrandPageData(locale: string = "fr"): Promise<BrandPage
       title: page.title ?? "",
       body: (page.body as string | null | undefined) ?? "",
       cover: coverUrl ? { url: coverUrl, alt: coverAlt ?? "" } : null,
+      docId: String(page.id),
     };
   } catch {
     return { title: "", body: "", cover: null };

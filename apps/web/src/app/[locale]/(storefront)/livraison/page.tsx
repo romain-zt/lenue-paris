@@ -45,6 +45,8 @@ export default async function DeliveryPage({ params }: PageProps) {
         title={page.title ?? ""}
         body={(page.body as string | null | undefined) ?? ""}
         cover={cover?.url ? cover : null}
+        docId={String(page.id)}
+        locale={locale}
       />
     );
   }
