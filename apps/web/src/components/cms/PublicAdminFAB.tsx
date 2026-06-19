@@ -39,12 +39,15 @@ type MessagePart =
 
 // ─── URL resolution ───────────────────────────────────────────────────────────
 
-function parsePublicContext() {
+function parsePublicContext(adminResolution?: AdminResolution | null) {
   if (typeof window === 'undefined') return { type: 'dashboard' as const }
   const parts = window.location.pathname.split('/').filter(Boolean)
   // parts[0] = locale, parts[1] = section, parts[2] = slug
   if (parts[1] === 'produits' && parts[2]) return { type: 'collection' as const, collection: 'products', slug: parts[2] }
   if (parts[1] === 'collections' && parts[2]) return { type: 'collection' as const, collection: 'collections', slug: parts[2] }
+  // Fall back to the resolved admin URL when path-based parsing can't determine context
+  // (covers /livraison, /contact, /en/livraison, globals, etc.)
+  if (adminResolution) return contextFromAdminUrl(adminResolution.url)
   return { type: 'dashboard' as const }
 }
 
@@ -182,14 +185,21 @@ async function resolveAdminUrl(): Promise<AdminResolution> {
   return { url: '/admin' }
 }
 
-// ─── Derive Payload collection + id from a resolved admin URL ─────────────────
+// ─── Derive Payload collection + id (or global slug) from a resolved admin URL ─
 
 function contextFromAdminUrl(
   url: string,
-): { type: 'collection'; collection: string; id: string } | { type: 'dashboard' } {
-  const match = url.match(/\/admin\/collections\/([^/]+)\/([^/?#]+)/)
-  if (match?.[1] && match?.[2]) {
-    return { type: 'collection', collection: match[1], id: match[2] }
+):
+  | { type: 'collection'; collection: string; id: string }
+  | { type: 'global'; slug: string }
+  | { type: 'dashboard' } {
+  const collMatch = url.match(/\/admin\/collections\/([^/]+)\/([^/?#]+)/)
+  if (collMatch?.[1] && collMatch?.[2]) {
+    return { type: 'collection', collection: collMatch[1], id: collMatch[2] }
+  }
+  const globalMatch = url.match(/\/admin\/globals\/([a-z0-9-]+)/)
+  if (globalMatch?.[1]) {
+    return { type: 'global', slug: globalMatch[1] }
   }
   return { type: 'dashboard' }
 }
@@ -200,21 +210,20 @@ function AIChatPanel({
   onClose,
   pendingPrompt,
   adminResolution,
+  hidden,
 }: {
   onClose: () => void
   pendingPrompt?: string
   adminResolution: AdminResolution | null
+  hidden?: boolean
 }) {
   const [input, setInput] = useState(pendingPrompt ?? '')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  // Derive document context from the resolved admin URL so the AI knows which
-  // Payload document it is editing (e.g. pages/1 for Livraison).
-  const contextRef = useRef(
-    adminResolution
-      ? contextFromAdminUrl(adminResolution.url)
-      : parsePublicContext(),
-  )
+  // Derive document context: prefer the resolved admin URL, then fall back to
+  // path-based parsing (which itself falls back to adminResolution for routes
+  // like /livraison that aren't handled by path matching alone).
+  const contextRef = useRef(parsePublicContext(adminResolution))
 
   // Keep context in sync when the admin URL resolves after mount
   useEffect(() => {
@@ -222,6 +231,13 @@ function AIChatPanel({
       contextRef.current = contextFromAdminUrl(adminResolution.url)
     }
   }, [adminResolution])
+
+  // Focus the textarea whenever the panel becomes visible
+  useEffect(() => {
+    if (!hidden) {
+      setTimeout(() => inputRef.current?.focus(), 150)
+    }
+  }, [hidden])
 
   // Sync input when a new prompt comes in from BlockOverlay ✦ click
   useEffect(() => {
@@ -307,10 +323,6 @@ function AIChatPanel({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 150)
-  }, [])
-
   const handleSend = useCallback(() => {
     if (!input.trim() || isLoading) return
     const text = input.trim()
@@ -332,7 +344,7 @@ function AIChatPanel({
         border: '1px solid rgba(255,255,255,0.1)',
         borderRadius: 14,
         boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
-        display: 'flex',
+        display: hidden ? 'none' : 'flex',
         flexDirection: 'column',
         zIndex: 9998,
         overflow: 'hidden',
@@ -705,15 +717,13 @@ export function PublicAdminFAB() {
 
   return (
     <>
-      {/* AI Chat panel */}
-      {aiOpen && (
-        <AIChatPanel
-          key={pendingPrompt}
-          onClose={() => setAiOpen(false)}
-          pendingPrompt={pendingPrompt}
-          adminResolution={adminResolution}
-        />
-      )}
+      {/* AI Chat panel — always mounted to preserve useChat history across open/close */}
+      <AIChatPanel
+        onClose={() => setAiOpen(false)}
+        pendingPrompt={pendingPrompt}
+        adminResolution={adminResolution}
+        hidden={!aiOpen}
+      />
 
       {/* FAB menu */}
       {menuOpen && !aiOpen && (
