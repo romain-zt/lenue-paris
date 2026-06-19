@@ -113,7 +113,7 @@ export function EditableField({
   return (
     <div
       data-lp-field={field}
-      style={{ position: 'relative' }}
+      style={{ position: 'relative', touchAction: 'manipulation' }}
       title={isEditing ? undefined : `Cliquez pour modifier : ${label}`}
     >
       {/* Dashed outline hint */}
@@ -142,7 +142,13 @@ export function EditableField({
         <textarea
           ref={textareaRef}
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => {
+            setValue(e.target.value)
+            // Auto-grow to content height
+            const t = e.currentTarget
+            t.style.height = 'auto'
+            t.style.height = t.scrollHeight + 'px'
+          }}
           onBlur={handleSave}
           onKeyDown={handleKeyDown}
           disabled={isPending}
@@ -154,16 +160,16 @@ export function EditableField({
             color: 'inherit',
             display: 'block',
             font: 'inherit',
-            // Minimum 16px so iOS doesn't auto-zoom on focus
+            // Minimum 16px prevents iOS auto-zoom on focus
             fontSize: 'max(16px, 1em)',
             letterSpacing: 'inherit',
             lineHeight: 'inherit',
             margin: 0,
-            // Reasonable minimum so the text is actually readable on mobile
             minHeight: '5em',
             outline: 'none',
+            overflow: 'hidden',
             padding: '4px 0',
-            resize: 'vertical',
+            resize: 'none',
             touchAction: 'manipulation',
             width: '100%',
           }}

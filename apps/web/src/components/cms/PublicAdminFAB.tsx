@@ -627,6 +627,10 @@ export function PublicAdminFAB() {
   const [publishState, setPublishState] = useState<'idle' | 'publishing' | 'published'>('idle')
   // toast shown for 2s when page context switches on navigation
   const [pageToast, setPageToast] = useState<string | null>(null)
+  // Controls whether the top "MODE ÉDITION" banner is visible.
+  // It only appears after the first edit (lastPatch is set) and auto-dismisses
+  // after 8 seconds so it never blocks the site header permanently.
+  const [bannerVisible, setBannerVisible] = useState(false)
   const isFirstResolution = useRef(true)
 
   const adminBaseUrl = adminResolution?.url ?? '/admin'
@@ -745,6 +749,18 @@ export function PublicAdminFAB() {
   useEffect(() => {
     if (!lastPatch) return
     const id = setTimeout(() => setLastPatch(null), 5 * 60 * 1000)
+    return () => clearTimeout(id)
+  }, [lastPatch])
+
+  // Show the top banner when an edit lands, then auto-dismiss after 8 seconds.
+  // This ensures the banner never blocks the site header before any modification.
+  useEffect(() => {
+    if (!lastPatch) {
+      setBannerVisible(false)
+      return
+    }
+    setBannerVisible(true)
+    const id = setTimeout(() => setBannerVisible(false), 8000)
     return () => clearTimeout(id)
   }, [lastPatch])
 
@@ -1051,8 +1067,8 @@ export function PublicAdminFAB() {
         {menuOpen || aiOpen ? '✕' : '✦'}
       </button>
 
-      {/* Edit mode indicator bar — only shown after a modification to avoid blocking the site header */}
-      {editMode && lastPatch && (
+      {/* Edit mode indicator bar — only shown after a modification, auto-dismisses after 8 s */}
+      {editMode && lastPatch && bannerVisible && (
         <div
           style={{
             alignItems: 'center',

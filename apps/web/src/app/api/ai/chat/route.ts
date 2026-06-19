@@ -117,10 +117,49 @@ export async function POST(request: NextRequest) {
     })
   }
 
+  // When a specific document is open, snapshot its top-level fields so the AI
+  // never guesses the wrong field path (fixes "no permissions to edit title" where
+  // the model was trying `hero.title` or `data.title` instead of the raw `title`).
+  let docSnapshot = ''
+  if (context?.type === 'collection' && context.collection && context.id) {
+    try {
+      const payload = await getPayload({ config })
+      const doc = await payload.findByID({
+        collection: context.collection as Parameters<typeof payload.findByID>[0]['collection'],
+        id: parseInt(context.id, 10),
+        overrideAccess: true,
+        depth: 0,
+        locale: 'fr',
+      })
+      const fields = Object.keys(doc).filter(
+        (k) =>
+          !['id', 'createdAt', 'updatedAt', 'globalType'].includes(k),
+      )
+      docSnapshot = `\n\nChamps disponibles sur ce document (utilisez exactement ces noms) :\n${fields.map((f) => `- ${f}: ${JSON.stringify((doc as Record<string, unknown>)[f])?.slice(0, 120)}`).join('\n')}\n\nRègle critique : pour modifier le titre, utilisez patch_field avec data={"title":"…"} — jamais "data.title" ni "hero.title".`
+    } catch (err) {
+      console.error('[/api/ai/chat] doc snapshot fetch failed:', err)
+    }
+  } else if (context?.type === 'global' && context.slug) {
+    try {
+      const payload = await getPayload({ config })
+      const doc = await payload.findGlobal({
+        slug: context.slug as Parameters<typeof payload.findGlobal>[0]['slug'],
+        overrideAccess: true,
+        locale: 'fr',
+      })
+      const fields = Object.keys(doc).filter(
+        (k) => !['id', 'createdAt', 'updatedAt', 'globalType'].includes(k),
+      )
+      docSnapshot = `\n\nChamps disponibles sur ce global (utilisez exactement ces noms) :\n${fields.map((f) => `- ${f}: ${JSON.stringify((doc as Record<string, unknown>)[f])?.slice(0, 120)}`).join('\n')}`
+    } catch (err) {
+      console.error('[/api/ai/chat] global snapshot fetch failed:', err)
+    }
+  }
+
   const contextNote = context?.type === 'collection' && context.collection && context.id
-    ? `\n\n## Contexte actuel\nL'utilisateur édite le document : collection="${context.collection}", id="${context.id}". Utilise ce document par défaut.`
+    ? `\n\n## Contexte actuel\nL'utilisateur édite le document : collection="${context.collection}", id="${context.id}". Utilise ce document par défaut.${docSnapshot}`
     : context?.type === 'global' && context.slug
-      ? `\n\n## Contexte actuel\nL'utilisateur est sur le global : "${context.slug}". Utilise ce global par défaut.`
+      ? `\n\n## Contexte actuel\nL'utilisateur est sur le global : "${context.slug}". Utilise ce global par défaut (isGlobal: true).${docSnapshot}`
       : ''
 
   const modelMessages = await convertToModelMessages(messages)
