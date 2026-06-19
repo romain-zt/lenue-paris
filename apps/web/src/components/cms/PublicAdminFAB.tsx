@@ -182,19 +182,46 @@ async function resolveAdminUrl(): Promise<AdminResolution> {
   return { url: '/admin' }
 }
 
+// ─── Derive Payload collection + id from a resolved admin URL ─────────────────
+
+function contextFromAdminUrl(
+  url: string,
+): { type: 'collection'; collection: string; id: string } | { type: 'dashboard' } {
+  const match = url.match(/\/admin\/collections\/([^/]+)\/([^/?#]+)/)
+  if (match?.[1] && match?.[2]) {
+    return { type: 'collection', collection: match[1], id: match[2] }
+  }
+  return { type: 'dashboard' }
+}
+
 // ─── AI Chat panel embedded in the FAB ───────────────────────────────────────
 
 function AIChatPanel({
   onClose,
   pendingPrompt,
+  adminResolution,
 }: {
   onClose: () => void
   pendingPrompt?: string
+  adminResolution: AdminResolution | null
 }) {
   const [input, setInput] = useState(pendingPrompt ?? '')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  const contextRef = useRef(parsePublicContext())
+  // Derive document context from the resolved admin URL so the AI knows which
+  // Payload document it is editing (e.g. pages/1 for Livraison).
+  const contextRef = useRef(
+    adminResolution
+      ? contextFromAdminUrl(adminResolution.url)
+      : parsePublicContext(),
+  )
+
+  // Keep context in sync when the admin URL resolves after mount
+  useEffect(() => {
+    if (adminResolution) {
+      contextRef.current = contextFromAdminUrl(adminResolution.url)
+    }
+  }, [adminResolution])
 
   // Sync input when a new prompt comes in from BlockOverlay ✦ click
   useEffect(() => {
@@ -227,22 +254,36 @@ function AIChatPanel({
     onFinish: ({ message }) => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
       // Dispatch lp:field-patched for every completed patch_field tool call
-      // so the FAB strip stays in sync with AI edits too
+      // so the FAB strip stays in sync with AI edits.
+      // Read from both args (call parameters) and result (execution output).
       const parts = (message as { parts?: MessagePart[] }).parts ?? []
       for (const p of parts) {
         if (p.type !== 'tool-invocation') continue
         const tp = p as {
           type: 'tool-invocation'
-          toolInvocation: { toolName: string; state: string; args?: Record<string, unknown> }
+          toolInvocation: {
+            toolName: string
+            state: string
+            args?: Record<string, unknown>
+            result?: { updatedFields?: string[]; success?: boolean }
+          }
         }
         if (
           tp.toolInvocation.toolName === 'patch_field' &&
-          tp.toolInvocation.state === 'result'
+          tp.toolInvocation.state === 'result' &&
+          tp.toolInvocation.result?.success
         ) {
+          const updatedFields = tp.toolInvocation.result?.updatedFields ?? []
           const args = tp.toolInvocation.args ?? {}
+          const label =
+            updatedFields.length > 0
+              ? updatedFields.join(', ')
+              : Object.keys((args.data as Record<string, unknown> | undefined) ?? {}).join(', ') ||
+                (args.collection as string) ||
+                'Contenu'
           window.dispatchEvent(
             new CustomEvent('lp:field-patched', {
-              detail: { label: (args.field as string) ?? 'Contenu', field: args.field },
+              detail: { label, field: updatedFields[0] ?? args.data },
             }),
           )
         }
@@ -660,6 +701,7 @@ export function PublicAdminFAB() {
           key={pendingPrompt}
           onClose={() => setAiOpen(false)}
           pendingPrompt={pendingPrompt}
+          adminResolution={adminResolution}
         />
       )}
 

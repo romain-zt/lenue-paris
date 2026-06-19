@@ -156,6 +156,34 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
   const [timeAgoDisplay, setTimeAgoDisplay] = useState('')
   const [mounted, setMounted] = useState(false)
   const [patchDone, setPatchDone] = useState(false)
+  const [autoReloadCountdown, setAutoReloadCountdown] = useState(0)
+  const autoReloadRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const cancelAutoReload = useCallback(() => {
+    if (autoReloadRef.current) clearInterval(autoReloadRef.current)
+    autoReloadRef.current = null
+    setAutoReloadCountdown(0)
+  }, [])
+
+  // Start a 3-second auto-reload countdown after every AI patch
+  useEffect(() => {
+    if (!patchDone) return
+    setAutoReloadCountdown(3)
+    autoReloadRef.current = setInterval(() => {
+      setAutoReloadCountdown((c) => {
+        if (c <= 1) {
+          if (autoReloadRef.current) clearInterval(autoReloadRef.current)
+          autoReloadRef.current = null
+          window.location.reload()
+          return 0
+        }
+        return c - 1
+      })
+    }, 1000)
+    return () => {
+      if (autoReloadRef.current) clearInterval(autoReloadRef.current)
+    }
+  }, [patchDone])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const docContextRef = useRef(docContext)
@@ -284,7 +312,9 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
         (p): p is ToolPart =>
           p.type === 'tool-invocation' &&
           (p as ToolPart).toolInvocation.toolName === 'patch_field' &&
-          (p as ToolPart).toolInvocation.state === 'result',
+          ((p as ToolPart).toolInvocation.state === 'result' ||
+            // AI SDK sometimes marks completed tool calls as 'call' in onFinish
+            (p as ToolPart).toolInvocation.state === 'call'),
       )
       if (patchParts.length > 0) {
         const updatedFields = patchParts.flatMap((p) => {
@@ -553,7 +583,23 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
             fontSize: 12,
             color: '#166534',
           }}>
-            <span>✅ Contenu enregistré dans la base de données.</span>
+            <span>✅ Enregistré · le formulaire se recharge {autoReloadCountdown > 0 ? `dans ${autoReloadCountdown}s` : '…'}</span>
+            <button
+              onClick={() => { cancelAutoReload(); setPatchDone(false) }}
+              style={{
+                background: 'transparent',
+                border: '1px solid #166534',
+                borderRadius: 4,
+                padding: '2px 8px',
+                fontSize: 11,
+                cursor: 'pointer',
+                color: '#166534',
+                flexShrink: 0,
+                marginLeft: 'auto',
+              }}
+            >
+              Annuler
+            </button>
             <button
               onClick={() => window.location.reload()}
               style={{
@@ -566,10 +612,9 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
                 color: '#fff',
                 fontWeight: 600,
                 flexShrink: 0,
-                marginLeft: 'auto',
               }}
             >
-              Recharger
+              Recharger maintenant
             </button>
           </div>
         )}

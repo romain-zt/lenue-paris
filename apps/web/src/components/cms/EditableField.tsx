@@ -34,6 +34,7 @@ export function EditableField({
   const [value, setValue] = useState(currentValue)
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -69,22 +70,29 @@ export function EditableField({
   const handleSave = () => {
     setIsEditing(false)
     if (value.trim() !== currentValue.trim()) {
+      setSaveError(false)
       startTransition(async () => {
-        await updateLiveField({ collection, id, field, value, locale })
-        setSaved(true)
-        // Signal the FAB to show the save strip with undo capability
-        window.dispatchEvent(
-          new CustomEvent('lp:field-patched', {
-            detail: {
-              field,
-              label: fieldLabel ?? field,
-              previousValue: currentValue,
-              collection,
-              id,
-              locale,
-            },
-          }),
-        )
+        try {
+          await updateLiveField({ collection, id, field, value, locale })
+          setSaved(true)
+          // Signal the FAB to show the save strip with undo capability
+          window.dispatchEvent(
+            new CustomEvent('lp:field-patched', {
+              detail: {
+                field,
+                label: fieldLabel ?? field,
+                previousValue: currentValue,
+                collection,
+                id,
+                locale,
+              },
+            }),
+          )
+        } catch {
+          setSaveError(true)
+          setValue(currentValue) // revert to original on error
+          setTimeout(() => setSaveError(false), 3000)
+        }
       })
     }
   }
@@ -182,6 +190,21 @@ export function EditableField({
           }}
         >
           Enregistrement…
+        </span>
+      )}
+      {saveError && (
+        <span
+          aria-live="polite"
+          style={{
+            bottom: -18,
+            color: 'rgba(239,68,68,0.85)',
+            fontSize: 10,
+            fontFamily: 'system-ui, sans-serif',
+            left: 0,
+            position: 'absolute',
+          }}
+        >
+          Échec — vérifiez votre connexion admin
         </span>
       )}
     </div>
