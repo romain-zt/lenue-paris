@@ -377,6 +377,9 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
       ? `ai-chat-global-${docContext.slug}`
       : 'ai-chat-dashboard'
 
+  const activeTabRef = useRef(activeTab)
+  useEffect(() => { activeTabRef.current = activeTab }, [activeTab])
+
   const transport = useMemo(() => new DefaultChatTransport({
     api: '/api/ai/chat',
     credentials: 'include',
@@ -385,6 +388,7 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
         messages: msgs,
         id: chatId,
         ...(body as Record<string, unknown>),
+        tab: activeTabRef.current === 'dev' ? 'developpement' : 'contenu',
         context: docContextRef.current,
       },
     }),
@@ -899,6 +903,15 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
           borderTop: '1px solid var(--theme-elevation-200, #e0e0e0)',
           flexShrink: 0,
         }}>
+          {/* Model subtitle — muted, never shown to non-technical users but gives power users context */}
+          <div style={{
+            fontSize: 10,
+            color: 'var(--theme-elevation-400, #bbb)',
+            marginBottom: 6,
+            letterSpacing: '0.02em',
+          }}>
+            {activeTab === 'contenu' ? 'Contenu · réponse rapide' : 'Développement · génération soignée'}
+          </div>
           {isLoading && (
             <div style={{
               display: 'flex',
