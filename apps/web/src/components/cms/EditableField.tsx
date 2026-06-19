@@ -72,9 +72,18 @@ export function EditableField({
       startTransition(async () => {
         await updateLiveField({ collection, id, field, value, locale })
         setSaved(true)
-        // Signal the FAB to show the "Recharger" hint
+        // Signal the FAB to show the save strip with undo capability
         window.dispatchEvent(
-          new CustomEvent('lp:field-patched', { detail: { field, label: fieldLabel ?? field } }),
+          new CustomEvent('lp:field-patched', {
+            detail: {
+              field,
+              label: fieldLabel ?? field,
+              previousValue: currentValue,
+              collection,
+              id,
+              locale,
+            },
+          }),
         )
       })
     }

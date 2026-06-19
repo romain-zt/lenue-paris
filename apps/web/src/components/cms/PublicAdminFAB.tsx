@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import type { UIMessage } from 'ai'
+import { updateLiveField } from '@/app/actions/liveEdit'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -11,6 +12,24 @@ type PayloadUser = {
   id: string
   email: string
   role?: string
+}
+
+type LastPatch = {
+  label: string
+  timestamp: number
+  previousValue?: string
+  collection?: 'pages' | 'products'
+  id?: string
+  field?: string
+  locale?: string
+}
+
+function relativeTime(ts: number): string {
+  const secs = Math.floor((Date.now() - ts) / 1000)
+  if (secs < 60) return `il y a ${secs} s`
+  const mins = Math.floor(secs / 60)
+  if (mins < 60) return `il y a ${mins} min`
+  return 'il y a un moment'
 }
 
 type MessagePart =
@@ -173,7 +192,6 @@ function AIChatPanel({
   pendingPrompt?: string
 }) {
   const [input, setInput] = useState(pendingPrompt ?? '')
-  const [patchedSinceOpen, setPatchedSinceOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const contextRef = useRef(parsePublicContext())
@@ -208,15 +226,27 @@ function AIChatPanel({
     transport,
     onFinish: ({ message }) => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-      // Detect if a patch_field tool call completed — show reload hint
+      // Dispatch lp:field-patched for every completed patch_field tool call
+      // so the FAB strip stays in sync with AI edits too
       const parts = (message as { parts?: MessagePart[] }).parts ?? []
-      const hadPatch = parts.some(
-        (p) =>
-          p.type === 'tool-invocation' &&
-          (p as { type: 'tool-invocation'; toolInvocation: { toolName: string; state: string } })
-            .toolInvocation.toolName === 'patch_field',
-      )
-      if (hadPatch) setPatchedSinceOpen(true)
+      for (const p of parts) {
+        if (p.type !== 'tool-invocation') continue
+        const tp = p as {
+          type: 'tool-invocation'
+          toolInvocation: { toolName: string; state: string; args?: Record<string, unknown> }
+        }
+        if (
+          tp.toolInvocation.toolName === 'patch_field' &&
+          tp.toolInvocation.state === 'result'
+        ) {
+          const args = tp.toolInvocation.args ?? {}
+          window.dispatchEvent(
+            new CustomEvent('lp:field-patched', {
+              detail: { label: (args.field as string) ?? 'Contenu', field: args.field },
+            }),
+          )
+        }
+      }
     },
   })
 
@@ -288,43 +318,6 @@ function AIChatPanel({
           ×
         </button>
       </div>
-
-      {/* Patch hint */}
-      {patchedSinceOpen && (
-        <div
-          style={{
-            padding: '8px 14px',
-            background: 'rgba(99,102,241,0.15)',
-            borderBottom: '1px solid rgba(99,102,241,0.2)',
-            fontSize: 11,
-            color: '#c7d2fe',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            flexShrink: 0,
-          }}
-        >
-          <span style={{ flex: 1 }}>
-            ✅ Modification enregistrée · Rechargez pour voir les changements
-          </span>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              background: '#6366f1',
-              border: 'none',
-              borderRadius: 4,
-              color: '#fff',
-              cursor: 'pointer',
-              fontSize: 10,
-              fontWeight: 700,
-              padding: '3px 8px',
-              flexShrink: 0,
-            }}
-          >
-            Recharger
-          </button>
-        </div>
-      )}
 
       {/* Messages */}
       <div
@@ -511,7 +504,9 @@ export function PublicAdminFAB() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
-  const [inlinePatched, setInlinePatched] = useState(false)
+  const [lastPatch, setLastPatch] = useState<LastPatch | null>(null)
+  const [isUndoing, setIsUndoing] = useState(false)
+  const [tick, setTick] = useState(0)
   const [adminResolution, setAdminResolution] = useState<AdminResolution | null>(null)
   const [resolving, setResolving] = useState(true)
   const [selectedFieldPath, setSelectedFieldPath] = useState<string | undefined>()
@@ -567,12 +562,36 @@ export function PublicAdminFAB() {
       .finally(() => setResolving(false))
   }, [])
 
-  // Show "Recharger" hint when EditableField saves inline
+  // Tick every 15 s to keep relative time display fresh
   useEffect(() => {
-    const handle = () => setInlinePatched(true)
+    const id = setInterval(() => setTick((t) => t + 1), 15_000)
+    return () => clearInterval(id)
+  }, [])
+
+  // Capture lp:field-patched events from EditableField and AI chat
+  useEffect(() => {
+    const handle = (e: Event) => {
+      const detail = (e as CustomEvent).detail ?? {}
+      setLastPatch({
+        label: (detail.label as string) || (detail.field as string) || 'Contenu',
+        timestamp: Date.now(),
+        previousValue: detail.previousValue as string | undefined,
+        collection: detail.collection as 'pages' | 'products' | undefined,
+        id: detail.id as string | undefined,
+        field: detail.field as string | undefined,
+        locale: detail.locale as string | undefined,
+      })
+    }
     window.addEventListener('lp:field-patched', handle)
     return () => window.removeEventListener('lp:field-patched', handle)
   }, [])
+
+  // Auto-dismiss last patch strip after 5 minutes
+  useEffect(() => {
+    if (!lastPatch) return
+    const id = setTimeout(() => setLastPatch(null), 5 * 60 * 1000)
+    return () => clearTimeout(id)
+  }, [lastPatch])
 
   // Listen for AI-help messages from BlockOverlay ✦ clicks.
   // Lives here (not in AIChatPanel) so it fires even when the panel is closed.
@@ -849,87 +868,36 @@ export function PublicAdminFAB() {
         {menuOpen || aiOpen ? '✕' : '✦'}
       </button>
 
-      {/* Inline-edit save hint */}
-      {inlinePatched && (
-        <div
-          style={{
-            background: 'rgba(34,197,94,0.9)',
-            backdropFilter: 'blur(6px)',
-            borderBottom: '1px solid rgba(34,197,94,0.5)',
-            color: '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            fontFamily: 'system-ui, sans-serif',
-            fontSize: 11,
-            fontWeight: 600,
-            left: 0,
-            padding: '5px 16px',
-            position: 'fixed',
-            right: 0,
-            top: 0,
-            zIndex: 9996,
-          }}
-        >
-          <span style={{ flex: 1 }}>
-            ✅ Modification enregistrée · Rechargez pour voir les changements
-          </span>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              background: 'rgba(255,255,255,0.25)',
-              border: 'none',
-              borderRadius: 4,
-              color: '#fff',
-              cursor: 'pointer',
-              fontSize: 10,
-              fontWeight: 700,
-              padding: '3px 10px',
-            }}
-          >
-            Recharger
-          </button>
-          <button
-            onClick={() => setInlinePatched(false)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'rgba(255,255,255,0.7)',
-              cursor: 'pointer',
-              fontSize: 14,
-              padding: '0 4px',
-            }}
-          >
-            ×
-          </button>
-        </div>
-      )}
-
       {/* Edit mode indicator bar */}
       {editMode && (
         <div
           style={{
+            alignItems: 'center',
             background: 'rgba(99,102,241,0.9)',
             backdropFilter: 'blur(6px)',
             borderBottom: '1px solid rgba(99,102,241,0.5)',
             color: '#fff',
+            display: 'flex',
             fontFamily: 'system-ui, sans-serif',
             fontSize: 11,
             fontWeight: 600,
+            gap: 8,
+            justifyContent: 'center',
             left: 0,
-            letterSpacing: '0.05em',
+            letterSpacing: '0.04em',
             padding: '5px 16px',
             position: 'fixed',
             right: 0,
-            textAlign: 'center',
             top: 0,
             zIndex: 9996,
           }}
         >
-          MODE ÉDITION · Survolez un bloc pour interagir · Modifications visibles après
-          actualisation
+          <span>
+            MODE ÉDITION · Brouillon — les visiteurs voient la version publiée · Recharger pour
+            prévisualiser
+          </span>
           <button
-            onClick={toggleEditMode}
+            onClick={() => window.location.reload()}
             style={{
               background: 'rgba(255,255,255,0.2)',
               border: 'none',
@@ -938,12 +906,170 @@ export function PublicAdminFAB() {
               cursor: 'pointer',
               fontSize: 10,
               fontWeight: 700,
-              marginLeft: 12,
               padding: '2px 8px',
+              flexShrink: 0,
+            }}
+          >
+            Recharger
+          </button>
+          <button
+            onClick={toggleEditMode}
+            style={{
+              background: 'rgba(255,255,255,0.12)',
+              border: 'none',
+              borderRadius: 4,
+              color: 'rgba(255,255,255,0.7)',
+              cursor: 'pointer',
+              fontSize: 10,
+              fontWeight: 700,
+              padding: '2px 8px',
+              flexShrink: 0,
             }}
           >
             Désactiver
           </button>
+        </div>
+      )}
+
+      {/* Dernière modification strip — above the FAB circle */}
+      {lastPatch && !aiOpen && (
+        <div
+          style={{
+            alignItems: 'center',
+            background: 'rgba(10,10,10,0.92)',
+            backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 10,
+            bottom: 76,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+            color: '#fff',
+            display: 'flex',
+            flexDirection: 'column',
+            fontFamily: 'system-ui, sans-serif',
+            gap: 6,
+            minWidth: 260,
+            maxWidth: 'calc(100vw - 40px)',
+            padding: '10px 14px',
+            position: 'fixed',
+            right: 20,
+            zIndex: 9997,
+          }}
+        >
+          {/* Field label + time */}
+          <div style={{ alignItems: 'center', display: 'flex', gap: 6, width: '100%' }}>
+            <span style={{ fontSize: 11, fontWeight: 600, flex: 1, color: '#e0e0e0' }}>
+              ✓ {lastPatch.label}
+            </span>
+            <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10 }}>
+              {/* tick forces re-render every 15s to keep relative time fresh */}
+              {relativeTime(lastPatch.timestamp + tick * 0)}
+            </span>
+            <button
+              onClick={() => setLastPatch(null)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'rgba(255,255,255,0.3)',
+                cursor: 'pointer',
+                fontSize: 14,
+                lineHeight: 1,
+                padding: '0 2px',
+              }}
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Draft notice */}
+          <p
+            style={{
+              color: 'rgba(255,255,255,0.35)',
+              fontSize: 10,
+              lineHeight: 1.4,
+              margin: 0,
+            }}
+          >
+            Brouillon enregistré · les visiteurs voient la version publiée
+          </p>
+
+          {/* Actions row */}
+          <div style={{ alignItems: 'center', display: 'flex', gap: 6, width: '100%' }}>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                background: '#6366f1',
+                border: 'none',
+                borderRadius: 5,
+                color: '#fff',
+                cursor: 'pointer',
+                fontSize: 10,
+                fontWeight: 700,
+                padding: '4px 10px',
+              }}
+            >
+              Recharger
+            </button>
+
+            {lastPatch.previousValue !== undefined &&
+              lastPatch.collection &&
+              lastPatch.id &&
+              lastPatch.field && (
+                <button
+                  disabled={isUndoing}
+                  onClick={async () => {
+                    if (!lastPatch.collection || !lastPatch.id || !lastPatch.field) return
+                    setIsUndoing(true)
+                    try {
+                      await updateLiveField({
+                        collection: lastPatch.collection,
+                        id: lastPatch.id,
+                        field: lastPatch.field,
+                        value: lastPatch.previousValue!,
+                        locale: lastPatch.locale,
+                      })
+                      setLastPatch(null)
+                    } finally {
+                      setIsUndoing(false)
+                    }
+                  }}
+                  style={{
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: 5,
+                    color: isUndoing ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.7)',
+                    cursor: isUndoing ? 'not-allowed' : 'pointer',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    padding: '4px 10px',
+                  }}
+                >
+                  {isUndoing ? '…' : 'Annuler'}
+                </button>
+              )}
+
+            {!resolving && adminResolution && adminResolution.url !== '/admin' && (
+              <a
+                href={adminResolution.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: 'rgba(255,255,255,0.4)',
+                  fontSize: 10,
+                  marginLeft: 'auto',
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={(e) => {
+                  ;(e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.75)'
+                }}
+                onMouseLeave={(e) => {
+                  ;(e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.4)'
+                }}
+              >
+                Publier dans l&apos;admin ↗
+              </a>
+            )}
+          </div>
         </div>
       )}
     </>
