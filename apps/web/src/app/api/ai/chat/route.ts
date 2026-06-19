@@ -3,6 +3,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { z } from 'zod'
 import { type NextRequest } from 'next/server'
 import type { UIMessage } from 'ai'
+import { revalidatePath } from 'next/cache'
 
 const cursor = createOpenAI({
   apiKey: process.env.CURSOR_API_KEY ?? '',
@@ -142,6 +143,8 @@ export async function POST(request: NextRequest) {
           })
           if (!res.ok) return { error: `HTTP ${res.status} — ${await res.text()}` }
           const result = await res.json()
+          // Invalidate Next.js RSC cache so the public site reflects the change on next load
+          revalidatePath('/', 'layout')
           return { success: true, updatedFields: Object.keys(data), doc: result.doc ?? result }
         },
       }),
