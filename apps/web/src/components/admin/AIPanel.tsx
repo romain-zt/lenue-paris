@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import type { UIMessage } from 'ai'
@@ -144,6 +145,7 @@ function MessageBubble({ message }: { message: UIMessage }) {
 }
 
 export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'contenu' | 'dev'>('contenu')
   const [docContext, setDocContext] = useState<DocContext>({ type: 'dashboard' })
@@ -151,6 +153,7 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
   const [lastEdit, setLastEdit] = useState<LastEdit | null>(null)
   const [timeAgoDisplay, setTimeAgoDisplay] = useState('')
   const [mounted, setMounted] = useState(false)
+  const [patchDone, setPatchDone] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const docContextRef = useRef(docContext)
@@ -183,6 +186,26 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
+  }, [])
+
+  // Receive AI-help requests from the preview iframe (InlineEditor / BlockOverlay)
+  useEffect(() => {
+    const handleIframeMessage = (e: MessageEvent) => {
+      if (!e.data || typeof e.data !== 'object') return
+      if (e.data.type === 'lp:ai-field-help') {
+        const { path, label, value } = e.data as { path: string; label?: string; value?: string }
+        const fieldName = label ?? path
+        const prompt = value
+          ? `Aide-moi avec le champ "${fieldName}" (${path}).\n\nValeur actuelle :\n"${value}"`
+          : `Explique-moi le champ "${fieldName}" (${path}) et aide-moi à le remplir.`
+        setOpen(true)
+        setActiveTab('contenu')
+        setInput(prompt)
+        setTimeout(() => inputRef.current?.focus(), 200)
+      }
+    }
+    window.addEventListener('message', handleIframeMessage)
+    return () => window.removeEventListener('message', handleIframeMessage)
   }, [])
 
   useEffect(() => {
@@ -219,10 +242,13 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
       const parts = (message as { parts?: MessagePart[] }).parts ?? []
       const hasPatch = parts.some(
         (p) => p.type === 'tool-invocation' &&
-          (p as ToolPart).toolInvocation.toolName === 'patch_field'
+          (p as ToolPart).toolInvocation.toolName === 'patch_field' &&
+          (p as { toolInvocation: { state: string } }).toolInvocation.state === 'result'
       )
       if (hasPatch) {
         setLastEdit({ fields: [], timestamp: new Date() })
+        setPatchDone(true)
+        router.refresh()
       }
     },
   })
@@ -453,6 +479,40 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
               }}
             >
               Annuler
+            </button>
+          </div>
+        )}
+
+        {/* Patch done banner */}
+        {patchDone && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 16px',
+            borderBottom: '1px solid var(--theme-elevation-200, #e0e0e0)',
+            background: 'rgba(34,197,94,0.08)',
+            flexShrink: 0,
+            fontSize: 12,
+            color: '#166534',
+          }}>
+            <span>✅ Contenu enregistré dans la base de données.</span>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                background: '#166534',
+                border: 'none',
+                borderRadius: 4,
+                padding: '2px 10px',
+                fontSize: 11,
+                cursor: 'pointer',
+                color: '#fff',
+                fontWeight: 600,
+                flexShrink: 0,
+                marginLeft: 'auto',
+              }}
+            >
+              Recharger
             </button>
           </div>
         )}

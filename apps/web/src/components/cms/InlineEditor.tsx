@@ -338,6 +338,34 @@ export function InlineEditor() {
             <div style={{ flex: 1 }} />
             <button
               type="button"
+              title="Demander à l'IA"
+              onClick={() => {
+                window.parent.postMessage(
+                  { type: 'lp:ai-field-help', path: state.path, label, value: draft },
+                  '*',
+                )
+                close()
+              }}
+              style={{
+                alignItems: 'center',
+                background: 'rgba(99,102,241,0.15)',
+                border: '1px solid rgba(99,102,241,0.3)',
+                borderRadius: 4,
+                color: '#a5b4fc',
+                cursor: 'pointer',
+                display: 'flex',
+                fontFamily: 'system-ui, sans-serif',
+                fontSize: 11,
+                fontWeight: 600,
+                gap: 3,
+                height: 28,
+                padding: '0 10px',
+              }}
+            >
+              ✦ IA
+            </button>
+            <button
+              type="button"
               onClick={close}
               style={{
                 background: 'rgba(255,255,255,0.07)',

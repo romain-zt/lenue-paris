@@ -28,15 +28,25 @@ interface BlockOverlayProps {
  */
 export function BlockOverlay({ blockType, blockIndex, children }: BlockOverlayProps) {
   const [isInIframe, setIsInIframe] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setIsInIframe(window.parent !== window)
+    setIsEditMode(document.documentElement.classList.contains('admin-edit-mode'))
+
+    const handleEditMode = (e: Event) => {
+      setIsEditMode((e as CustomEvent<{ enabled: boolean }>).detail.enabled)
+    }
+    document.addEventListener('admin-edit-mode', handleEditMode)
+    return () => document.removeEventListener('admin-edit-mode', handleEditMode)
   }, [])
 
-  if (!isInIframe) {
-    // Passthrough — no overhead outside live preview
+  const isActive = isInIframe || isEditMode
+
+  if (!isActive) {
+    // Passthrough — no overhead outside live preview / edit mode
     return <>{children}</>
   }
 
@@ -133,20 +143,35 @@ export function BlockOverlay({ blockType, blockIndex, children }: BlockOverlayPr
             }}
           >
             <OverlayButton
-              title={`Edit ${label} (block ${blockIndex})`}
-              onClick={focusBlock}
-              primary
+              title="Demander à l'IA"
+              onClick={() => {
+                window.parent.postMessage(
+                  { type: 'lp:ai-field-help', path: fieldPath, label },
+                  '*',
+                )
+              }}
             >
-              Edit
+              ✦
             </OverlayButton>
-            {blockIndex > 0 && (
+            {isInIframe && (
+              <OverlayButton
+                title={`Edit ${label} (block ${blockIndex})`}
+                onClick={focusBlock}
+                primary
+              >
+                Edit
+              </OverlayButton>
+            )}
+            {isInIframe && blockIndex > 0 && (
               <OverlayButton title="Move block up" onClick={() => reorder('up')}>
                 ↑
               </OverlayButton>
             )}
-            <OverlayButton title="Move block down" onClick={() => reorder('down')}>
-              ↓
-            </OverlayButton>
+            {isInIframe && (
+              <OverlayButton title="Move block down" onClick={() => reorder('down')}>
+                ↓
+              </OverlayButton>
+            )}
           </div>
         </>
       )}

@@ -15,6 +15,7 @@ import { SelectionProvider } from "@/lib/selection/SelectionProvider";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { STOREFRONT_NAV_LINKS } from "@/lib/navigation/storefrontNav";
 import { getSiteSettings } from "@/lib/cms/siteSettings";
+import { PublicAdminFAB } from "@/components/cms/PublicAdminFAB";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin", "cyrillic"],
@@ -136,6 +137,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
               </div>
             </nav>
           </footer>
+          <PublicAdminFAB />
           </SelectionProvider>
         </NextIntlClientProvider>
       </body>
