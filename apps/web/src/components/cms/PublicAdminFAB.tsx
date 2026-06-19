@@ -29,102 +29,128 @@ function parsePublicContext() {
   return { type: 'dashboard' as const }
 }
 
-type AdminResolution = { url: string; title?: string }
+type AdminResolution = { url: string; title?: string; subtitle?: string }
+
+// Fixed storefront routes that map directly to a known page slug.
+// These slugs are NOT locale-scoped in Payload, so we skip locale filtering for them.
+const STATIC_PAGE_SLUGS: Record<string, string> = {
+  livraison: 'livraison',
+  contact: 'contact',
+  'a-propos': 'a-propos',
+  about: 'about',
+}
+
+/** Fetch a page by slug without locale filtering, then optionally retry with locale. */
+async function fetchPageBySlug(
+  base: string,
+  slug: string,
+  locale: string,
+): Promise<{ id: string; title?: string } | null> {
+  // 1. Try without locale (works for fixed slugs like livraison, contact)
+  const r1 = await fetch(
+    `${base}/api/pages?where[slug][equals]=${encodeURIComponent(slug)}&limit=1&depth=0`,
+    { credentials: 'include' },
+  )
+  if (r1.ok) {
+    const d = await r1.json()
+    const doc = d.docs?.[0]
+    if (doc?.id) {
+      console.log('[resolveAdminUrl] resolved page (no-locale)', doc.id, 'slug:', slug)
+      return doc
+    }
+  }
+  // 2. Retry with locale (works for locale-scoped slugs)
+  const r2 = await fetch(
+    `${base}/api/pages?where[slug][equals]=${encodeURIComponent(slug)}&limit=1&depth=0&locale=${encodeURIComponent(locale)}`,
+    { credentials: 'include' },
+  )
+  if (r2.ok) {
+    const d = await r2.json()
+    const doc = d.docs?.[0]
+    if (doc?.id) {
+      console.log('[resolveAdminUrl] resolved page (with-locale)', doc.id, 'slug:', slug)
+      return doc
+    }
+  }
+  console.warn('[resolveAdminUrl] pages lookup returned no docs for slug:', slug)
+  return null
+}
 
 async function resolveAdminUrl(): Promise<AdminResolution> {
   if (typeof window === 'undefined') return { url: '/admin' }
   const base = window.location.origin
   const parts = window.location.pathname.split('/').filter(Boolean)
-  // parts[0] = locale (e.g. 'en', 'fr'), parts[1] = section/slug, parts[2] = item slug
   const locale = parts[0] ?? 'en'
-  const seg1 = parts[1]  // undefined when on /[locale] root
-  const seg2 = parts[2]  // defined only for /[locale]/[section]/[slug]
-
-  const lp = `&locale=${encodeURIComponent(locale)}`
+  const seg1 = parts[1]
+  const seg2 = parts[2]
+  const localeLabel = locale.toUpperCase()
 
   try {
     // /[locale]/produits/[slug]
     if (seg1 === 'produits' && seg2) {
       const r = await fetch(
-        `${base}/api/products?where[slug][equals]=${encodeURIComponent(seg2)}&limit=1&depth=0${lp}`,
+        `${base}/api/products?where[slug][equals]=${encodeURIComponent(seg2)}&limit=1&depth=0`,
         { credentials: 'include' },
       )
       if (r.ok) {
         const d = await r.json()
         const doc = d.docs?.[0]
         if (doc?.id) {
-          console.log('[resolveAdminUrl] resolved product', doc.id)
-          return { url: `/admin/collections/products/${doc.id}`, title: doc.title }
+          return { url: `/admin/collections/products/${doc.id}`, title: doc.title, subtitle: `Produit · ${localeLabel}` }
         }
         console.warn('[resolveAdminUrl] products lookup returned no docs for slug:', seg2)
       } else {
-        console.error('[resolveAdminUrl] products lookup failed', r.status, await r.text().catch(() => ''))
+        console.error('[resolveAdminUrl] products lookup failed', r.status)
       }
     }
 
     // /[locale]/collections/[slug]
     if (seg1 === 'collections' && seg2) {
       const r = await fetch(
-        `${base}/api/collections?where[slug][equals]=${encodeURIComponent(seg2)}&limit=1&depth=0${lp}`,
+        `${base}/api/collections?where[slug][equals]=${encodeURIComponent(seg2)}&limit=1&depth=0`,
         { credentials: 'include' },
       )
       if (r.ok) {
         const d = await r.json()
         const doc = d.docs?.[0]
         if (doc?.id) {
-          console.log('[resolveAdminUrl] resolved collection', doc.id)
-          return { url: `/admin/collections/collections/${doc.id}`, title: doc.title ?? doc.name }
+          return { url: `/admin/collections/collections/${doc.id}`, title: doc.title ?? doc.name, subtitle: `Collection · ${localeLabel}` }
         }
         console.warn('[resolveAdminUrl] collections lookup returned no docs for slug:', seg2)
       } else {
-        console.error('[resolveAdminUrl] collections lookup failed', r.status, await r.text().catch(() => ''))
+        console.error('[resolveAdminUrl] collections lookup failed', r.status)
       }
     }
 
     // /[locale]/[slug] — a simple page (livraison, contact, etc.)
-    // seg1 is the slug after stripping the locale prefix
     if (seg1 && !seg2 && seg1 !== 'produits' && seg1 !== 'collections') {
-      const r = await fetch(
-        `${base}/api/pages?where[slug][equals]=${encodeURIComponent(seg1)}&limit=1&depth=0${lp}`,
-        { credentials: 'include' },
-      )
-      if (r.ok) {
-        const d = await r.json()
-        const doc = d.docs?.[0]
-        if (doc?.id) {
-          console.log('[resolveAdminUrl] resolved page', doc.id, 'for slug:', seg1)
-          return { url: `/admin/collections/pages/${doc.id}`, title: doc.title }
+      // Check static map first so known fixed routes never waste a locale-filtered query
+      const canonicalSlug = STATIC_PAGE_SLUGS[seg1] ?? seg1
+      const doc = await fetchPageBySlug(base, canonicalSlug, locale)
+      if (doc?.id) {
+        return {
+          url: `/admin/collections/pages/${doc.id}`,
+          title: doc.title,
+          subtitle: `Page · ${localeLabel}`,
         }
-        console.warn('[resolveAdminUrl] pages lookup returned no docs for slug:', seg1)
-      } else {
-        console.error('[resolveAdminUrl] pages lookup failed', r.status, await r.text().catch(() => ''))
       }
     }
 
-    // /[locale] or / — homepage: try known home slugs in order
+    // /[locale] or / — homepage
     if (!seg1) {
       for (const homeSlug of ['home', 'homepage', 'accueil', 'index']) {
-        const r = await fetch(
-          `${base}/api/pages?where[slug][equals]=${encodeURIComponent(homeSlug)}&limit=1&depth=0${lp}`,
-          { credentials: 'include' },
-        )
-        if (r.ok) {
-          const d = await r.json()
-          const doc = d.docs?.[0]
-          if (doc?.id) {
-            console.log('[resolveAdminUrl] resolved homepage via slug:', homeSlug, doc.id)
-            return { url: `/admin/collections/pages/${doc.id}`, title: doc.title }
-          }
+        const doc = await fetchPageBySlug(base, homeSlug, locale)
+        if (doc?.id) {
+          return { url: `/admin/collections/pages/${doc.id}`, title: doc.title, subtitle: `Accueil · ${localeLabel}` }
         }
       }
       // Last resort: first page in the collection
-      const r = await fetch(`${base}/api/pages?limit=1&depth=0${lp}`, { credentials: 'include' })
+      const r = await fetch(`${base}/api/pages?limit=1&depth=0`, { credentials: 'include' })
       if (r.ok) {
         const d = await r.json()
         const doc = d.docs?.[0]
         if (doc?.id) {
-          console.log('[resolveAdminUrl] resolved homepage via first page', doc.id)
-          return { url: `/admin/collections/pages/${doc.id}`, title: doc.title }
+          return { url: `/admin/collections/pages/${doc.id}`, title: doc.title, subtitle: `Page · ${localeLabel}` }
         }
       }
       console.warn('[resolveAdminUrl] homepage lookup: no pages found')
@@ -485,11 +511,15 @@ export function PublicAdminFAB() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
-  const [adminBaseUrl, setAdminBaseUrl] = useState('/admin')
-  const [adminPageTitle, setAdminPageTitle] = useState<string | undefined>()
+  const [adminResolution, setAdminResolution] = useState<AdminResolution | null>(null)
+  const [resolving, setResolving] = useState(true)
   const [selectedFieldPath, setSelectedFieldPath] = useState<string | undefined>()
   // pendingPrompt: set when a BlockOverlay ✦ click triggers the AI panel
   const [pendingPrompt, setPendingPrompt] = useState<string | undefined>()
+
+  const adminBaseUrl = adminResolution?.url ?? '/admin'
+  const adminPageTitle = adminResolution?.title
+  const adminPageSubtitle = adminResolution?.subtitle
 
   // Derived admin URL: base URL + optional ?field= param for deep-linking
   const adminUrl = selectedFieldPath
@@ -497,11 +527,13 @@ export function PublicAdminFAB() {
     : adminBaseUrl
 
   // Dynamic label for the "open in admin" link
-  const adminLinkLabel = selectedFieldPath
-    ? `↗ Ce paragraphe dans l'admin`
-    : adminPageTitle
-      ? `↗ ${adminPageTitle} dans l'admin`
-      : `↗ Ouvrir dans l'admin`
+  const adminLinkLabel = resolving
+    ? '↗ Cherche la page…'
+    : selectedFieldPath
+      ? `↗ Ce paragraphe dans l'admin`
+      : adminPageTitle
+        ? `↗ ${adminPageTitle} dans l'admin`
+        : `↗ Ouvrir dans l'admin`
 
   // Check if current user is a Payload admin
   useEffect(() => {
@@ -516,12 +548,13 @@ export function PublicAdminFAB() {
 
   // Resolve the admin URL for the current public page
   useEffect(() => {
+    setResolving(true)
     resolveAdminUrl()
-      .then(({ url, title }) => {
-        setAdminBaseUrl(url)
-        setAdminPageTitle(title)
+      .then((resolution) => {
+        setAdminResolution(resolution)
       })
       .catch(() => {})
+      .finally(() => setResolving(false))
   }, [])
 
   // Listen for AI-help messages from BlockOverlay ✦ clicks.
@@ -693,31 +726,56 @@ export function PublicAdminFAB() {
           <div style={{ background: 'rgba(255,255,255,0.06)', height: 1, margin: '2px 0' }} />
 
           {/* Admin panel link — resolves to the exact document in admin */}
-          <a
-            href={adminUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              background: 'transparent',
-              borderRadius: 7,
-              color: 'rgba(255,255,255,0.5)',
-              display: 'block',
-              fontSize: 12,
-              padding: '8px 10px',
-              textDecoration: 'none',
-              transition: 'background 0.12s, color 0.12s',
-            }}
-            onMouseEnter={(e) => {
-              ;(e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.06)'
-              ;(e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.8)'
-            }}
-            onMouseLeave={(e) => {
-              ;(e.currentTarget as HTMLAnchorElement).style.background = 'transparent'
-              ;(e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.5)'
-            }}
-          >
-            {adminLinkLabel}
-          </a>
+          {resolving ? (
+            <div
+              style={{
+                borderRadius: 7,
+                color: 'rgba(255,255,255,0.3)',
+                fontSize: 12,
+                padding: '8px 10px',
+              }}
+            >
+              {adminLinkLabel}
+            </div>
+          ) : (
+            <a
+              href={adminUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                background: 'transparent',
+                borderRadius: 7,
+                color: 'rgba(255,255,255,0.5)',
+                display: 'block',
+                fontSize: 12,
+                padding: '8px 10px',
+                textDecoration: 'none',
+                transition: 'background 0.12s, color 0.12s',
+              }}
+              onMouseEnter={(e) => {
+                ;(e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.06)'
+                ;(e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.8)'
+              }}
+              onMouseLeave={(e) => {
+                ;(e.currentTarget as HTMLAnchorElement).style.background = 'transparent'
+                ;(e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.5)'
+              }}
+            >
+              {adminLinkLabel}
+              {adminPageSubtitle && !selectedFieldPath && (
+                <span
+                  style={{
+                    color: 'rgba(255,255,255,0.25)',
+                    display: 'block',
+                    fontSize: 10,
+                    marginTop: 2,
+                  }}
+                >
+                  {adminPageSubtitle}
+                </span>
+              )}
+            </a>
+          )}
         </div>
       )}
 
