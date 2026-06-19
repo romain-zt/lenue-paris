@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
         inputSchema: zodSchema(z.object({
           collection: z.string().describe('Slug de la collection ou du global'),
           id: z.string().optional().describe('ID du document (non requis pour les globaux)'),
-          data: z.record(z.unknown()).describe('Objet avec les champs à mettre à jour, ex: { title: "Nouveau titre" }'),
+          data: z.record(z.string(), z.unknown()).describe('Objet avec les champs à mettre à jour, ex: { title: "Nouveau titre" }'),
           locale: z.string().optional().describe('Locale pour les champs localisés (fr, en, ru)'),
           isGlobal: z.boolean().optional().describe('Vrai pour modifier un global'),
         })),

@@ -1,13 +1,21 @@
 'use client'
 
-import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { useChat, type Message } from 'ai/react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useChat } from '@ai-sdk/react'
+import { DefaultChatTransport } from 'ai'
+import type { UIMessage } from 'ai'
 
 type DocContext = {
   type: 'collection' | 'global' | 'dashboard'
   collection?: string
   id?: string
   slug?: string
+}
+
+type LastEdit = {
+  fields: string[]
+  timestamp: Date
+  previousData?: Record<string, unknown>
 }
 
 function parseAdminPath(pathname: string): DocContext {
@@ -24,16 +32,24 @@ function parseAdminPath(pathname: string): DocContext {
   return { type: 'dashboard' }
 }
 
+function timeAgo(date: Date): string {
+  const diff = Math.floor((Date.now() - date.getTime()) / 1000)
+  if (diff < 60) return 'à l\'instant'
+  if (diff < 3600) return `il y a ${Math.floor(diff / 60)} min`
+  if (diff < 86400) return `il y a ${Math.floor(diff / 3600)}h`
+  return `il y a ${Math.floor(diff / 86400)}j`
+}
+
 const QUICK_ACTIONS = {
   contenu: [
     { label: 'Modifier ce contenu', prompt: 'Montre-moi les champs de ce document et aide-moi à les modifier.' },
     { label: 'Expliquer les champs', prompt: 'Explique-moi à quoi servent les différents champs de ce document.' },
-    { label: 'Traduire en FR/EN/RU', prompt: 'Traduis le contenu de ce document en français, anglais et russe.' },
+    { label: 'Traduire FR/EN/RU', prompt: 'Traduis le contenu de ce document en français, anglais et russe.' },
   ],
   dev: [
     { label: 'Nouveau bloc', prompt: 'Aide-moi à créer un nouveau bloc Payload (schema + composant React).' },
     { label: 'Nouveau composant', prompt: 'Génère un composant React et pousse-le sur GitHub.' },
-    { label: 'Voir la structure', prompt: 'Montre-moi toutes les collections et globaux disponibles avec leurs champs.' },
+    { label: 'Structure du site', prompt: 'Montre-moi toutes les collections et globaux disponibles avec leurs champs.' },
   ],
 }
 
@@ -43,13 +59,23 @@ const TONE_CHIPS = [
   { label: 'Plus direct', modifier: 'Réécris ce texte de façon plus directe et concise : ' },
 ]
 
+type ToolPart = {
+  type: 'dynamic-tool'
+  toolName: string
+  toolCallId: string
+  state: string
+}
+
+type MessagePart = { type: 'text'; text: string } | ToolPart | { type: string }
+
 function ToolCallCard({ toolName, state }: { toolName: string; state: string }) {
   const labels: Record<string, string> = {
-    get_document: '📖 Lecture du document',
-    patch_field: '✏️ Modification du contenu',
-    list_collections: '📋 Récupération du schéma',
-    push_to_github: '🚀 Push vers GitHub',
+    get_document: 'Lecture du document',
+    patch_field: 'Modification du contenu',
+    list_schema: 'Récupération du schéma',
+    push_to_github: 'Push vers GitHub',
   }
+  const isLoading = state === 'input-streaming' || state === 'input-available'
   return (
     <div style={{
       padding: '8px 12px',
@@ -62,19 +88,17 @@ function ToolCallCard({ toolName, state }: { toolName: string; state: string }) 
       alignItems: 'center',
       gap: 8,
     }}>
-      {state === 'call' || state === 'partial-call' ? (
-        <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</span>
-      ) : (
-        <span>✅</span>
-      )}
+      <span style={isLoading ? { display: 'inline-block', animation: 'ai-spin 1s linear infinite' } : {}}>
+        {isLoading ? '⏳' : '✅'}
+      </span>
       {labels[toolName] ?? toolName}
     </div>
   )
 }
 
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({ message }: { message: UIMessage }) {
   const isUser = message.role === 'user'
-  const parts = (message as { parts?: Array<{ type: string; text?: string; toolName?: string; state?: string }> }).parts
+  const parts = (message as { parts?: MessagePart[] }).parts
 
   return (
     <div style={{
@@ -84,51 +108,31 @@ function MessageBubble({ message }: { message: Message }) {
       gap: 4,
       marginBottom: 12,
     }}>
-      {parts ? parts.map((part, i) => {
-        if (part.type === 'text' && part.text) {
+      {parts && parts.length > 0 ? parts.map((part, i) => {
+        if (part.type === 'text') {
+          const textPart = part as { type: 'text'; text: string }
           return (
             <div key={i} style={{
               maxWidth: '85%',
               padding: '10px 14px',
               borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-              background: isUser
-                ? 'var(--theme-text, #1a1a1a)'
-                : 'var(--theme-elevation-100, #f5f5f5)',
-              color: isUser
-                ? 'var(--theme-elevation-0, #fff)'
-                : 'var(--theme-text, #1a1a1a)',
+              background: isUser ? 'var(--theme-text, #1a1a1a)' : 'var(--theme-elevation-100, #f5f5f5)',
+              color: isUser ? 'var(--theme-elevation-0, #fff)' : 'var(--theme-text, #1a1a1a)',
               fontSize: 13,
               lineHeight: 1.5,
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
             }}>
-              {part.text}
+              {textPart.text}
             </div>
           )
         }
-        if (part.type === 'tool-invocation') {
-          return <ToolCallCard key={i} toolName={part.toolName ?? ''} state={part.state ?? ''} />
+        if (part.type === 'dynamic-tool') {
+          const toolPart = part as ToolPart
+          return <ToolCallCard key={i} toolName={toolPart.toolName} state={toolPart.state} />
         }
         return null
-      }) : (
-        <div style={{
-          maxWidth: '85%',
-          padding: '10px 14px',
-          borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-          background: isUser
-            ? 'var(--theme-text, #1a1a1a)'
-            : 'var(--theme-elevation-100, #f5f5f5)',
-          color: isUser
-            ? 'var(--theme-elevation-0, #fff)'
-            : 'var(--theme-text, #1a1a1a)',
-          fontSize: 13,
-          lineHeight: 1.5,
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word',
-        }}>
-          {message.content}
-        </div>
-      )}
+      }      ) : null}
     </div>
   )
 }
@@ -137,9 +141,16 @@ export const AIPanel: React.FC = () => {
   const [open, setOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'contenu' | 'dev'>('contenu')
   const [docContext, setDocContext] = useState<DocContext>({ type: 'dashboard' })
-  const [toneTarget, setToneTarget] = useState('')
+  const [input, setInput] = useState('')
+  const [lastEdit, setLastEdit] = useState<LastEdit | null>(null)
+  const [timeAgoDisplay, setTimeAgoDisplay] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const docContextRef = useRef(docContext)
+
+  useEffect(() => {
+    docContextRef.current = docContext
+  }, [docContext])
 
   useEffect(() => {
     const update = () => setDocContext(parseAdminPath(window.location.pathname))
@@ -165,20 +176,48 @@ export const AIPanel: React.FC = () => {
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
+  useEffect(() => {
+    if (!lastEdit) return
+    const tick = () => setTimeAgoDisplay(timeAgo(lastEdit.timestamp))
+    tick()
+    const interval = setInterval(tick, 30000)
+    return () => clearInterval(interval)
+  }, [lastEdit])
+
   const storageKey = docContext.type === 'collection'
     ? `ai-chat-${docContext.collection}-${docContext.id}`
     : docContext.type === 'global'
       ? `ai-chat-global-${docContext.slug}`
       : 'ai-chat-dashboard'
 
-  const { messages, input, handleSubmit, setInput, isLoading, append, setMessages } = useChat({
+  const transport = useMemo(() => new DefaultChatTransport({
     api: '/api/ai/chat',
+    prepareSendMessagesRequest: ({ body, messages: msgs, id: chatId }) => ({
+      body: {
+        messages: msgs,
+        id: chatId,
+        ...(body as Record<string, unknown>),
+        context: docContextRef.current,
+      },
+    }),
+  }), [])
+
+  const { messages, sendMessage, status, setMessages } = useChat({
     id: storageKey,
-    body: { context: docContext },
-    onFinish: () => {
+    transport,
+    onFinish: ({ message }) => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      const parts = (message as { parts?: MessagePart[] }).parts ?? []
+      const patchPart = parts.find(
+        (p): p is ToolPart => p.type === 'dynamic-tool' && (p as ToolPart).toolName === 'patch_field' && (p as ToolPart).state === 'output-available'
+      )
+      if (patchPart) {
+        setLastEdit({ fields: [], timestamp: new Date() })
+      }
     },
   })
+
+  const isLoading = status === 'submitted' || status === 'streaming'
 
   useEffect(() => {
     if (open) {
@@ -193,32 +232,33 @@ export const AIPanel: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const sendQuickAction = useCallback((prompt: string) => {
-    append({ role: 'user', content: prompt })
-  }, [append])
+  const handleSend = useCallback(() => {
+    if (!input.trim() || isLoading) return
+    const text = input.trim()
+    setInput('')
+    sendMessage({ text })
+  }, [input, isLoading, sendMessage])
 
-  const sendWithTone = useCallback((modifier: string) => {
-    if (!toneTarget.trim()) {
-      setInput(modifier)
-      inputRef.current?.focus()
-      return
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
     }
-    append({ role: 'user', content: modifier + toneTarget })
-    setToneTarget('')
-  }, [toneTarget, append, setInput])
+  }
+
+  const sendQuickAction = useCallback((prompt: string) => {
+    sendMessage({ text: prompt })
+  }, [sendMessage])
+
+  const undoLastEdit = useCallback(() => {
+    setLastEdit(null)
+  }, [])
 
   const contextLabel = docContext.type === 'collection'
     ? `${docContext.collection} · ${docContext.id?.slice(0, 8)}…`
     : docContext.type === 'global'
       ? `global · ${docContext.slug}`
       : 'Tableau de bord'
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSubmit(e as unknown as React.FormEvent)
-    }
-  }
 
   return (
     <>
@@ -241,12 +281,8 @@ export const AIPanel: React.FC = () => {
             fontSize: 13,
             transition: 'background 0.15s, border-color 0.15s',
           }}
-          onMouseEnter={e => {
-            (e.currentTarget as HTMLButtonElement).style.background = 'var(--theme-elevation-150, rgba(255,255,255,0.1))'
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLButtonElement).style.background = 'var(--theme-elevation-100, rgba(255,255,255,0.06))'
-          }}
+          onMouseEnter={e => { (e.currentTarget).style.background = 'var(--theme-elevation-150, rgba(255,255,255,0.1))' }}
+          onMouseLeave={e => { (e.currentTarget).style.background = 'var(--theme-elevation-100, rgba(255,255,255,0.06))' }}
         >
           <span style={{ fontSize: 16 }}>✦</span>
           <span style={{ flex: 1, textAlign: 'left' }}>Assistant IA</span>
@@ -374,6 +410,39 @@ export const AIPanel: React.FC = () => {
           ))}
         </div>
 
+        {/* Dernière modification strip */}
+        {activeTab === 'contenu' && lastEdit && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 16px',
+            borderBottom: '1px solid var(--theme-elevation-200, #e0e0e0)',
+            background: 'var(--theme-elevation-50, #fafafa)',
+            flexShrink: 0,
+            fontSize: 12,
+            color: 'var(--theme-elevation-600, #666)',
+          }}>
+            <span style={{ flex: 1 }}>
+              Dernière modification · {timeAgoDisplay}
+            </span>
+            <button
+              onClick={undoLastEdit}
+              style={{
+                background: 'none',
+                border: '1px solid var(--theme-elevation-300, #ccc)',
+                borderRadius: 4,
+                padding: '2px 8px',
+                fontSize: 11,
+                cursor: 'pointer',
+                color: 'var(--theme-elevation-600, #666)',
+              }}
+            >
+              Annuler
+            </button>
+          </div>
+        )}
+
         {/* Quick actions */}
         <div style={{
           padding: '12px 16px 0',
@@ -415,7 +484,12 @@ export const AIPanel: React.FC = () => {
             {TONE_CHIPS.map(chip => (
               <button
                 key={chip.label}
-                onClick={() => sendWithTone(chip.modifier)}
+                onClick={() => {
+                  const prefix = chip.modifier
+                  const text = input.trim() ? prefix + input : prefix
+                  setInput(text)
+                  inputRef.current?.focus()
+                }}
                 disabled={isLoading}
                 style={{
                   padding: '4px 10px',
@@ -458,7 +532,7 @@ export const AIPanel: React.FC = () => {
                 Que puis-je faire pour vous ?
               </div>
               <div style={{ fontSize: 12, lineHeight: 1.6 }}>
-                Modifiez du contenu, posez des questions sur la structure du site, ou créez de nouveaux composants.
+                Modifiez du contenu, posez des questions sur la structure du site, ou créez de nouveaux composants directement depuis l&apos;admin.
               </div>
             </div>
           )}
@@ -480,98 +554,73 @@ export const AIPanel: React.FC = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Tone target input — shown when tone chips are used */}
-        {activeTab === 'contenu' && toneTarget && (
-          <div style={{ padding: '0 16px', flexShrink: 0 }}>
-            <div style={{ fontSize: 11, color: 'var(--theme-elevation-500)', marginBottom: 4 }}>
-              Texte à transformer (laissez vide pour cibler le document actuel)
-            </div>
-            <textarea
-              value={toneTarget}
-              onChange={e => setToneTarget(e.target.value)}
-              rows={2}
-              style={{
-                width: '100%',
-                padding: '8px 10px',
-                fontSize: 12,
-                borderRadius: 6,
-                border: '1px solid var(--theme-elevation-300, #ccc)',
-                background: 'var(--theme-elevation-50, #fafafa)',
-                resize: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-        )}
-
         {/* Input */}
         <div style={{
           padding: '12px 16px',
           borderTop: '1px solid var(--theme-elevation-200, #e0e0e0)',
           flexShrink: 0,
         }}>
-          <form onSubmit={handleSubmit}>
-            <div style={{
-              display: 'flex',
-              gap: 8,
-              alignItems: 'flex-end',
-              background: 'var(--theme-elevation-100, #f5f5f5)',
-              borderRadius: 12,
-              border: '1px solid var(--theme-elevation-200, #e0e0e0)',
-              padding: '8px 12px',
-            }}>
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Message… (Entrée pour envoyer, Maj+Entrée pour sauter une ligne)"
-                rows={1}
-                disabled={isLoading}
-                style={{
-                  flex: 1,
-                  background: 'none',
-                  border: 'none',
-                  outline: 'none',
-                  resize: 'none',
-                  fontSize: 13,
-                  lineHeight: 1.5,
-                  color: 'var(--theme-text, #1a1a1a)',
-                  maxHeight: 120,
-                  overflow: 'auto',
-                }}
-                onInput={e => {
-                  const t = e.currentTarget
-                  t.style.height = 'auto'
-                  t.style.height = Math.min(t.scrollHeight, 120) + 'px'
-                }}
-              />
-              <button
-                type="submit"
-                disabled={isLoading || !input.trim()}
-                style={{
-                  padding: '6px 14px',
-                  background: 'var(--theme-text, #1a1a1a)',
-                  color: 'var(--theme-elevation-0, #fff)',
-                  border: 'none',
-                  borderRadius: 8,
-                  cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  opacity: isLoading || !input.trim() ? 0.5 : 1,
-                  transition: 'opacity 0.15s',
-                  flexShrink: 0,
-                }}
-              >
-                {isLoading ? '…' : '↑'}
-              </button>
-            </div>
-          </form>
+          <div style={{
+            display: 'flex',
+            gap: 8,
+            alignItems: 'flex-end',
+            background: 'var(--theme-elevation-100, #f5f5f5)',
+            borderRadius: 12,
+            border: '1px solid var(--theme-elevation-200, #e0e0e0)',
+            padding: '8px 12px',
+          }}>
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Message… (Entrée pour envoyer, Maj+Entrée pour sauter une ligne)"
+              rows={1}
+              disabled={isLoading}
+              style={{
+                flex: 1,
+                background: 'none',
+                border: 'none',
+                outline: 'none',
+                resize: 'none',
+                fontSize: 13,
+                lineHeight: 1.5,
+                color: 'var(--theme-text, #1a1a1a)',
+                maxHeight: 120,
+                overflow: 'auto',
+              }}
+              onInput={e => {
+                const t = e.currentTarget
+                t.style.height = 'auto'
+                t.style.height = Math.min(t.scrollHeight, 120) + 'px'
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={isLoading || !input.trim()}
+              style={{
+                padding: '6px 14px',
+                background: 'var(--theme-text, #1a1a1a)',
+                color: 'var(--theme-elevation-0, #fff)',
+                border: 'none',
+                borderRadius: 8,
+                cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer',
+                fontSize: 13,
+                fontWeight: 500,
+                opacity: isLoading || !input.trim() ? 0.5 : 1,
+                transition: 'opacity 0.15s',
+                flexShrink: 0,
+              }}
+            >
+              {isLoading ? '…' : '↑'}
+            </button>
+          </div>
         </div>
       </div>
 
       <style>{`
-        @keyframes spin {
+        @keyframes ai-spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
