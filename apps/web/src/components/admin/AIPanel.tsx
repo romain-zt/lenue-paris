@@ -72,6 +72,92 @@ type ToolPart = {
 
 type MessagePart = { type: 'text'; text: string } | ToolPart | { type: string }
 
+// ─── Share link section (dev tab) ─────────────────────────────────────────────
+
+function ShareLinkSection() {
+  const [copied, setCopied] = useState(false)
+  const [shareUrl, setShareUrl] = useState<string | null>(null)
+  const [fetching, setFetching] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  const fetchAndCopy = useCallback(async () => {
+    setFetching(true)
+    setErr(null)
+    try {
+      const r = await fetch('/api/editor-token/share-url', { credentials: 'include' })
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}))
+        setErr((d as { error?: string }).error ?? 'Erreur')
+        return
+      }
+      const d = await r.json() as { url: string }
+      setShareUrl(d.url)
+      await navigator.clipboard.writeText(d.url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    } catch {
+      setErr('Impossible de copier')
+    } finally {
+      setFetching(false)
+    }
+  }, [])
+
+  return (
+    <div style={{
+      margin: '8px 16px 0',
+      padding: '10px 12px',
+      background: 'var(--theme-elevation-50, #f9f9f9)',
+      border: '1px solid var(--theme-elevation-200, #e0e0e0)',
+      borderRadius: 8,
+      flexShrink: 0,
+    }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--theme-elevation-800, #333)', marginBottom: 6 }}>
+        Partager l'accès éditeur
+      </div>
+      <div style={{ fontSize: 11, color: 'var(--theme-elevation-500, #888)', lineHeight: 1.4, marginBottom: 8 }}>
+        Partagez ce lien pour permettre à quelqu'un d'éditer le site sans compte admin.
+      </div>
+      {shareUrl && (
+        <div style={{
+          padding: '5px 8px',
+          background: 'var(--theme-elevation-100, #f0f0f0)',
+          borderRadius: 5,
+          fontSize: 10,
+          color: 'var(--theme-elevation-600, #555)',
+          fontFamily: 'monospace',
+          wordBreak: 'break-all',
+          marginBottom: 6,
+          userSelect: 'all',
+        }}>
+          {shareUrl}
+        </div>
+      )}
+      {err && (
+        <div style={{ fontSize: 11, color: '#b91c1c', marginBottom: 6 }}>{err}</div>
+      )}
+      <button
+        type="button"
+        onClick={fetchAndCopy}
+        disabled={fetching}
+        style={{
+          padding: '5px 12px',
+          fontSize: 11,
+          fontWeight: 600,
+          background: copied ? 'rgba(34,197,94,0.15)' : 'var(--theme-text, #1a1a1a)',
+          color: copied ? 'rgb(21,128,61)' : 'var(--theme-elevation-0, #fff)',
+          border: copied ? '1px solid rgba(34,197,94,0.4)' : 'none',
+          borderRadius: 6,
+          cursor: fetching ? 'wait' : 'pointer',
+          opacity: fetching ? 0.6 : 1,
+          transition: 'background 0.2s, color 0.2s',
+        }}
+      >
+        {fetching ? '…' : copied ? '✓ Lien copié' : '↗ Copier le lien de partage'}
+      </button>
+    </div>
+  )
+}
+
 function ToolCallCard({ toolName, state }: { toolName: string; state: string }) {
   const labels: Record<string, string> = {
     get_document: 'Lecture du document',
@@ -710,6 +796,11 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
           </div>
         )}
 
+        {/* Share link — dev tab only */}
+        {activeTab === 'dev' && (
+          <ShareLinkSection />
+        )}
+
         {/* Messages */}
         <div style={{
           flex: 1,
@@ -768,12 +859,35 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
               lineHeight: 1.5,
             }}>
               <span style={{ flexShrink: 0 }}>⚠</span>
-              <span>
-                {error?.message
-                  ? error.message
-                  : <>Une erreur s&apos;est produite lors de la communication avec l&apos;IA. Vérifiez que <code style={{ fontFamily: 'monospace', fontSize: 11 }}>CURSOR_API_KEY</code> est configuré et réessayez.</>
-                }
-              </span>
+              <div style={{ flex: 1 }}>
+                <div>
+                  {error?.message?.includes('server_error') || error?.message?.includes('An error occurred')
+                    ? 'Erreur serveur temporaire (OpenAI). Réessayez dans quelques secondes.'
+                    : error?.message
+                      ? error.message
+                      : 'Erreur de connexion à l\'IA. Vérifiez que OPENAI_API_KEY est configuré.'
+                  }
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (input.trim()) handleSend()
+                  }}
+                  style={{
+                    marginTop: 6,
+                    padding: '3px 10px',
+                    fontSize: 11,
+                    background: 'rgba(239,68,68,0.12)',
+                    border: '1px solid rgba(239,68,68,0.3)',
+                    borderRadius: 5,
+                    color: '#b91c1c',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                  }}
+                >
+                  ↺ Réessayer
+                </button>
+              </div>
             </div>
           )}
           <div ref={messagesEndRef} />

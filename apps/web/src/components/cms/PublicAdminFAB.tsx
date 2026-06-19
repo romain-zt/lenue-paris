@@ -602,11 +602,8 @@ function AIChatPanel({
 
 // ─── Editor token helpers ─────────────────────────────────────────────────────
 
-function getEditorTokenFromCookie(): string | null {
-  if (typeof document === 'undefined') return null
-  const match = document.cookie.match(/(?:^|;\s*)editor_token=([^;]+)/)
-  return match?.[1] ?? null
-}
+// editor_token is set as HttpOnly so document.cookie cannot read it.
+// We validate it server-side via a lightweight API call instead.
 
 // ─── Main FAB component ───────────────────────────────────────────────────────
 
@@ -680,10 +677,15 @@ export function PublicAdminFAB() {
       })
   }, [])
 
-  // Check for editor_token cookie — shows FAB for share-link collaborators
+  // Check for editor_token cookie via server-side validate endpoint.
+  // document.cookie cannot read HttpOnly cookies, so we delegate to the API.
   useEffect(() => {
-    const token = getEditorTokenFromCookie()
-    if (token) setIsEditorToken(true)
+    fetch('/api/editor-token/validate', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : { ok: false }))
+      .then((data: { ok?: boolean }) => {
+        if (data.ok) setIsEditorToken(true)
+      })
+      .catch(() => {})
   }, [])
 
   // Check if current user is a Payload admin
