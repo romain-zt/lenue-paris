@@ -46,6 +46,7 @@
     "@types/node": "catalog:",
     "@types/pg": "^8.11.10",
     "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "dotenv": "^17.4.2",
     "eslint": "catalog:",
