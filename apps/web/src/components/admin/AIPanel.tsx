@@ -112,10 +112,10 @@ function ShareLinkSection() {
       flexShrink: 0,
     }}>
       <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--theme-elevation-800, #333)', marginBottom: 6 }}>
-        Partager l'accès éditeur
+        {`Partager l'accès éditeur`}
       </div>
       <div style={{ fontSize: 11, color: 'var(--theme-elevation-500, #888)', lineHeight: 1.4, marginBottom: 8 }}>
-        Partagez ce lien pour permettre à quelqu'un d'éditer le site sans compte admin.
+        {`Partagez ce lien pour permettre à quelqu'un d'éditer le site sans compte admin.`}
       </div>
       {shareUrl && (
         <div style={{
