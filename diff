@@ -1,0 +1,2983 @@
+diff --git a/BOOTSTRAP.md b/BOOTSTRAP.md
+deleted file mode 100644
+index 153d21c..0000000
+--- a/BOOTSTRAP.md
++++ /dev/null
+@@ -1,140 +0,0 @@
+-# Bootstrap a new project from this template
+-
+-This template gives you a governed product pipeline end to end:
+-
+-```
+-clone ─▶ set up locally with Cursor (PRD → scope → plan)
+-      ─▶ push to GitHub (+ API keys)
+-      ─▶ GitHub Actions + Cursor cloud agents plan · test · implement · review · merge
+-      ─▶ self-healing loop (re-catch ≤ 1h) until work is done or a human is needed
+-```
+-
+-Two layers, kept separate:
+-
+-- **`.cursor/core/**`** — the framework governance layer (commands, rules, agents, skills, templates, checkers, hooks). Source of truth in *this* repo. In a project, copy it once and treat it as read-only.
+-- **`.cursor/project/**`** — per-project additions and overrides. Gitignored on this framework repo; committed by downstream projects.
+-- **`.github/scripts/core/**`** — the cloud automation scripts.
+-- **`.github/workflows/*.yml`** — GitHub Actions workflows (flat by requirement).
+-
+-Project specifics live in **`docs/project.config.md`** and **`docs/state/`** — nothing project-specific is hardcoded in the framework.
+-
+----
+-
+-## Step 1 — Bootstrap a new project from this framework
+-
+-**There is no auto-sync.** Copy the framework files once, then own them in your project. When the framework repo ships updates, manually diff and apply what you need.
+-
+-```bash
+-# Create your new project repo (or use an existing one)
+-gh repo create my-product --private --clone
+-cd my-product
+-
+-# One-shot copy: framework core
+-cp -r /path/to/framework/.cursor/core/ .cursor/core/
+-cp -r /path/to/framework/.github/scripts/core/ .github/scripts/core/
+-cp /path/to/framework/.github/workflows/*.yml .github/workflows/
+-# (skip project--*.yml if any)
+-
+-# Create your project overlay scaffold (gitignore core, commit project)
+-mkdir -p .cursor/project/{rules,skills,commands,agents,templates,hooks}
+-touch .cursor/project/rules/.gitkeep
+-touch .cursor/project/skills/.gitkeep
+-touch .cursor/project/commands/.gitkeep
+-touch .cursor/project/agents/.gitkeep
+-touch .cursor/project/templates/.gitkeep
+-touch .cursor/project/hooks/.gitkeep
+-cp /path/to/framework/.cursor/project/README.md .cursor/project/README.md
+-```
+-
+-Then configure `.gitignore` to track `project/` but ignore `core/` modifications (treat `core/` as installed, not editable).
+-
+----
+-
+-## Step 2 — Make it your project (local, in Cursor)
+-
+-1. **Set identity.** Edit `docs/project.config.md` (or recreate from
+-   `.cursor/core/templates/project/project.config.template.md`): project name, stack
+-   overrides, priority bands (P0–P4), v0 boundary.
+-2. **Bring in the code skeleton.** The product root must be a pnpm monorepo so CI can
+-   build it. Use `.cursor/core/templates/starter-monorepo/` as the base (next-forge direction
+-   + Payload(Postgres) + docker-compose for Postgres/MinIO). Local services:
+-   ```bash
+-   docker compose up -d        # Postgres + MinIO
+-   pnpm install
+-   ```
+-3. **Drive the workflow with Cursor.** Start anything with `/intake`, then:
+-   - `/prd init` → `/prd` — discover and converge the PRD. Include a **`# Flow Inventory`**
+-     table (columns `Flow | v0`) so the automation can derive work later.
+-   - `/feature-area` → `/user-story` → `/spec` — decompose into Scope Slices and Specs
+-     under `docs/product/**`.
+-   - When ready to build, enable the implementation phase (below).
+-4. **Seed `docs/state/HANDOFF.md`** with a short, true description of the project. Every
+-   cloud agent reads it first.
+-
+-> The `docs/state/*.json` files ship ready (a permanent `bootstrap` anchor). You don't
+-> create them — you just append slice steps to the pipeline later.
+-
+-### Enable implementation (off by default)
+-1. Copy `.cursor/core/templates/product-decisions/PD-implementation-phase.template.md` →
+-   `docs/product-decisions/PD-NNN-implementation-phase.md`, set `status: approved`.
+-2. In `docs/project.config.md` set **Implementation governance enabled: yes**.
+-
+----
+-
+-## Step 3 — Push to GitHub + add keys
+-
+-```bash
+-git add -A && git commit -m "chore: bootstrap project" && git push
+-```
+-
+-Then configure the repo once (full detail in [`.github/AUTOMATION.md`](.github/AUTOMATION.md)):
+-
+-1. **Secret** `CURSOR_API_KEY` (from cursor.com — Pro/Team plan).
+-2. **Settings → Actions → General**: enable *Read and write permissions* and *Allow
+-   GitHub Actions to create and approve pull requests*.
+-3. **Branch protection** on `main`: require the `quality` check.
+-4. Optional **variables**: `CURSOR_AGENT_MODEL`, `REQUIRED_CHECKS`, `ORCHESTRATOR_ENABLED`.
+-
+----
+-
+-## Step 4 — Let the loop run
+-
+-Add work to the pipeline, then automation takes over:
+-
+-- **From the PRD:** push changes to `docs/prd/PRD.md` (Flow Inventory) or
+-  `docs/state/orchestration.prd-flow-map.json`. `orchestration-automation` appends the
+-  matching Scope Slices and dispatches the orchestrator.
+-- **By hand:** add steps to `docs/state/orchestration.planner-queue.json`, then run the
+-  **Orchestration Planner** workflow.
+-
+-For each ready step the orchestrator opens a draft tracking PR and fires a Cursor cloud
+-agent that implements the slice (test-first, per `.cursor/core/rules/`). When `quality` passes
+-and review approves, it merges and advances to the next step. Watch progress in the
+-**Actions** tab (each run prints a live Cursor dashboard link).
+-
+----
+-
+-## Step 5 — Try it without any product code
+-
+-Want to verify the plumbing on a fresh clone before writing a feature?
+-
+-```bash
+-# open a tiny PR — CI is graceful, so `quality` goes green even with no app yet
+-git checkout -b test/automation
+-echo "<!-- smoke test -->" >> README.md
+-git commit -am "test: trigger automation"
+-git push -u origin test/automation
+-gh pr create --draft --title "test: automation smoke" --body "Verifying review + merge."
+-```
+-
+-`pr-automation` waits for `quality`, undrafts, runs the review agent, and merges if clean.
+-
+----
+-
+-## Daily controls
+-
+-- **Pause everything:** set variable `ORCHESTRATOR_ENABLED=false`. Resume with `true`.
+-- **Unstick:** the hourly *Orchestrator Cleanup* recovers stalls automatically; you can
+-  also run it manually. See the resilience section in [`.github/AUTOMATION.md`](.github/AUTOMATION.md#4-resilience--never-stuck--1h).
+-- **A step needs you:** look for a PR comment or a `blocked` step in
+-  `docs/state/status.json` with a `NEED_HUMAN:` reason.
+diff --git a/agent-loop-kit/.verify-run-a/build-log.ndjson b/agent-loop-kit/.verify-run-a/build-log.ndjson
+deleted file mode 100644
+index 2f48e98..0000000
+--- a/agent-loop-kit/.verify-run-a/build-log.ndjson
++++ /dev/null
+@@ -1,42 +0,0 @@
+-{"ts":"2026-06-15T20:55:28.960Z","event":"scribe_complete","state":"idea_seed"}
+-{"ts":"2026-06-15T20:55:28.963Z","event":"vision_complete","state":"vision_prd"}
+-{"ts":"2026-06-15T20:55:28.964Z","event":"convergence_complete","state":"veto","diverged":false}
+-{"ts":"2026-06-15T20:55:28.964Z","event":"human_veto","state":"veto","approved":"auto-offline"}
+-{"ts":"2026-06-15T20:55:28.968Z","event":"build_complete","state":"building"}
+-{"ts":"2026-06-15T20:55:28.973Z","event":"review_failed","state":"aborted","pass":false,"results":{"readability":{"score":0.9,"avgWordsPerSentence":11},"designTokens":{"score":0.5,"hasRoot":true,"hasVar":false},"seoMeta":{"score":1,"hasDescription":true,"hasViewport":true},"altCoverage":{"score":1,"coverage":1,"total":1}},"floors":{"readability":0.5,"designTokens":1,"seoMeta":1,"altCoverage":1}}
+-{"ts":"2026-06-15T20:55:32.664Z","event":"scribe_complete","state":"idea_seed"}
+-{"ts":"2026-06-15T20:55:32.668Z","event":"vision_complete","state":"vision_prd"}
+-{"ts":"2026-06-15T20:55:32.669Z","event":"convergence_complete","state":"veto","diverged":false}
+-{"ts":"2026-06-15T20:55:32.669Z","event":"human_veto","state":"veto","approved":"auto-offline"}
+-{"ts":"2026-06-15T20:55:32.673Z","event":"build_complete","state":"building"}
+-{"ts":"2026-06-15T20:55:32.678Z","event":"review_failed","state":"aborted","pass":false,"results":{"readability":{"score":0.9,"avgWordsPerSentence":11},"designTokens":{"score":0.5,"hasRoot":true,"hasVar":false},"seoMeta":{"score":1,"hasDescription":true,"hasViewport":true},"altCoverage":{"score":1,"coverage":1,"total":1}},"floors":{"readability":0.5,"designTokens":1,"seoMeta":1,"altCoverage":1}}
+-{"ts":"2026-06-15T20:55:38.478Z","event":"scribe_complete","state":"idea_seed"}
+-{"ts":"2026-06-15T20:55:38.480Z","event":"vision_complete","state":"vision_prd"}
+-{"ts":"2026-06-15T20:55:38.481Z","event":"convergence_complete","state":"veto","diverged":false}
+-{"ts":"2026-06-15T20:55:38.481Z","event":"human_veto","state":"veto","approved":"auto-offline"}
+-{"ts":"2026-06-15T20:55:38.485Z","event":"build_complete","state":"building"}
+-{"ts":"2026-06-15T20:55:38.489Z","event":"slice_complete","state":"slice_complete"}
+-{"ts":"2026-06-15T20:55:46.053Z","event":"scribe_complete","state":"idea_seed"}
+-{"ts":"2026-06-15T20:55:46.056Z","event":"vision_complete","state":"vision_prd"}
+-{"ts":"2026-06-15T20:55:46.058Z","event":"convergence_complete","state":"veto","diverged":false}
+-{"ts":"2026-06-15T20:55:46.058Z","event":"human_veto","state":"veto","approved":"auto-offline"}
+-{"ts":"2026-06-15T20:55:46.064Z","event":"build_complete","state":"building"}
+-{"ts":"2026-06-15T20:55:46.071Z","event":"slice_complete","state":"slice_complete"}
+-{"ts":"2026-06-15T20:55:58.148Z","event":"scribe_complete","state":"idea_seed"}
+-{"ts":"2026-06-15T20:55:58.152Z","event":"vision_complete","state":"vision_prd"}
+-{"ts":"2026-06-15T20:55:58.154Z","event":"convergence_complete","state":"veto","diverged":false}
+-{"ts":"2026-06-15T20:55:58.154Z","event":"human_veto","state":"veto","approved":"auto-offline"}
+-{"ts":"2026-06-15T20:55:58.159Z","event":"build_complete","state":"building"}
+-{"ts":"2026-06-15T20:55:58.165Z","event":"slice_complete","state":"slice_complete"}
+-{"ts":"2026-06-15T20:56:47.609Z","event":"scribe_complete","state":"idea_seed"}
+-{"ts":"2026-06-15T20:56:47.612Z","event":"vision_complete","state":"vision_prd"}
+-{"ts":"2026-06-15T20:56:47.613Z","event":"convergence_complete","state":"veto","diverged":false}
+-{"ts":"2026-06-15T20:56:47.613Z","event":"human_veto","state":"veto","approved":"auto-offline"}
+-{"ts":"2026-06-15T20:56:47.616Z","event":"build_complete","state":"building"}
+-{"ts":"2026-06-15T20:56:47.621Z","event":"slice_complete","state":"slice_complete"}
+-{"ts":"2026-06-15T21:07:56.102Z","event":"scribe_complete","state":"idea_seed"}
+-{"ts":"2026-06-15T21:07:56.103Z","event":"vision_complete","state":"vision_prd"}
+-{"ts":"2026-06-15T21:07:56.103Z","event":"convergence_complete","state":"veto","diverged":false}
+-{"ts":"2026-06-15T21:07:56.104Z","event":"human_veto","state":"veto","approved":"auto-offline"}
+-{"ts":"2026-06-15T21:07:56.105Z","event":"build_complete","state":"building"}
+-{"ts":"2026-06-15T21:07:56.106Z","event":"slice_complete","state":"slice_complete"}
+diff --git a/agent-loop-kit/.verify-run-a/convergence-packet.json b/agent-loop-kit/.verify-run-a/convergence-packet.json
+deleted file mode 100644
+index 5d8d125..0000000
+--- a/agent-loop-kit/.verify-run-a/convergence-packet.json
++++ /dev/null
+@@ -1,16 +0,0 @@
+-{
+-  "scribe": {
+-    "audience": "early adopters",
+-    "successSignal": "waitlist signup"
+-  },
+-  "vision": {
+-    "scope": "landing + waitlist",
+-    "nonGoals": [
+-      "payments"
+-    ]
+-  },
+-  "slicePlanner": {
+-    "hypothesis": "landing + waitlist + analytics hook",
+-    "pack": "saas-landing"
+-  }
+-}
+\ No newline at end of file
+diff --git a/agent-loop-kit/.verify-run-a/first-slice-brief.md b/agent-loop-kit/.verify-run-a/first-slice-brief.md
+deleted file mode 100644
+index f9285c5..0000000
+--- a/agent-loop-kit/.verify-run-a/first-slice-brief.md
++++ /dev/null
+@@ -1,8 +0,0 @@
+-# First Slice Brief
+-
+-**Slice:** landing + waitlist + analytics
+-
+-**Acceptance:**
+-- Landing page renders
+-- Waitlist form submits
+-- Meta tags present
+diff --git a/agent-loop-kit/.verify-run-a/idea-seed.md b/agent-loop-kit/.verify-run-a/idea-seed.md
+deleted file mode 100644
+index 828b0ca..0000000
+--- a/agent-loop-kit/.verify-run-a/idea-seed.md
++++ /dev/null
+@@ -1,7 +0,0 @@
+-# Idea Seed
+-
+-**Problem:** A SaaS waitlist landing page for indie developers
+-
+-**Audience:** early adopters
+-
+-**Success signal:** first waitlist signup
+diff --git a/agent-loop-kit/.verify-run-a/overlay/calibration.json b/agent-loop-kit/.verify-run-a/overlay/calibration.json
+deleted file mode 100644
+index 9baf30b..0000000
+--- a/agent-loop-kit/.verify-run-a/overlay/calibration.json
++++ /dev/null
+@@ -1,3 +0,0 @@
+-{
+-  "gateThreshold": 0.85
+-}
+\ No newline at end of file
+diff --git a/agent-loop-kit/.verify-run-a/slice-1-output/index.html b/agent-loop-kit/.verify-run-a/slice-1-output/index.html
+deleted file mode 100644
+index 2382ed6..0000000
+--- a/agent-loop-kit/.verify-run-a/slice-1-output/index.html
++++ /dev/null
+@@ -1,13 +0,0 @@
+-<!DOCTYPE html>
+-<html lang="en">
+-<head>
+-  <meta charset="utf-8">
+-  <meta name="description" content="Join the waitlist for our indie dev SaaS">
+-  <meta name="viewport" content="width=device-width, initial-scale=1">
+-  <title>Waitlist</title>
+-  <style>:root { --color-primary: #2563eb; --spacing-md: 1rem; } body { color: var(--color-primary); padding: var(--spacing-md); }</style>
+-</head>
+-<body>
+-  <main><h1>Join the waitlist</h1><form><input type="email" aria-label="Email"><img src="hero.png" alt="Product preview"></form></main>
+-</body>
+-</html>
+\ No newline at end of file
+diff --git a/agent-loop-kit/.verify-run-a/slice-contract.json b/agent-loop-kit/.verify-run-a/slice-contract.json
+deleted file mode 100644
+index c028ff7..0000000
+--- a/agent-loop-kit/.verify-run-a/slice-contract.json
++++ /dev/null
+@@ -1,5 +0,0 @@
+-{
+-  "hash": "2d7e4bb27ac7eb05",
+-  "frozenAt": "2026-06-15T21:07:56.104Z",
+-  "brief": "# First Slice Brief\n\n**Slice:** landing + waitlist + analytics\n\n**Acceptance:**\n- Landing page renders\n- Waitlist form submits\n- Meta tags present\n"
+-}
+\ No newline at end of file
+diff --git a/agent-loop-kit/.verify-run-a/vision-prd-changelog.md b/agent-loop-kit/.verify-run-a/vision-prd-changelog.md
+deleted file mode 100644
+index 1f30ce9..0000000
+--- a/agent-loop-kit/.verify-run-a/vision-prd-changelog.md
++++ /dev/null
+@@ -1 +0,0 @@
+-- learned: waitlist copy should emphasize speed
+diff --git a/agent-loop-kit/.verify-run-a/vision-prd.md b/agent-loop-kit/.verify-run-a/vision-prd.md
+deleted file mode 100644
+index 92deb93..0000000
+--- a/agent-loop-kit/.verify-run-a/vision-prd.md
++++ /dev/null
+@@ -1,12 +0,0 @@
+-# Vision PRD v0.1
+-
+-## Principles
+-- Ship smallest vertical fast
+-- Mobile-first
+-
+-## Non-goals
+-- Payments
+-- Full auth
+-
+-## Boundaries
+-One landing + waitlist
+diff --git a/agent-loop-kit/RELEASE-NOTES.md b/agent-loop-kit/RELEASE-NOTES.md
+deleted file mode 100644
+index 7fc2523..0000000
+--- a/agent-loop-kit/RELEASE-NOTES.md
++++ /dev/null
+@@ -1,37 +0,0 @@
+-# agent-loop-kit v0.1 — Release Notes
+-
+-## What this is
+-
+-Session-one autonomous bootstrap: draft idea in, structured artifacts out, one merged slice, overlay learning, core untouched.
+-
+-## Requirements
+-
+-- Node 20 LTS
+-- OPENAI_API_KEY (live loop; offline demo works without)
+-
+-## Included (v0.1)
+-
+-- Copy readability, design tokens, SEO meta, alt-text scorers (deterministic)
+-- LLM reviewers via openai/gpt-4.1-mini (live mode)
+-- Convergence Packet + human veto checkpoint
+-- Slice Contract freeze + adversarial freeze-bypass tests
+-- Three starter overlay packs: saas-landing, internal-tool, marketplace
+-- `./verify.sh --offline` and `--live`
+-- Export / promote scripts (overlay only)
+-
+-## Excluded (deferred to v0.2)
+-
+-- Image generation agent
+-- Pinned static analysis (eslint/ruff) for code
+-- Multi-slice autonomy (live Run D)
+-- Self-improvement without human promotion
+-- Richer mid-slice PRD influence beyond queue-and-wait
+-
+-## Ceilings (live mode)
+-
+-- 12 agent calls / 8 minutes / $0.80 estimated
+-- Exceed → `project/resume-at-veto.json` (checkpoint, not broken state)
+-
+-## Ollama
+-
+-Dev-only. No parity claim with OpenAI.
+diff --git a/agent-loop-kit/START.md b/agent-loop-kit/START.md
+deleted file mode 100644
+index 92cb995..0000000
+--- a/agent-loop-kit/START.md
++++ /dev/null
+@@ -1,20 +0,0 @@
+-# Agent Loop Kit v0.1 — START
+-
+-Three commands:
+-
+-```bash
+-unzip agent-loop-kit-v0.1.zip && cd agent-loop-kit
+-chmod +x bootstrap.sh verify.sh
+-./bootstrap.sh "your rough draft idea here"
+-```
+-
+-Requirements: **Node 20 LTS**, **`OPENAI_API_KEY`** for live loop (offline demo works without).
+-
+-Verify before first run:
+-
+-```bash
+-./verify.sh --offline   # zero network, must go green
+-./verify.sh --live      # optional, needs API key
+-```
+-
+-Session-one flow: draft idea → Idea Seed → Vision PRD → Convergence Packet → human veto → one slice → overlay writes. Core is never edited.
+diff --git a/agent-loop-kit/bootstrap.sh b/agent-loop-kit/bootstrap.sh
+deleted file mode 100755
+index 43cfeec..0000000
+--- a/agent-loop-kit/bootstrap.sh
++++ /dev/null
+@@ -1,34 +0,0 @@
+-#!/usr/bin/env bash
+-set -euo pipefail
+-ROOT="$(cd "$(dirname "$0")" && pwd)"
+-IDEA="${1:-A SaaS waitlist landing page for indie developers}"
+-PACK="${PACK:-saas-landing}"
+-
+-echo "==> Agent Loop Kit v0.1 bootstrap"
+-echo "    Idea: $IDEA"
+-echo "    Pack: $PACK"
+-
+-if ! command -v node >/dev/null 2>&1; then
+-  echo "ERROR: Node 20 LTS required. Install from https://nodejs.org"
+-  exit 1
+-fi
+-
+-NODE_MAJOR=$(node -p "process.versions.node.split('.')[0]")
+-if [[ "$NODE_MAJOR" != "20" ]]; then
+-  echo "WARN: Node 20 LTS recommended (found v$(node -v))"
+-fi
+-
+-mkdir -p "$ROOT/project/overlay"
+-cp -n "$ROOT/project/templates/"*.md "$ROOT/project/" 2>/dev/null || true
+-
+-if [[ -z "${OPENAI_API_KEY:-}" ]]; then
+-  echo "==> No OPENAI_API_KEY — running offline demo loop"
+-  node "$ROOT/core/src/loopd.mjs" --offline --idea "$IDEA"
+-else
+-  echo "==> Running live loop (ceilings: 12 calls / 8 min / \$0.80)"
+-  node "$ROOT/core/src/loopd.mjs" --idea "$IDEA"
+-fi
+-
+-echo ""
+-echo "==> Artifacts written to project/"
+-echo "    Next: review project/first-slice-brief.md and approve slice at veto if checkpoint exists"
+diff --git a/agent-loop-kit/core/manifest.json b/agent-loop-kit/core/manifest.json
+deleted file mode 100644
+index 9ddb9a1..0000000
+--- a/agent-loop-kit/core/manifest.json
++++ /dev/null
+@@ -1,29 +0,0 @@
+-{
+-  "name": "agent-loop-kit",
+-  "version": "0.1.0",
+-  "loopd": "0.1.0",
+-  "runtime": {
+-    "node": ">=20.0.0 <21.0.0"
+-  },
+-  "backend": {
+-    "default": "openai/gpt-4.1-mini",
+-    "env_key": "OPENAI_API_KEY",
+-    "dev_only": {
+-      "backend": "ollama/llama3",
+-      "note": "Dev-only; no parity claim with OpenAI"
+-    }
+-  },
+-  "ceilings": {
+-    "agent_calls": 12,
+-    "wall_clock_seconds": 480,
+-    "estimated_cost_usd": 0.8
+-  },
+-  "artifacts": [
+-    "idea-seed.md",
+-    "vision-prd.md",
+-    "first-slice-brief.md",
+-    "build-log.ndjson",
+-    "influence-ledger.ndjson",
+-    "slice-contract.json"
+-  ]
+-}
+diff --git a/agent-loop-kit/core/package.json b/agent-loop-kit/core/package.json
+deleted file mode 100644
+index b7c27b7..0000000
+--- a/agent-loop-kit/core/package.json
++++ /dev/null
+@@ -1,16 +0,0 @@
+-{
+-  "name": "@agent-loop-kit/core",
+-  "version": "0.1.0",
+-  "private": true,
+-  "type": "module",
+-  "engines": {
+-    "node": ">=20.0.0 <21.0.0"
+-  },
+-  "bin": {
+-    "loopd": "./src/loopd.mjs"
+-  },
+-  "scripts": {
+-    "test": "node --test tests/**/*.spec.mjs",
+-    "verify:offline": "node src/verify-offline.mjs"
+-  }
+-}
+diff --git a/agent-loop-kit/core/scorers/index.mjs b/agent-loop-kit/core/scorers/index.mjs
+deleted file mode 100644
+index 462126a..0000000
+--- a/agent-loop-kit/core/scorers/index.mjs
++++ /dev/null
+@@ -1,57 +0,0 @@
+-/**
+- * Deterministic quality scorers — no LLM required.
+- * @param {{ html: string, floorYaml: string }} input
+- */
+-export function runScorers({ html, floorYaml = '' }) {
+-  const results = {
+-    readability: scoreReadability(html),
+-    designTokens: scoreDesignTokens(html),
+-    seoMeta: scoreSeoMeta(html),
+-    altCoverage: scoreAltCoverage(html)
+-  };
+-
+-  const floors = parseFloors(floorYaml);
+-  const pass = Object.entries(floors).every(([key, min]) => (results[key]?.score ?? 0) >= min);
+-
+-  return { pass, results, floors };
+-}
+-
+-function parseFloors(yaml) {
+-  const floors = { readability: 0.5, designTokens: 1, seoMeta: 1, altCoverage: 1 };
+-  for (const line of yaml.split('\n')) {
+-    const m = line.match(/^(\w+):\s*([\d.]+)/);
+-    if (m) floors[m[1]] = parseFloat(m[2]);
+-  }
+-  return floors;
+-}
+-
+-function scoreReadability(html) {
+-  const text = html.replace(/<[^>]+>/g, ' ').trim();
+-  const words = text.split(/\s+/).filter(Boolean);
+-  const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+-  const avgWords = words.length / Math.max(sentences.length, 1);
+-  const score = avgWords <= 20 ? 0.9 : avgWords <= 30 ? 0.7 : 0.4;
+-  return { score, avgWordsPerSentence: avgWords };
+-}
+-
+-function scoreDesignTokens(html) {
+-  const hasRoot =/:root\s*\{/.test(html);
+-  const hasVar = /var\s*\(--/.test(html);
+-  const score = hasRoot && hasVar ? 1 : hasRoot ? 0.5 : 0;
+-  return { score, hasRoot, hasVar };
+-}
+-
+-function scoreSeoMeta(html) {
+-  const hasDescription = /<meta\s+name=["']description["']/i.test(html);
+-  const hasViewport = /<meta\s+name=["']viewport["']/i.test(html);
+-  const score = (hasDescription ? 0.5 : 0) + (hasViewport ? 0.5 : 0);
+-  return { score, hasDescription, hasViewport };
+-}
+-
+-function scoreAltCoverage(html) {
+-  const imgs = [...html.matchAll(/<img\b[^>]*>/gi)];
+-  if (imgs.length === 0) return { score: 1, coverage: 1 };
+-  const withAlt = imgs.filter((m) => /\balt=["'][^"']+["']/i.test(m[0])).length;
+-  const coverage = withAlt / imgs.length;
+-  return { score: coverage, coverage, total: imgs.length };
+-}
+diff --git a/agent-loop-kit/core/src/adapters/fixtures.mjs b/agent-loop-kit/core/src/adapters/fixtures.mjs
+deleted file mode 100644
+index b5f7a55..0000000
+--- a/agent-loop-kit/core/src/adapters/fixtures.mjs
++++ /dev/null
+@@ -1,93 +0,0 @@
+-/** Offline fixture responses — live outside loopd, keyed by role + idea hash */
+-
+-import { createHash } from 'node:crypto';
+-
+-function ideaKey(idea) {
+-  return createHash('sha256').update(idea).digest('hex').slice(0, 8);
+-}
+-
+-/** @param {string} role @param {string} idea @param {Record<string, unknown>} context */
+-export function getFixtureResponse(role, idea, context = {}) {
+-  const key = ideaKey(idea);
+-  const isB2B = /b2b|enterprise|onboarding|sales team/i.test(idea);
+-
+-  switch (role) {
+-    case 'scribe':
+-      return {
+-        problem: idea,
+-        audience: isB2B ? 'B2B team leads evaluating onboarding tools' : 'indie developers seeking early access',
+-        success_signal: isB2B ? 'first qualified demo booking' : 'first waitlist signup'
+-      };
+-    case 'vision':
+-      return {
+-        principles: ['Ship smallest vertical fast', 'Mobile-first'],
+-        non_goals: isB2B ? ['consumer viral loops', 'marketplace'] : ['payments', 'full auth'],
+-        boundaries: isB2B ? 'Onboarding stub + one dashboard screen' : 'One landing + waitlist'
+-      };
+-    case 'slice_planner':
+-      return {
+-        slice_hypothesis: isB2B ? 'auth stub + onboarding checklist screen' : 'landing + waitlist + analytics hook',
+-        acceptance_criteria: isB2B
+-          ? ['Auth stub renders', 'Onboarding checklist visible', 'Meta tags present']
+-          : ['Landing page renders', 'Waitlist form submits', 'Meta tags present'],
+-        audience: isB2B ? 'B2B team leads' : 'indie developers',
+-        success_signal: isB2B ? 'first demo booking' : 'first waitlist signup',
+-        pack: context.pack ?? 'saas-landing'
+-      };
+-    case 'arbiter':
+-      return { aligned: true, score: 0.92, divergence_reason: '' };
+-    case 'builder':
+-      return {
+-        html: buildFixtureHtml(isB2B, context.reviseHint)
+-      };
+-    case 'architect':
+-      return {
+-        severity: context.injectConflict ? 'blocker' : 'advisory',
+-        criticality: 'on-path',
+-        reversibility: 'cheap',
+-        finding: context.injectConflict ? 'Defer auth to slice two' : 'Scaffold structure acceptable',
+-        confidence: 0.85
+-      };
+-    case 'copywriter':
+-      return {
+-        severity: context.injectConflict ? 'blocker' : 'advisory',
+-        criticality: 'on-path',
+-        reversibility: context.injectConflict ? 'expensive' : 'cheap',
+-        finding: context.injectConflict ? 'Block until voice guide is defined' : 'Copy tone acceptable',
+-        confidence: 0.8
+-      };
+-    case 'designer':
+-      return { severity: 'advisory', criticality: 'off-path', reversibility: 'cheap', finding: 'Add design tokens', confidence: 0.75 };
+-    case 'seo':
+-      return { severity: 'advisory', criticality: 'on-path', reversibility: 'cheap', finding: 'Meta description present', confidence: 0.9 };
+-    case 'image':
+-      return { severity: 'advisory', finding: 'Hero alt text needed', alt_recommendation: 'Product preview screenshot', confidence: 0.7 };
+-    case 'red_team':
+-      return { confirmed: true, adjusted_severity: context.injectConflict ? 'blocker' : 'advisory', reason: 'Verified against acceptance criteria' };
+-    case 'orchestrator':
+-      return { next_action: 'continue', state: context.state ?? 'idea_seed' };
+-    default:
+-      throw new Error(`no fixture for role: ${role}`);
+-  }
+-}
+-
+-function buildFixtureHtml(isB2B, reviseHint) {
+-  const title = isB2B ? 'Team onboarding' : 'Join the waitlist';
+-  const desc = isB2B
+-    ? 'Streamline B2B team onboarding with our checklist dashboard'
+-    : 'Join the waitlist for our indie dev SaaS';
+-  const heading = reviseHint ? `${title} — ${reviseHint}` : title;
+-  return `<!DOCTYPE html>
+-<html lang="en">
+-<head>
+-  <meta charset="utf-8">
+-  <meta name="description" content="${desc}">
+-  <meta name="viewport" content="width=device-width, initial-scale=1">
+-  <title>${title}</title>
+-  <style>:root { --color-primary: #2563eb; --spacing-md: 1rem; } body { color: var(--color-primary); padding: var(--spacing-md); }</style>
+-</head>
+-<body>
+-  <main><h1>${heading}</h1><form><input type="email" aria-label="Email"><img src="hero.png" alt="Product preview"></form></main>
+-</body>
+-</html>`;
+-}
+diff --git a/agent-loop-kit/core/src/build-log.mjs b/agent-loop-kit/core/src/build-log.mjs
+deleted file mode 100644
+index fa0af2f..0000000
+--- a/agent-loop-kit/core/src/build-log.mjs
++++ /dev/null
+@@ -1,31 +0,0 @@
+-import { appendFileSync, mkdirSync } from 'node:fs';
+-import { dirname } from 'node:path';
+-import { randomUUID } from 'node:crypto';
+-
+-/** @param {string} logPath */
+-export function createBuildLogger(logPath) {
+-  mkdirSync(dirname(logPath), { recursive: true });
+-
+-  return {
+-    /** @param {Record<string, unknown>} entry */
+-    append(entry) {
+-      const line = JSON.stringify({
+-        ts: new Date().toISOString(),
+-        ...entry
+-      });
+-      appendFileSync(logPath, line + '\n');
+-    },
+-
+-    /** Log an adapter call with required Step 1 fields */
+-    logAdapterCall({ role, requestId, usage, event = 'adapter_call', ...rest }) {
+-      this.append({
+-        agent: role,
+-        role,
+-        request_id: requestId ?? randomUUID(),
+-        event,
+-        usage: usage ?? { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+-        ...rest
+-      });
+-    }
+-  };
+-}
+diff --git a/agent-loop-kit/core/src/loopd.mjs b/agent-loop-kit/core/src/loopd.mjs
+deleted file mode 100644
+index eeab8bf..0000000
+--- a/agent-loop-kit/core/src/loopd.mjs
++++ /dev/null
+@@ -1,176 +0,0 @@
+-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+-import { join, dirname } from 'node:path';
+-import { fileURLToPath } from 'node:url';
+-import { createHash } from 'node:crypto';
+-import { canTransition, nextState } from './state-machine.mjs';
+-import { compilePrompt } from './prompt-compile.mjs';
+-import { runScorers } from '../scorers/index.mjs';
+-
+-const __dirname = dirname(fileURLToPath(import.meta.url));
+-const KIT_ROOT = join(__dirname, '../..');
+-
+-export function loadManifest() {
+-  return JSON.parse(readFileSync(join(KIT_ROOT, 'core/manifest.json'), 'utf8'));
+-}
+-
+-export function hashContent(content) {
+-  return createHash('sha256').update(content).digest('hex').slice(0, 16);
+-}
+-
+-/**
+- * @param {object} opts
+- * @param {string} [opts.idea]
+- * @param {string} [opts.pack]
+- * @param {boolean} [opts.offline]
+- * @param {string} [opts.projectDir]
+- */
+-export async function runLoop(opts = {}) {
+-  const manifest = loadManifest();
+-  const offline = opts.offline ?? !process.env.OPENAI_API_KEY;
+-  const projectDir = opts.projectDir ?? join(KIT_ROOT, 'project');
+-  const idea = opts.idea ?? 'A SaaS waitlist landing page for indie developers';
+-  const pack = opts.pack ?? 'saas-landing';
+-
+-  mkdirSync(projectDir, { recursive: true });
+-  mkdirSync(join(projectDir, 'overlay'), { recursive: true });
+-
+-  const stats = { agentCalls: 0, states: [], artifacts: {} };
+-  let state = 'idea_seed';
+-
+-  const log = (event, data = {}) => {
+-    const line = JSON.stringify({ ts: new Date().toISOString(), event, state, ...data });
+-    const logPath = join(projectDir, 'build-log.ndjson');
+-    writeFileSync(logPath, (existsSync(logPath) ? readFileSync(logPath, 'utf8') : '') + line + '\n');
+-  };
+-
+-  // idea_seed
+-  stats.states.push(state);
+-  const ideaSeed = `# Idea Seed\n\n**Problem:** ${idea}\n\n**Audience:** early adopters\n\n**Success signal:** first waitlist signup\n`;
+-  writeFileSync(join(projectDir, 'idea-seed.md'), ideaSeed);
+-  stats.artifacts.ideaSeed = ideaSeed;
+-  stats.agentCalls++;
+-  log('scribe_complete');
+-  state = nextState(state);
+-
+-  // vision_prd
+-  stats.states.push(state);
+-  const visionPrd = `# Vision PRD v0.1\n\n## Principles\n- Ship smallest vertical fast\n- Mobile-first\n\n## Non-goals\n- Payments\n- Full auth\n\n## Boundaries\nOne landing + waitlist\n`;
+-  writeFileSync(join(projectDir, 'vision-prd.md'), visionPrd);
+-  stats.agentCalls++;
+-  log('vision_complete');
+-  state = nextState(state);
+-
+-  // convergence
+-  stats.states.push(state);
+-  const convergence = {
+-    scribe: { audience: 'early adopters', successSignal: 'waitlist signup' },
+-    vision: { scope: 'landing + waitlist', nonGoals: ['payments'] },
+-    slicePlanner: { hypothesis: 'landing + waitlist + analytics hook', pack }
+-  };
+-  stats.agentCalls += 3;
+-  const diverged = false;
+-  writeFileSync(join(projectDir, 'convergence-packet.json'), JSON.stringify(convergence, null, 2));
+-  state = nextState(state, { diverged });
+-  log('convergence_complete', { diverged });
+-
+-  if (state === 'resume_at_veto') {
+-    writeFileSync(join(projectDir, 'resume-at-veto.json'), JSON.stringify({
+-      reason: 'convergence divergence',
+-      options: [
+-        { slice: 'landing + waitlist', tradeoff: 'fastest path' },
+-        { slice: 'B2B onboarding stub', tradeoff: 'matches enterprise signal' }
+-      ]
+-    }, null, 2));
+-    return { ...stats, state, checkpoint: true };
+-  }
+-
+-  // veto (session one always pauses for human in live; auto-approve offline)
+-  stats.states.push('veto');
+-  stats.agentCalls++;
+-  log('human_veto', { approved: offline ? 'auto-offline' : 'pending' });
+-  state = nextState('veto');
+-
+-  // building — freeze check
+-  stats.states.push(state);
+-  const contractHash = hashContent(visionPrd);
+-  const sliceBrief = `# First Slice Brief\n\n**Slice:** landing + waitlist + analytics\n\n**Acceptance:**\n- Landing page renders\n- Waitlist form submits\n- Meta tags present\n`;
+-  writeFileSync(join(projectDir, 'first-slice-brief.md'), sliceBrief);
+-  writeFileSync(join(projectDir, 'slice-contract.json'), JSON.stringify({
+-    hash: contractHash,
+-    frozenAt: new Date().toISOString(),
+-    brief: sliceBrief
+-  }, null, 2));
+-
+-  const compileResult = compilePrompt({
+-    role: 'builder',
+-    sliceContractHash: contractHash,
+-    firstSliceBrief: sliceBrief,
+-    buildLogTail: 'scaffold started',
+-    liveHints: [],
+-    acceptanceCriteria: 'landing + waitlist'
+-  });
+-
+-  if (!compileResult.ok) {
+-    state = nextState(state, { freezeViolation: true });
+-    log('freeze_violation', { reason: compileResult.reason });
+-    return { ...stats, state, aborted: true };
+-  }
+-
+-  const outputDir = join(projectDir, 'slice-1-output');
+-  mkdirSync(outputDir, { recursive: true });
+-  const html = `<!DOCTYPE html>
+-<html lang="en">
+-<head>
+-  <meta charset="utf-8">
+-  <meta name="description" content="Join the waitlist for our indie dev SaaS">
+-  <meta name="viewport" content="width=device-width, initial-scale=1">
+-  <title>Waitlist</title>
+-  <style>:root { --color-primary: #2563eb; --spacing-md: 1rem; } body { color: var(--color-primary); padding: var(--spacing-md); }</style>
+-</head>
+-<body>
+-  <main><h1>Join the waitlist</h1><form><input type="email" aria-label="Email"><img src="hero.png" alt="Product preview"></form></main>
+-</body>
+-</html>`;
+-  writeFileSync(join(outputDir, 'index.html'), html);
+-  stats.agentCalls++;
+-  log('build_complete');
+-  state = nextState(state);
+-
+-  // reviewing
+-  stats.states.push(state);
+-  const packDir = join(KIT_ROOT, 'packs', pack);
+-  const floorPath = join(packDir, 'quality_floor.yaml');
+-  const floor = existsSync(floorPath)
+-    ? readFileSync(floorPath, 'utf8')
+-    : '';
+-  const scores = runScorers({ html, floorYaml: floor });
+-  stats.agentCalls += 4;
+-  stats.scores = scores;
+-
+-  if (!scores.pass) {
+-    state = nextState(state, { sliceAbort: true });
+-    log('review_failed', scores);
+-    return { ...stats, state, aborted: true };
+-  }
+-
+-  state = nextState(state);
+-  stats.states.push(state);
+-
+-  // changelog + overlay write
+-  writeFileSync(join(projectDir, 'vision-prd-changelog.md'), `- learned: waitlist copy should emphasize speed\n`);
+-  writeFileSync(join(projectDir, 'overlay', 'calibration.json'), JSON.stringify({ gateThreshold: 0.85 }, null, 2));
+-  log('slice_complete');
+-
+-  return { ...stats, state, success: true };
+-}
+-
+-// CLI
+-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+-  const offline = process.argv.includes('--offline');
+-  const ideaIdx = process.argv.indexOf('--idea');
+-  const idea = ideaIdx >= 0 ? process.argv[ideaIdx + 1] : undefined;
+-  runLoop({ offline, idea }).then((result) => {
+-    console.log(JSON.stringify(result, null, 2));
+-    process.exit(result.success ? 0 : 1);
+-  });
+-}
+diff --git a/agent-loop-kit/core/src/prompt-compile.mjs b/agent-loop-kit/core/src/prompt-compile.mjs
+deleted file mode 100644
+index a8e1dc4..0000000
+--- a/agent-loop-kit/core/src/prompt-compile.mjs
++++ /dev/null
+@@ -1,52 +0,0 @@
+-const BLOCKED_PATTERNS = [
+-  /vision-prd\.md/i,
+-  /\bvision prd\b/i,
+-  /full vision document/i,
+-  /reconstruct.*vision/i
+-];
+-
+-const ALLOWED_KEYS = new Set([
+-  'sliceContractHash',
+-  'firstSliceBrief',
+-  'buildLogTail',
+-  'liveHints',
+-  'role',
+-  'acceptanceCriteria'
+-]);
+-
+-/**
+- * @param {Record<string, unknown>} context
+- * @returns {{ ok: true, prompt: string } | { ok: false, reason: string }}
+- */
+-export function compilePrompt(context) {
+-  for (const key of Object.keys(context)) {
+-    if (!ALLOWED_KEYS.has(key)) {
+-      return { ok: false, reason: `disallowed context key: ${key}` };
+-    }
+-  }
+-
+-  const serialized = JSON.stringify(context);
+-  for (const pattern of BLOCKED_PATTERNS) {
+-    if (pattern.test(serialized)) {
+-      return { ok: false, reason: `freeze violation: matched ${pattern}` };
+-    }
+-  }
+-
+-  if (context.buildLogTail && typeof context.buildLogTail === 'string') {
+-    const tail = context.buildLogTail;
+-    if (/non-goal.*retired|full prd|complete vision/i.test(tail) && tail.length > 500) {
+-      return { ok: false, reason: 'freeze violation: build log tail reconstructs vision' };
+-    }
+-  }
+-
+-  const prompt = [
+-    `Role: ${context.role ?? 'agent'}`,
+-    `Slice contract: ${context.sliceContractHash ?? 'none'}`,
+-    `Brief: ${context.firstSliceBrief ?? ''}`,
+-    `Build log tail: ${context.buildLogTail ?? ''}`,
+-    `Live hints: ${JSON.stringify(context.liveHints ?? [])}`,
+-    `Acceptance: ${context.acceptanceCriteria ?? ''}`
+-  ].join('\n');
+-
+-  return { ok: true, prompt };
+-}
+diff --git a/agent-loop-kit/core/src/schemas/roles.mjs b/agent-loop-kit/core/src/schemas/roles.mjs
+deleted file mode 100644
+index 442e124..0000000
+--- a/agent-loop-kit/core/src/schemas/roles.mjs
++++ /dev/null
+@@ -1,126 +0,0 @@
+-/** Structured output schemas per agent role */
+-
+-export const ROLE_SCHEMAS = {
+-  scribe: {
+-    type: 'object',
+-    required: ['problem', 'audience', 'success_signal'],
+-    properties: {
+-      problem: { type: 'string' },
+-      audience: { type: 'string' },
+-      success_signal: { type: 'string' }
+-    }
+-  },
+-  vision: {
+-    type: 'object',
+-    required: ['principles', 'non_goals', 'boundaries'],
+-    properties: {
+-      principles: { type: 'array', items: { type: 'string' } },
+-      non_goals: { type: 'array', items: { type: 'string' } },
+-      boundaries: { type: 'string' }
+-    }
+-  },
+-  slice_planner: {
+-    type: 'object',
+-    required: ['slice_hypothesis', 'acceptance_criteria', 'audience', 'success_signal'],
+-    properties: {
+-      slice_hypothesis: { type: 'string' },
+-      acceptance_criteria: { type: 'array', items: { type: 'string' } },
+-      audience: { type: 'string' },
+-      success_signal: { type: 'string' },
+-      pack: { type: 'string' }
+-    }
+-  },
+-  arbiter: {
+-    type: 'object',
+-    required: ['aligned', 'score', 'divergence_reason'],
+-    properties: {
+-      aligned: { type: 'boolean' },
+-      score: { type: 'number' },
+-      divergence_reason: { type: 'string' }
+-    }
+-  },
+-  builder: {
+-    type: 'object',
+-    required: ['html'],
+-    properties: {
+-      html: { type: 'string' }
+-    }
+-  },
+-  architect: {
+-    type: 'object',
+-    required: ['severity', 'criticality', 'reversibility', 'finding'],
+-    properties: {
+-      severity: { enum: ['blocker', 'advisory'] },
+-      criticality: { enum: ['on-path', 'off-path'] },
+-      reversibility: { enum: ['cheap', 'expensive'] },
+-      finding: { type: 'string' },
+-      confidence: { type: 'number' }
+-    }
+-  },
+-  copywriter: {
+-    type: 'object',
+-    required: ['severity', 'criticality', 'reversibility', 'finding'],
+-    properties: {
+-      severity: { enum: ['blocker', 'advisory'] },
+-      criticality: { enum: ['on-path', 'off-path'] },
+-      reversibility: { enum: ['cheap', 'expensive'] },
+-      finding: { type: 'string' },
+-      confidence: { type: 'number' }
+-    }
+-  },
+-  designer: {
+-    type: 'object',
+-    required: ['severity', 'criticality', 'reversibility', 'finding'],
+-    properties: {
+-      severity: { enum: ['blocker', 'advisory'] },
+-      criticality: { enum: ['on-path', 'off-path'] },
+-      reversibility: { enum: ['cheap', 'expensive'] },
+-      finding: { type: 'string' },
+-      confidence: { type: 'number' }
+-    }
+-  },
+-  seo: {
+-    type: 'object',
+-    required: ['severity', 'criticality', 'reversibility', 'finding'],
+-    properties: {
+-      severity: { enum: ['blocker', 'advisory'] },
+-      criticality: { enum: ['on-path', 'off-path'] },
+-      reversibility: { enum: ['cheap', 'expensive'] },
+-      finding: { type: 'string' },
+-      confidence: { type: 'number' }
+-    }
+-  },
+-  image: {
+-    type: 'object',
+-    required: ['severity', 'finding', 'alt_recommendation'],
+-    properties: {
+-      severity: { enum: ['blocker', 'advisory'] },
+-      finding: { type: 'string' },
+-      alt_recommendation: { type: 'string' },
+-      confidence: { type: 'number' }
+-    }
+-  },
+-  red_team: {
+-    type: 'object',
+-    required: ['confirmed', 'adjusted_severity', 'reason'],
+-    properties: {
+-      confirmed: { type: 'boolean' },
+-      adjusted_severity: { enum: ['blocker', 'advisory'] },
+-      reason: { type: 'string' }
+-    }
+-  },
+-  orchestrator: {
+-    type: 'object',
+-    required: ['next_action', 'state'],
+-    properties: {
+-      next_action: { type: 'string' },
+-      state: { type: 'string' }
+-    }
+-  }
+-};
+-
+-export function getRoleSchema(role) {
+-  const schema = ROLE_SCHEMAS[role];
+-  if (!schema) throw new Error(`unknown role schema: ${role}`);
+-  return schema;
+-}
+diff --git a/agent-loop-kit/core/src/state-machine.mjs b/agent-loop-kit/core/src/state-machine.mjs
+deleted file mode 100644
+index c1ae8b9..0000000
+--- a/agent-loop-kit/core/src/state-machine.mjs
++++ /dev/null
+@@ -1,52 +0,0 @@
+-/** @typedef {'idea_seed'|'vision_prd'|'convergence'|'veto'|'building'|'reviewing'|'slice_complete'|'aborted'|'resume_at_veto'} State */
+-
+-export const TRANSITIONS = {
+-  idea_seed: ['vision_prd'],
+-  vision_prd: ['convergence'],
+-  convergence: ['veto', 'resume_at_veto'],
+-  veto: ['building'],
+-  building: ['reviewing', 'aborted'],
+-  reviewing: ['slice_complete', 'aborted', 'resume_at_veto'],
+-  slice_complete: [],
+-  aborted: ['convergence'],
+-  resume_at_veto: ['veto']
+-};
+-
+-/** @param {State} from @param {State} to */
+-export function canTransition(from, to) {
+-  return (TRANSITIONS[from] ?? []).includes(to);
+-}
+-
+-/** @param {State} state @param {object} ctx */
+-export function nextState(state, ctx = {}) {
+-  switch (state) {
+-    case 'idea_seed':
+-      return 'vision_prd';
+-    case 'vision_prd':
+-      return 'convergence';
+-    case 'convergence':
+-      return ctx.diverged ? 'resume_at_veto' : 'veto';
+-    case 'resume_at_veto':
+-      return 'veto';
+-    case 'veto':
+-      return 'building';
+-    case 'building':
+-      return ctx.freezeViolation ? 'aborted' : 'reviewing';
+-    case 'reviewing':
+-      if (ctx.ceilingExceeded) return 'resume_at_veto';
+-      if (ctx.freezeViolation || ctx.sliceAbort) return 'aborted';
+-      return 'slice_complete';
+-    default:
+-      return state;
+-  }
+-}
+-
+-export const SESSION_ONE_PATH = [
+-  'idea_seed',
+-  'vision_prd',
+-  'convergence',
+-  'veto',
+-  'building',
+-  'reviewing',
+-  'slice_complete'
+-];
+diff --git a/agent-loop-kit/core/src/verify-offline.mjs b/agent-loop-kit/core/src/verify-offline.mjs
+deleted file mode 100644
+index 2b389c0..0000000
+--- a/agent-loop-kit/core/src/verify-offline.mjs
++++ /dev/null
+@@ -1,81 +0,0 @@
+-import { readFileSync } from 'node:fs';
+-import { join, dirname } from 'node:path';
+-import { fileURLToPath } from 'node:url';
+-import { SESSION_ONE_PATH, canTransition } from '../src/state-machine.mjs';
+-import { runLoop } from '../src/loopd.mjs';
+-import { runScorers } from '../scorers/index.mjs';
+-
+-const __dirname = dirname(fileURLToPath(import.meta.url));
+-const KIT_ROOT = join(__dirname, '../..');
+-
+-/** Run A — agent count + latency per phase */
+-export async function runA() {
+-  const start = Date.now();
+-  const result = await runLoop({ offline: true, projectDir: join(KIT_ROOT, '.verify-run-a') });
+-  const elapsed = Date.now() - start;
+-  return {
+-    name: 'Run A',
+-    pass: result.success && result.agentCalls <= 12,
+-    agentCalls: result.agentCalls,
+-    wallClockMs: elapsed,
+-    states: result.states
+-  };
+-}
+-
+-/** Run B — deadlock resolves via pack quality_policy */
+-export function runB() {
+-  const policy = readFileSync(join(KIT_ROOT, 'packs/saas-landing/quality_policy.yaml'), 'utf8');
+-  const resolves = /deadlock_default:/.test(policy);
+-  return { name: 'Run B', pass: resolves, policy: 'saas-landing' };
+-}
+-
+-/** Run C — mid-slice learnings queued, contract-amend detected, ambiguous → next-slice */
+-export function runC() {
+-  const amend = classifyLedger('must change acceptance criteria for auth');
+-  const queued = classifyLedger('defer to slice two for voice guide') === 'next-slice';
+-  const noLiveHint = classifyLedger('unclear requirement maybe') === 'next-slice';
+-  return { name: 'Run C', pass: amend === 'contract-amend' && queued && noLiveHint };
+-}
+-
+-/** Run D — overlay proposals + slice-two inheritance (offline fixture) */
+-export function runD() {
+-  const overlayPath = join(KIT_ROOT, 'project/overlay');
+-  const hasDerivedFrom = readFileSync(join(KIT_ROOT, 'packs/saas-landing/pack.yaml'), 'utf8').includes('derived_from');
+-  return { name: 'Run D', pass: hasDerivedFrom, note: 'offline fixture; live gate deferred v0.2' };
+-}
+-
+-function classifyLedger(line) {
+-  if (/non-goal|must change acceptance|slice two/i.test(line)) {
+-    if (/must change acceptance/i.test(line)) return 'contract-amend';
+-    return 'next-slice';
+-  }
+-  return 'next-slice'; // ambiguous defaults to next-slice, never live-hint
+-}
+-
+-export async function runAll() {
+-  const results = [];
+-  for (let i = 0; i < SESSION_ONE_PATH.length - 1; i++) {
+-    if (!canTransition(SESSION_ONE_PATH[i], SESSION_ONE_PATH[i + 1])) {
+-      throw new Error(`invalid transition ${SESSION_ONE_PATH[i]} -> ${SESSION_ONE_PATH[i + 1]}`);
+-    }
+-  }
+-  results.push(await runA());
+-  results.push(runB());
+-  results.push(runC());
+-  results.push(runD());
+-
+-  const goldenHtml = readFileSync(join(__dirname, '../tests/fixtures/golden-slice.html'), 'utf8');
+-  const floor = readFileSync(join(KIT_ROOT, 'packs/saas-landing/quality_floor.yaml'), 'utf8');
+-  const scores = runScorers({ html: goldenHtml, floorYaml: floor });
+-  results.push({ name: 'Golden scorer', pass: scores.pass, scores: scores.results });
+-
+-  return results;
+-}
+-
+-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+-  runAll().then((results) => {
+-    const pass = results.every((r) => r.pass);
+-    console.log(JSON.stringify({ pass, results }, null, 2));
+-    process.exit(pass ? 0 : 1);
+-  });
+-}
+diff --git a/agent-loop-kit/core/tests/fixtures/golden-slice.html b/agent-loop-kit/core/tests/fixtures/golden-slice.html
+deleted file mode 100644
+index c64c374..0000000
+--- a/agent-loop-kit/core/tests/fixtures/golden-slice.html
++++ /dev/null
+@@ -1,13 +0,0 @@
+-<!DOCTYPE html>
+-<html lang="en">
+-<head>
+-  <meta charset="utf-8">
+-  <meta name="description" content="Join the waitlist for our indie dev SaaS">
+-  <meta name="viewport" content="width=device-width, initial-scale=1">
+-  <title>Waitlist</title>
+-  <style>:root { --color-primary: #2563eb; --spacing-md: 1rem; } body { color: var(--color-primary); padding: var(--spacing-md); }</style>
+-</head>
+-<body>
+-  <main><h1>Join the waitlist</h1><form><input type="email" aria-label="Email"><img src="hero.png" alt="Product preview"></form></main>
+-</body>
+-</html>
+diff --git a/agent-loop-kit/core/tests/freeze-bypass.spec.mjs b/agent-loop-kit/core/tests/freeze-bypass.spec.mjs
+deleted file mode 100644
+index edd2a60..0000000
+--- a/agent-loop-kit/core/tests/freeze-bypass.spec.mjs
++++ /dev/null
+@@ -1,45 +0,0 @@
+-import { describe, it } from 'node:test';
+-import assert from 'node:assert/strict';
+-import { compilePrompt } from '../src/prompt-compile.mjs';
+-
+-describe('freeze-bypass adversarial', () => {
+-  it('aborts when vision-prd.md is injected into prompt template', () => {
+-    const result = compilePrompt({
+-      role: 'builder',
+-      sliceContractHash: 'abc123',
+-      firstSliceBrief: 'landing page',
+-      buildLogTail: 'see vision-prd.md for full scope',
+-      liveHints: [],
+-      acceptanceCriteria: 'ship landing'
+-    });
+-    assert.equal(result.ok, false);
+-    assert.match(result.reason, /freeze violation/i);
+-  });
+-
+-  it('rejects build log tail that reconstructs full vision', () => {
+-    const tail = 'non-goal retired: payments. ' + 'Full PRD context: '.repeat(80);
+-    const result = compilePrompt({
+-      role: 'reviewer',
+-      sliceContractHash: 'abc123',
+-      firstSliceBrief: 'brief',
+-      buildLogTail: tail,
+-      liveHints: [],
+-      acceptanceCriteria: 'copy pass'
+-    });
+-    assert.equal(result.ok, false);
+-    assert.match(result.reason, /reconstructs vision/i);
+-  });
+-
+-  it('allows valid compile with allowlisted keys only', () => {
+-    const result = compilePrompt({
+-      role: 'copywriter',
+-      sliceContractHash: 'def456',
+-      firstSliceBrief: 'waitlist landing',
+-      buildLogTail: 'tone should be direct',
+-      liveHints: [{ hint: 'use short sentences', binding: false }],
+-      acceptanceCriteria: 'readability >= 0.5'
+-    });
+-    assert.equal(result.ok, true);
+-    assert.ok(result.prompt.includes('waitlist landing'));
+-  });
+-});
+diff --git a/agent-loop-kit/packs/internal-tool/pack.yaml b/agent-loop-kit/packs/internal-tool/pack.yaml
+deleted file mode 100644
+index d5403f9..0000000
+--- a/agent-loop-kit/packs/internal-tool/pack.yaml
++++ /dev/null
+@@ -1,12 +0,0 @@
+-name: internal-tool
+-version: 0.1.0
+-description: Internal dashboard + auth stub
+-derived_from:
+-  core: 0.1.0
+-  pack: internal-tool@0.1.0
+-  overlay_revision: null
+-affordances:
+-  - auth-stub
+-  - dashboard
+-  - api
+-first_slice_default: auth stub + one dashboard screen
+diff --git a/agent-loop-kit/packs/internal-tool/quality_floor.yaml b/agent-loop-kit/packs/internal-tool/quality_floor.yaml
+deleted file mode 100644
+index 0a4a222..0000000
+--- a/agent-loop-kit/packs/internal-tool/quality_floor.yaml
++++ /dev/null
+@@ -1,4 +0,0 @@
+-readability: 0.5
+-designTokens: 0.5
+-seoMeta: 0.5
+-altCoverage: 0.5
+diff --git a/agent-loop-kit/packs/internal-tool/quality_policy.yaml b/agent-loop-kit/packs/internal-tool/quality_policy.yaml
+deleted file mode 100644
+index d1bca18..0000000
+--- a/agent-loop-kit/packs/internal-tool/quality_policy.yaml
++++ /dev/null
+@@ -1,2 +0,0 @@
+-deadlock_default: abort_and_replan
+-copy_block_on_deadlock: true
+diff --git a/agent-loop-kit/packs/marketplace/pack.yaml b/agent-loop-kit/packs/marketplace/pack.yaml
+deleted file mode 100644
+index 8162c0f..0000000
+--- a/agent-loop-kit/packs/marketplace/pack.yaml
++++ /dev/null
+@@ -1,12 +0,0 @@
+-name: marketplace
+-version: 0.1.0
+-description: Two-sided listing + search
+-derived_from:
+-  core: 0.1.0
+-  pack: marketplace@0.1.0
+-  overlay_revision: null
+-affordances:
+-  - listings
+-  - search
+-  - seller-onboarding
+-first_slice_default: listing browse + search stub
+diff --git a/agent-loop-kit/packs/marketplace/quality_floor.yaml b/agent-loop-kit/packs/marketplace/quality_floor.yaml
+deleted file mode 100644
+index 12c0cd6..0000000
+--- a/agent-loop-kit/packs/marketplace/quality_floor.yaml
++++ /dev/null
+@@ -1,4 +0,0 @@
+-readability: 0.5
+-designTokens: 0.5
+-seoMeta: 0.5
+-altCoverage: 1
+diff --git a/agent-loop-kit/packs/marketplace/quality_policy.yaml b/agent-loop-kit/packs/marketplace/quality_policy.yaml
+deleted file mode 100644
+index a365de5..0000000
+--- a/agent-loop-kit/packs/marketplace/quality_policy.yaml
++++ /dev/null
+@@ -1,2 +0,0 @@
+-deadlock_default: defer_non_critical_reviewers
+-copy_block_on_deadlock: false
+diff --git a/agent-loop-kit/packs/saas-landing/pack.yaml b/agent-loop-kit/packs/saas-landing/pack.yaml
+deleted file mode 100644
+index db8ed8b..0000000
+--- a/agent-loop-kit/packs/saas-landing/pack.yaml
++++ /dev/null
+@@ -1,13 +0,0 @@
+-name: saas-landing
+-version: 0.1.0
+-description: Landing page + waitlist + analytics hook
+-derived_from:
+-  core: 0.1.0
+-  pack: saas-landing@0.1.0
+-  overlay_revision: null
+-affordances:
+-  - landing
+-  - waitlist
+-  - analytics
+-  - seo-meta
+-first_slice_default: landing + waitlist + analytics hook
+diff --git a/agent-loop-kit/packs/saas-landing/quality_floor.yaml b/agent-loop-kit/packs/saas-landing/quality_floor.yaml
+deleted file mode 100644
+index 0a673a6..0000000
+--- a/agent-loop-kit/packs/saas-landing/quality_floor.yaml
++++ /dev/null
+@@ -1,4 +0,0 @@
+-readability: 0.5
+-designTokens: 1
+-seoMeta: 1
+-altCoverage: 1
+diff --git a/agent-loop-kit/packs/saas-landing/quality_policy.yaml b/agent-loop-kit/packs/saas-landing/quality_policy.yaml
+deleted file mode 100644
+index 8443eca..0000000
+--- a/agent-loop-kit/packs/saas-landing/quality_policy.yaml
++++ /dev/null
+@@ -1,3 +0,0 @@
+-deadlock_default: defer_voice_guide_to_slice_two
+-copy_block_on_deadlock: false
+-architect_vs_copy_tiebreak: slice_critical_path_wins
+diff --git a/agent-loop-kit/project/build-log.ndjson b/agent-loop-kit/project/build-log.ndjson
+deleted file mode 100644
+index 8aa6ef2..0000000
+--- a/agent-loop-kit/project/build-log.ndjson
++++ /dev/null
+@@ -1,6 +0,0 @@
+-{"ts":"2026-06-15T21:06:52.582Z","event":"scribe_complete","state":"idea_seed"}
+-{"ts":"2026-06-15T21:06:52.583Z","event":"vision_complete","state":"vision_prd"}
+-{"ts":"2026-06-15T21:06:52.583Z","event":"convergence_complete","state":"veto","diverged":false}
+-{"ts":"2026-06-15T21:06:52.583Z","event":"human_veto","state":"veto","approved":"auto-offline"}
+-{"ts":"2026-06-15T21:06:52.585Z","event":"build_complete","state":"building"}
+-{"ts":"2026-06-15T21:06:52.586Z","event":"slice_complete","state":"slice_complete"}
+diff --git a/agent-loop-kit/project/convergence-packet.json b/agent-loop-kit/project/convergence-packet.json
+deleted file mode 100644
+index 5d8d125..0000000
+--- a/agent-loop-kit/project/convergence-packet.json
++++ /dev/null
+@@ -1,16 +0,0 @@
+-{
+-  "scribe": {
+-    "audience": "early adopters",
+-    "successSignal": "waitlist signup"
+-  },
+-  "vision": {
+-    "scope": "landing + waitlist",
+-    "nonGoals": [
+-      "payments"
+-    ]
+-  },
+-  "slicePlanner": {
+-    "hypothesis": "landing + waitlist + analytics hook",
+-    "pack": "saas-landing"
+-  }
+-}
+\ No newline at end of file
+diff --git a/agent-loop-kit/project/first-slice-brief.md b/agent-loop-kit/project/first-slice-brief.md
+deleted file mode 100644
+index f9285c5..0000000
+--- a/agent-loop-kit/project/first-slice-brief.md
++++ /dev/null
+@@ -1,8 +0,0 @@
+-# First Slice Brief
+-
+-**Slice:** landing + waitlist + analytics
+-
+-**Acceptance:**
+-- Landing page renders
+-- Waitlist form submits
+-- Meta tags present
+diff --git a/agent-loop-kit/project/idea-seed.md b/agent-loop-kit/project/idea-seed.md
+deleted file mode 100644
+index 828b0ca..0000000
+--- a/agent-loop-kit/project/idea-seed.md
++++ /dev/null
+@@ -1,7 +0,0 @@
+-# Idea Seed
+-
+-**Problem:** A SaaS waitlist landing page for indie developers
+-
+-**Audience:** early adopters
+-
+-**Success signal:** first waitlist signup
+diff --git a/agent-loop-kit/project/overlay/.gitkeep b/agent-loop-kit/project/overlay/.gitkeep
+deleted file mode 100644
+index 9e26dfe..0000000
+--- a/agent-loop-kit/project/overlay/.gitkeep
++++ /dev/null
+@@ -1 +0,0 @@
+-{}
+\ No newline at end of file
+diff --git a/agent-loop-kit/project/overlay/calibration.json b/agent-loop-kit/project/overlay/calibration.json
+deleted file mode 100644
+index 9baf30b..0000000
+--- a/agent-loop-kit/project/overlay/calibration.json
++++ /dev/null
+@@ -1,3 +0,0 @@
+-{
+-  "gateThreshold": 0.85
+-}
+\ No newline at end of file
+diff --git a/agent-loop-kit/project/slice-1-output/index.html b/agent-loop-kit/project/slice-1-output/index.html
+deleted file mode 100644
+index 2382ed6..0000000
+--- a/agent-loop-kit/project/slice-1-output/index.html
++++ /dev/null
+@@ -1,13 +0,0 @@
+-<!DOCTYPE html>
+-<html lang="en">
+-<head>
+-  <meta charset="utf-8">
+-  <meta name="description" content="Join the waitlist for our indie dev SaaS">
+-  <meta name="viewport" content="width=device-width, initial-scale=1">
+-  <title>Waitlist</title>
+-  <style>:root { --color-primary: #2563eb; --spacing-md: 1rem; } body { color: var(--color-primary); padding: var(--spacing-md); }</style>
+-</head>
+-<body>
+-  <main><h1>Join the waitlist</h1><form><input type="email" aria-label="Email"><img src="hero.png" alt="Product preview"></form></main>
+-</body>
+-</html>
+\ No newline at end of file
+diff --git a/agent-loop-kit/project/slice-contract.json b/agent-loop-kit/project/slice-contract.json
+deleted file mode 100644
+index e35996c..0000000
+--- a/agent-loop-kit/project/slice-contract.json
++++ /dev/null
+@@ -1,5 +0,0 @@
+-{
+-  "hash": "2d7e4bb27ac7eb05",
+-  "frozenAt": "2026-06-15T21:06:52.584Z",
+-  "brief": "# First Slice Brief\n\n**Slice:** landing + waitlist + analytics\n\n**Acceptance:**\n- Landing page renders\n- Waitlist form submits\n- Meta tags present\n"
+-}
+\ No newline at end of file
+diff --git a/agent-loop-kit/project/templates/first-slice-brief.md b/agent-loop-kit/project/templates/first-slice-brief.md
+deleted file mode 100644
+index 99adb73..0000000
+--- a/agent-loop-kit/project/templates/first-slice-brief.md
++++ /dev/null
+@@ -1,7 +0,0 @@
+-# First Slice Brief
+-
+-**Slice:**
+-
+-**Acceptance criteria:**
+-
+-**Rollback tier:** bootstrap (git-only, deploy N/A)
+diff --git a/agent-loop-kit/project/templates/idea-seed.md b/agent-loop-kit/project/templates/idea-seed.md
+deleted file mode 100644
+index 66a3c6b..0000000
+--- a/agent-loop-kit/project/templates/idea-seed.md
++++ /dev/null
+@@ -1,7 +0,0 @@
+-# Idea Seed
+-
+-**Problem:** {{problem}}
+-
+-**Audience:** {{audience}}
+-
+-**Success signal:** {{success_signal}}
+diff --git a/agent-loop-kit/project/templates/vision-prd.md b/agent-loop-kit/project/templates/vision-prd.md
+deleted file mode 100644
+index a0f6cf5..0000000
+--- a/agent-loop-kit/project/templates/vision-prd.md
++++ /dev/null
+@@ -1,7 +0,0 @@
+-# Vision PRD v0.1
+-
+-## Principles
+-
+-## Non-goals
+-
+-## Boundaries
+diff --git a/agent-loop-kit/project/vision-prd-changelog.md b/agent-loop-kit/project/vision-prd-changelog.md
+deleted file mode 100644
+index 1f30ce9..0000000
+--- a/agent-loop-kit/project/vision-prd-changelog.md
++++ /dev/null
+@@ -1 +0,0 @@
+-- learned: waitlist copy should emphasize speed
+diff --git a/agent-loop-kit/project/vision-prd.md b/agent-loop-kit/project/vision-prd.md
+deleted file mode 100644
+index 92deb93..0000000
+--- a/agent-loop-kit/project/vision-prd.md
++++ /dev/null
+@@ -1,12 +0,0 @@
+-# Vision PRD v0.1
+-
+-## Principles
+-- Ship smallest vertical fast
+-- Mobile-first
+-
+-## Non-goals
+-- Payments
+-- Full auth
+-
+-## Boundaries
+-One landing + waitlist
+diff --git a/agent-loop-kit/release/smoke.json b/agent-loop-kit/release/smoke.json
+deleted file mode 100644
+index 1432b17..0000000
+--- a/agent-loop-kit/release/smoke.json
++++ /dev/null
+@@ -1,13 +0,0 @@
+-{
+-  "version": "0.1.0",
+-  "mode": "offline-maintainer-smoke",
+-  "canned_seed": "A SaaS waitlist landing page for indie developers",
+-  "agent_calls": 11,
+-  "wall_clock_seconds": 402,
+-  "estimated_cost_usd": 0,
+-  "known_failure": {
+-    "scenario": "Convergence Packet divergence",
+-    "resolution": "human veto → resume-at-veto.json → pick ranked slice option"
+-  },
+-  "note": "Live smoke with OPENAI_API_KEY recorded separately at release time"
+-}
+diff --git a/agent-loop-kit/scripts/build-zip.sh b/agent-loop-kit/scripts/build-zip.sh
+deleted file mode 100755
+index ffb1e82..0000000
+--- a/agent-loop-kit/scripts/build-zip.sh
++++ /dev/null
+@@ -1,21 +0,0 @@
+-#!/usr/bin/env bash
+-set -euo pipefail
+-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+-OUT="$ROOT/dist/agent-loop-kit-v0.1.zip"
+-mkdir -p "$ROOT/dist"
+-
+-echo "==> Running offline verify before pack"
+-"$ROOT/verify.sh" --offline
+-echo "==> Building zip"
+-rm -f "$OUT"
+-(cd "$ROOT" && zip -r "$OUT" \
+-  core/manifest.json core/package.json core/src core/scorers core/tests \
+-  packs project/templates/*.md project/overlay/.gitkeep \
+-  bootstrap.sh verify.sh START.md RELEASE-NOTES.md release \
+-  scripts \
+-  -x "*.DS_Store" -x "*/.verify-run-a/*" -x "project/build-log.ndjson" -x "project/*.md" -x "project/slice-*" -x "scripts/dist/*")
+-
+-SHA=$(shasum -a 256 "$OUT" | awk '{print $1}')
+-echo "$SHA" > "$ROOT/dist/agent-loop-kit-v0.1.zip.sha256"
+-echo "Built $OUT"
+-echo "SHA256: $SHA"
+diff --git a/agent-loop-kit/scripts/export-overlay-pack.sh b/agent-loop-kit/scripts/export-overlay-pack.sh
+deleted file mode 100755
+index 0b63d9f..0000000
+--- a/agent-loop-kit/scripts/export-overlay-pack.sh
++++ /dev/null
+@@ -1,14 +0,0 @@
+-#!/usr/bin/env bash
+-set -euo pipefail
+-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+-DEST="${1:-./exported-pack}"
+-mkdir -p "$DEST"
+-cp -r "$ROOT/packs/saas-landing/"* "$DEST/"
+-cat >> "$DEST/pack.yaml" <<EOF
+-derived_from:
+-  core: 0.1.0
+-  pack: saas-landing@0.1.0
+-  overlay_revision: $(date +%Y%m%d)
+-  exported_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+-EOF
+-echo "Exported overlay pack to $DEST"
+diff --git a/agent-loop-kit/scripts/promote-to-core-candidate.sh b/agent-loop-kit/scripts/promote-to-core-candidate.sh
+deleted file mode 100755
+index 20b641a..0000000
+--- a/agent-loop-kit/scripts/promote-to-core-candidate.sh
++++ /dev/null
+@@ -1,8 +0,0 @@
+-#!/usr/bin/env bash
+-set -euo pipefail
+-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+-OUT="$ROOT/dist/core-candidate.diff"
+-mkdir -p "$ROOT/dist"
+-diff -ruN "$ROOT/core" "$ROOT/core" > "$OUT" 2>/dev/null || true
+-echo "No core mutations detected. Candidate diff (empty expected): $OUT"
+-echo "Review manually before any core promotion."
+diff --git a/agent-loop-kit/verify.sh b/agent-loop-kit/verify.sh
+deleted file mode 100755
+index 4aaf2ef..0000000
+--- a/agent-loop-kit/verify.sh
++++ /dev/null
+@@ -1,34 +0,0 @@
+-#!/usr/bin/env bash
+-set -euo pipefail
+-ROOT="$(cd "$(dirname "$0")" && pwd)"
+-MODE="${1:---offline}"
+-
+-case "$MODE" in
+-  --offline)
+-    echo "==> verify --offline (structural invariants, zero network)"
+-    cd "$ROOT/core"
+-    node --test tests/**/*.spec.mjs
+-    node src/verify-offline.mjs
+-    echo "PASS: offline verify green"
+-    ;;
+-  --live)
+-    if [[ -z "${OPENAI_API_KEY:-}" ]]; then
+-      echo "ERROR: OPENAI_API_KEY required for --live"
+-      exit 1
+-    fi
+-    echo "==> verify --live (canned seed, published ceilings)"
+-    START=$(date +%s)
+-    node "$ROOT/core/src/loopd.mjs" --offline --idea "B2B analytics dashboard for small teams"
+-    ELAPSED=$(( $(date +%s) - START ))
+-    echo "Wall clock: ${ELAPSED}s (ceiling: 480s)"
+-    if [[ "$ELAPSED" -gt 480 ]]; then
+-      echo "FAIL: exceeded wall clock ceiling"
+-      exit 1
+-    fi
+-    echo "PASS: live verify green"
+-    ;;
+-  *)
+-    echo "Usage: ./verify.sh [--offline|--live]"
+-    exit 1
+-    ;;
+-esac
+diff --git a/apps/web/media/PHOTO-2026-06-12-17-30-33.jpg b/apps/web/media/PHOTO-2026-06-12-17-30-33.jpg
+deleted file mode 100644
+index b6a6694..0000000
+Binary files a/apps/web/media/PHOTO-2026-06-12-17-30-33.jpg and /dev/null differ
+diff --git a/apps/web/media/PHOTO-2026-06-12-17-30-46.jpg b/apps/web/media/PHOTO-2026-06-12-17-30-46.jpg
+deleted file mode 100644
+index fae23e6..0000000
+Binary files a/apps/web/media/PHOTO-2026-06-12-17-30-46.jpg and /dev/null differ
+diff --git a/apps/web/media/PHOTO-2026-06-12-17-30-47.jpg b/apps/web/media/PHOTO-2026-06-12-17-30-47.jpg
+deleted file mode 100644
+index d92b5a1..0000000
+Binary files a/apps/web/media/PHOTO-2026-06-12-17-30-47.jpg and /dev/null differ
+diff --git a/apps/web/media/PHOTO-2026-06-12-17-30-56.jpg b/apps/web/media/PHOTO-2026-06-12-17-30-56.jpg
+deleted file mode 100644
+index 9d9d29e..0000000
+Binary files a/apps/web/media/PHOTO-2026-06-12-17-30-56.jpg and /dev/null differ
+diff --git a/apps/web/media/PHOTO-2026-06-12-17-32-34.jpg b/apps/web/media/PHOTO-2026-06-12-17-32-34.jpg
+deleted file mode 100644
+index 269b809..0000000
+Binary files a/apps/web/media/PHOTO-2026-06-12-17-32-34.jpg and /dev/null differ
+diff --git a/apps/web/media/PHOTO-2026-06-12-17-34-11.jpg b/apps/web/media/PHOTO-2026-06-12-17-34-11.jpg
+deleted file mode 100644
+index 477d485..0000000
+Binary files a/apps/web/media/PHOTO-2026-06-12-17-34-11.jpg and /dev/null differ
+diff --git a/apps/web/media/PHOTO-2026-06-12-18-02-45.jpg b/apps/web/media/PHOTO-2026-06-12-18-02-45.jpg
+deleted file mode 100644
+index 9524a79..0000000
+Binary files a/apps/web/media/PHOTO-2026-06-12-18-02-45.jpg and /dev/null differ
+diff --git a/apps/web/media/PHOTO-2026-06-12-18-02-57.jpg b/apps/web/media/PHOTO-2026-06-12-18-02-57.jpg
+deleted file mode 100644
+index c56b34f..0000000
+Binary files a/apps/web/media/PHOTO-2026-06-12-18-02-57.jpg and /dev/null differ
+diff --git a/apps/web/media/PHOTO-2026-06-12-18-07-47.jpg b/apps/web/media/PHOTO-2026-06-12-18-07-47.jpg
+deleted file mode 100644
+index 31da341..0000000
+Binary files a/apps/web/media/PHOTO-2026-06-12-18-07-47.jpg and /dev/null differ
+diff --git a/apps/web/media/PHOTO-2026-06-12-22-37-24.jpg b/apps/web/media/PHOTO-2026-06-12-22-37-24.jpg
+deleted file mode 100644
+index 493be69..0000000
+Binary files a/apps/web/media/PHOTO-2026-06-12-22-37-24.jpg and /dev/null differ
+diff --git a/apps/web/media/PHOTO-2026-06-12-23-17-32.jpg b/apps/web/media/PHOTO-2026-06-12-23-17-32.jpg
+deleted file mode 100644
+index 8f78c04..0000000
+Binary files a/apps/web/media/PHOTO-2026-06-12-23-17-32.jpg and /dev/null differ
+diff --git a/apps/web/media/PHOTO-2026-06-12-23-17-33.jpg b/apps/web/media/PHOTO-2026-06-12-23-17-33.jpg
+deleted file mode 100644
+index 3304992..0000000
+Binary files a/apps/web/media/PHOTO-2026-06-12-23-17-33.jpg and /dev/null differ
+diff --git a/apps/web/media/PHOTO-2026-06-12-23-29-2.jpg b/apps/web/media/PHOTO-2026-06-12-23-29-2.jpg
+deleted file mode 100644
+index c84f130..0000000
+Binary files a/apps/web/media/PHOTO-2026-06-12-23-29-2.jpg and /dev/null differ
+diff --git a/apps/web/media/PHOTO-2026-06-13-08-45-41.jpg b/apps/web/media/PHOTO-2026-06-13-08-45-41.jpg
+deleted file mode 100644
+index 52b50fb..0000000
+Binary files a/apps/web/media/PHOTO-2026-06-13-08-45-41.jpg and /dev/null differ
+diff --git a/apps/web/media/dress-camille.jpg b/apps/web/media/dress-camille.jpg
+deleted file mode 100644
+index d92b5a1..0000000
+Binary files a/apps/web/media/dress-camille.jpg and /dev/null differ
+diff --git a/apps/web/media/dress-heloise.jpg b/apps/web/media/dress-heloise.jpg
+deleted file mode 100644
+index 9524a79..0000000
+Binary files a/apps/web/media/dress-heloise.jpg and /dev/null differ
+diff --git a/apps/web/media/dress-louise.jpg b/apps/web/media/dress-louise.jpg
+deleted file mode 100644
+index 269b809..0000000
+Binary files a/apps/web/media/dress-louise.jpg and /dev/null differ
+diff --git a/apps/web/media/dress-margot.jpg b/apps/web/media/dress-margot.jpg
+deleted file mode 100644
+index 477d485..0000000
+Binary files a/apps/web/media/dress-margot.jpg and /dev/null differ
+diff --git a/apps/web/public/images/PHOTO-2026-06-12-17-30-33.jpg b/apps/web/public/images/PHOTO-2026-06-12-17-30-33.jpg
+deleted file mode 100644
+index b6a6694..0000000
+Binary files a/apps/web/public/images/PHOTO-2026-06-12-17-30-33.jpg and /dev/null differ
+diff --git a/apps/web/public/images/PHOTO-2026-06-12-17-30-46.jpg b/apps/web/public/images/PHOTO-2026-06-12-17-30-46.jpg
+deleted file mode 100644
+index fae23e6..0000000
+Binary files a/apps/web/public/images/PHOTO-2026-06-12-17-30-46.jpg and /dev/null differ
+diff --git a/apps/web/public/images/PHOTO-2026-06-12-17-30-47.jpg b/apps/web/public/images/PHOTO-2026-06-12-17-30-47.jpg
+deleted file mode 100644
+index d92b5a1..0000000
+Binary files a/apps/web/public/images/PHOTO-2026-06-12-17-30-47.jpg and /dev/null differ
+diff --git a/apps/web/public/images/PHOTO-2026-06-12-17-30-56.jpg b/apps/web/public/images/PHOTO-2026-06-12-17-30-56.jpg
+deleted file mode 100644
+index 9d9d29e..0000000
+Binary files a/apps/web/public/images/PHOTO-2026-06-12-17-30-56.jpg and /dev/null differ
+diff --git a/apps/web/public/images/PHOTO-2026-06-12-17-32-34.jpg b/apps/web/public/images/PHOTO-2026-06-12-17-32-34.jpg
+deleted file mode 100644
+index 269b809..0000000
+Binary files a/apps/web/public/images/PHOTO-2026-06-12-17-32-34.jpg and /dev/null differ
+diff --git a/apps/web/public/images/PHOTO-2026-06-12-17-34-11.jpg b/apps/web/public/images/PHOTO-2026-06-12-17-34-11.jpg
+deleted file mode 100644
+index 477d485..0000000
+Binary files a/apps/web/public/images/PHOTO-2026-06-12-17-34-11.jpg and /dev/null differ
+diff --git a/apps/web/public/images/PHOTO-2026-06-12-18-02-45.jpg b/apps/web/public/images/PHOTO-2026-06-12-18-02-45.jpg
+deleted file mode 100644
+index 9524a79..0000000
+Binary files a/apps/web/public/images/PHOTO-2026-06-12-18-02-45.jpg and /dev/null differ
+diff --git a/apps/web/public/images/PHOTO-2026-06-12-18-02-57.jpg b/apps/web/public/images/PHOTO-2026-06-12-18-02-57.jpg
+deleted file mode 100644
+index c56b34f..0000000
+Binary files a/apps/web/public/images/PHOTO-2026-06-12-18-02-57.jpg and /dev/null differ
+diff --git a/apps/web/public/images/PHOTO-2026-06-12-18-07-47.jpg b/apps/web/public/images/PHOTO-2026-06-12-18-07-47.jpg
+deleted file mode 100644
+index 31da341..0000000
+Binary files a/apps/web/public/images/PHOTO-2026-06-12-18-07-47.jpg and /dev/null differ
+diff --git a/apps/web/public/images/PHOTO-2026-06-12-22-37-24.jpg b/apps/web/public/images/PHOTO-2026-06-12-22-37-24.jpg
+deleted file mode 100644
+index 493be69..0000000
+Binary files a/apps/web/public/images/PHOTO-2026-06-12-22-37-24.jpg and /dev/null differ
+diff --git a/apps/web/public/images/PHOTO-2026-06-12-23-17-32.jpg b/apps/web/public/images/PHOTO-2026-06-12-23-17-32.jpg
+deleted file mode 100644
+index 8f78c04..0000000
+Binary files a/apps/web/public/images/PHOTO-2026-06-12-23-17-32.jpg and /dev/null differ
+diff --git a/apps/web/public/images/PHOTO-2026-06-12-23-17-33.jpg b/apps/web/public/images/PHOTO-2026-06-12-23-17-33.jpg
+deleted file mode 100644
+index 3304992..0000000
+Binary files a/apps/web/public/images/PHOTO-2026-06-12-23-17-33.jpg and /dev/null differ
+diff --git a/apps/web/public/images/PHOTO-2026-06-12-23-29-2.jpg b/apps/web/public/images/PHOTO-2026-06-12-23-29-2.jpg
+deleted file mode 100644
+index c84f130..0000000
+Binary files a/apps/web/public/images/PHOTO-2026-06-12-23-29-2.jpg and /dev/null differ
+diff --git a/apps/web/public/images/PHOTO-2026-06-13-08-45-41.jpg b/apps/web/public/images/PHOTO-2026-06-13-08-45-41.jpg
+deleted file mode 100644
+index 52b50fb..0000000
+Binary files a/apps/web/public/images/PHOTO-2026-06-13-08-45-41.jpg and /dev/null differ
+diff --git a/apps/web/public/images/cafe-de-flore.jpg b/apps/web/public/images/cafe-de-flore.jpg
+deleted file mode 100644
+index 52b50fb..0000000
+Binary files a/apps/web/public/images/cafe-de-flore.jpg and /dev/null differ
+diff --git a/apps/web/public/images/dress-camille.jpg b/apps/web/public/images/dress-camille.jpg
+deleted file mode 100644
+index d92b5a1..0000000
+Binary files a/apps/web/public/images/dress-camille.jpg and /dev/null differ
+diff --git a/apps/web/public/images/dress-heloise.jpg b/apps/web/public/images/dress-heloise.jpg
+deleted file mode 100644
+index 9524a79..0000000
+Binary files a/apps/web/public/images/dress-heloise.jpg and /dev/null differ
+diff --git a/apps/web/public/images/dress-louise.jpg b/apps/web/public/images/dress-louise.jpg
+deleted file mode 100644
+index 269b809..0000000
+Binary files a/apps/web/public/images/dress-louise.jpg and /dev/null differ
+diff --git a/apps/web/public/images/dress-margot.jpg b/apps/web/public/images/dress-margot.jpg
+deleted file mode 100644
+index 477d485..0000000
+Binary files a/apps/web/public/images/dress-margot.jpg and /dev/null differ
+diff --git a/apps/web/public/images/hero.jpg b/apps/web/public/images/hero.jpg
+deleted file mode 100644
+index c84f130..0000000
+Binary files a/apps/web/public/images/hero.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/PHOTO-2026-06-12-17-30-46.jpg b/apps/web/public/media-uploads/PHOTO-2026-06-12-17-30-46.jpg
+deleted file mode 100644
+index fae23e6..0000000
+Binary files a/apps/web/public/media-uploads/PHOTO-2026-06-12-17-30-46.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/PHOTO-2026-06-12-17-30-47.jpg b/apps/web/public/media-uploads/PHOTO-2026-06-12-17-30-47.jpg
+deleted file mode 100644
+index fae23e6..0000000
+Binary files a/apps/web/public/media-uploads/PHOTO-2026-06-12-17-30-47.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/PHOTO-2026-06-12-17-30-56.jpg b/apps/web/public/media-uploads/PHOTO-2026-06-12-17-30-56.jpg
+deleted file mode 100644
+index 9d9d29e..0000000
+Binary files a/apps/web/public/media-uploads/PHOTO-2026-06-12-17-30-56.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/PHOTO-2026-06-12-17-30-57.jpg b/apps/web/public/media-uploads/PHOTO-2026-06-12-17-30-57.jpg
+deleted file mode 100644
+index 9d9d29e..0000000
+Binary files a/apps/web/public/media-uploads/PHOTO-2026-06-12-17-30-57.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/PHOTO-2026-06-12-18-02-57.jpg b/apps/web/public/media-uploads/PHOTO-2026-06-12-18-02-57.jpg
+deleted file mode 100644
+index c56b34f..0000000
+Binary files a/apps/web/public/media-uploads/PHOTO-2026-06-12-18-02-57.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/PHOTO-2026-06-12-18-02-58.jpg b/apps/web/public/media-uploads/PHOTO-2026-06-12-18-02-58.jpg
+deleted file mode 100644
+index c56b34f..0000000
+Binary files a/apps/web/public/media-uploads/PHOTO-2026-06-12-18-02-58.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/PHOTO-2026-06-12-18-07-47.jpg b/apps/web/public/media-uploads/PHOTO-2026-06-12-18-07-47.jpg
+deleted file mode 100644
+index 31da341..0000000
+Binary files a/apps/web/public/media-uploads/PHOTO-2026-06-12-18-07-47.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/PHOTO-2026-06-12-18-07-48.jpg b/apps/web/public/media-uploads/PHOTO-2026-06-12-18-07-48.jpg
+deleted file mode 100644
+index 31da341..0000000
+Binary files a/apps/web/public/media-uploads/PHOTO-2026-06-12-18-07-48.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/PHOTO-2026-06-12-22-37-24.jpg b/apps/web/public/media-uploads/PHOTO-2026-06-12-22-37-24.jpg
+deleted file mode 100644
+index 493be69..0000000
+Binary files a/apps/web/public/media-uploads/PHOTO-2026-06-12-22-37-24.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/PHOTO-2026-06-12-22-37-25.jpg b/apps/web/public/media-uploads/PHOTO-2026-06-12-22-37-25.jpg
+deleted file mode 100644
+index 493be69..0000000
+Binary files a/apps/web/public/media-uploads/PHOTO-2026-06-12-22-37-25.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/PHOTO-2026-06-12-23-17-32.jpg b/apps/web/public/media-uploads/PHOTO-2026-06-12-23-17-32.jpg
+deleted file mode 100644
+index 8f78c04..0000000
+Binary files a/apps/web/public/media-uploads/PHOTO-2026-06-12-23-17-32.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/PHOTO-2026-06-12-23-17-33.jpg b/apps/web/public/media-uploads/PHOTO-2026-06-12-23-17-33.jpg
+deleted file mode 100644
+index 3304992..0000000
+Binary files a/apps/web/public/media-uploads/PHOTO-2026-06-12-23-17-33.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/PHOTO-2026-06-12-23-17-34.jpg b/apps/web/public/media-uploads/PHOTO-2026-06-12-23-17-34.jpg
+deleted file mode 100644
+index 3304992..0000000
+Binary files a/apps/web/public/media-uploads/PHOTO-2026-06-12-23-17-34.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/PHOTO-2026-06-13-08-45-41.jpg b/apps/web/public/media-uploads/PHOTO-2026-06-13-08-45-41.jpg
+deleted file mode 100644
+index 52b50fb..0000000
+Binary files a/apps/web/public/media-uploads/PHOTO-2026-06-13-08-45-41.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/cafe-de-flore.jpg b/apps/web/public/media-uploads/cafe-de-flore.jpg
+deleted file mode 100644
+index 8f78c04..0000000
+Binary files a/apps/web/public/media-uploads/cafe-de-flore.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/dress-camille-1.jpg b/apps/web/public/media-uploads/dress-camille-1.jpg
+deleted file mode 100644
+index d92b5a1..0000000
+Binary files a/apps/web/public/media-uploads/dress-camille-1.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/dress-camille.jpg b/apps/web/public/media-uploads/dress-camille.jpg
+deleted file mode 100644
+index d92b5a1..0000000
+Binary files a/apps/web/public/media-uploads/dress-camille.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/dress-heloise-1.jpg b/apps/web/public/media-uploads/dress-heloise-1.jpg
+deleted file mode 100644
+index 9524a79..0000000
+Binary files a/apps/web/public/media-uploads/dress-heloise-1.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/dress-heloise.jpg b/apps/web/public/media-uploads/dress-heloise.jpg
+deleted file mode 100644
+index 9524a79..0000000
+Binary files a/apps/web/public/media-uploads/dress-heloise.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/dress-louise-1.jpg b/apps/web/public/media-uploads/dress-louise-1.jpg
+deleted file mode 100644
+index 269b809..0000000
+Binary files a/apps/web/public/media-uploads/dress-louise-1.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/dress-louise.jpg b/apps/web/public/media-uploads/dress-louise.jpg
+deleted file mode 100644
+index 269b809..0000000
+Binary files a/apps/web/public/media-uploads/dress-louise.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/dress-margot-1.jpg b/apps/web/public/media-uploads/dress-margot-1.jpg
+deleted file mode 100644
+index 477d485..0000000
+Binary files a/apps/web/public/media-uploads/dress-margot-1.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/dress-margot.jpg b/apps/web/public/media-uploads/dress-margot.jpg
+deleted file mode 100644
+index 477d485..0000000
+Binary files a/apps/web/public/media-uploads/dress-margot.jpg and /dev/null differ
+diff --git a/apps/web/public/media-uploads/hero.jpg b/apps/web/public/media-uploads/hero.jpg
+deleted file mode 100644
+index c84f130..0000000
+Binary files a/apps/web/public/media-uploads/hero.jpg and /dev/null differ
+diff --git a/apps/web/src/app/(payload)/admin/[[...segments]]/page.tsx b/apps/web/src/app/(payload)/admin/[[...segments]]/page.tsx
+deleted file mode 100644
+index b5f33cc..0000000
+--- a/apps/web/src/app/(payload)/admin/[[...segments]]/page.tsx
++++ /dev/null
+@@ -1,18 +0,0 @@
+-/* THIS FILE IS AUTO-GENERATED — PAYLOAD BOILERPLATE — DO NOT EDIT */
+-import type { Metadata } from "next";
+-import { RootPage, generatePageMetadata } from "@payloadcms/next/views";
+-import config from "@payload-config";
+-import { importMap } from "../importMap";
+-
+-type Args = {
+-  params: Promise<{ segments: string[] }>;
+-  searchParams: Promise<{ [key: string]: string | string[] }>;
+-};
+-
+-export const generateMetadata = ({ params, searchParams }: Args): Promise<Metadata> =>
+-  generatePageMetadata({ config, params, searchParams });
+-
+-const Page = ({ params, searchParams }: Args) =>
+-  RootPage({ config, params, searchParams, importMap });
+-
+-export default Page;
+diff --git a/apps/web/src/app/(payload)/admin/importMap.js b/apps/web/src/app/(payload)/admin/importMap.js
+deleted file mode 100644
+index aa75109..0000000
+--- a/apps/web/src/app/(payload)/admin/importMap.js
++++ /dev/null
+@@ -1,56 +0,0 @@
+-import { AIPanel as AIPanel_lenue } from '@/components/admin/AIPanel'
+-import { CustomLivePreview as CustomLivePreview_lenue } from '@/components/admin/CustomLivePreview'
+-import { RscEntryLexicalCell as RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
+-import { RscEntryLexicalField as RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
+-import { LexicalDiffComponent as LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
+-import { InlineToolbarFeatureClient as InlineToolbarFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { HorizontalRuleFeatureClient as HorizontalRuleFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { UploadFeatureClient as UploadFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { BlockquoteFeatureClient as BlockquoteFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { RelationshipFeatureClient as RelationshipFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { LinkFeatureClient as LinkFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { ChecklistFeatureClient as ChecklistFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { OrderedListFeatureClient as OrderedListFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { UnorderedListFeatureClient as UnorderedListFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { IndentFeatureClient as IndentFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { AlignFeatureClient as AlignFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { HeadingFeatureClient as HeadingFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { ParagraphFeatureClient as ParagraphFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { InlineCodeFeatureClient as InlineCodeFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { SuperscriptFeatureClient as SuperscriptFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { SubscriptFeatureClient as SubscriptFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { StrikethroughFeatureClient as StrikethroughFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { UnderlineFeatureClient as UnderlineFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+-import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
+-
+-/** @type import('payload').ImportMap */
+-export const importMap = {
+-  "@/components/admin/AIPanel#AIPanel": AIPanel_lenue,
+-  "@payloadcms/richtext-lexical/rsc#RscEntryLexicalCell": RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e,
+-  "@payloadcms/richtext-lexical/rsc#RscEntryLexicalField": RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e,
+-  "@payloadcms/richtext-lexical/rsc#LexicalDiffComponent": LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e,
+-  "@payloadcms/richtext-lexical/client#InlineToolbarFeatureClient": InlineToolbarFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#HorizontalRuleFeatureClient": HorizontalRuleFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#UploadFeatureClient": UploadFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#BlockquoteFeatureClient": BlockquoteFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#RelationshipFeatureClient": RelationshipFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#LinkFeatureClient": LinkFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#ChecklistFeatureClient": ChecklistFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#OrderedListFeatureClient": OrderedListFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#UnorderedListFeatureClient": UnorderedListFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#IndentFeatureClient": IndentFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#AlignFeatureClient": AlignFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#HeadingFeatureClient": HeadingFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#ParagraphFeatureClient": ParagraphFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#InlineCodeFeatureClient": InlineCodeFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#SuperscriptFeatureClient": SuperscriptFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#SubscriptFeatureClient": SubscriptFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#StrikethroughFeatureClient": StrikethroughFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#UnderlineFeatureClient": UnderlineFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#BoldFeatureClient": BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+-  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
+-  "@/components/admin/CustomLivePreview#CustomLivePreview": CustomLivePreview_lenue
+-}
+diff --git a/apps/web/src/app/(payload)/api/[...slug]/route.ts b/apps/web/src/app/(payload)/api/[...slug]/route.ts
+deleted file mode 100644
+index f12f0ff..0000000
+--- a/apps/web/src/app/(payload)/api/[...slug]/route.ts
++++ /dev/null
+@@ -1,8 +0,0 @@
+-/* THIS FILE IS AUTO-GENERATED — PAYLOAD BOILERPLATE — DO NOT EDIT */
+-import { REST_DELETE, REST_GET, REST_PATCH, REST_POST } from "@payloadcms/next/routes";
+-import config from "@payload-config";
+-
+-export const GET = REST_GET(config);
+-export const POST = REST_POST(config);
+-export const DELETE = REST_DELETE(config);
+-export const PATCH = REST_PATCH(config);
+diff --git a/apps/web/src/app/(payload)/api/graphql-playground/route.ts b/apps/web/src/app/(payload)/api/graphql-playground/route.ts
+deleted file mode 100644
+index 1a5dcca..0000000
+--- a/apps/web/src/app/(payload)/api/graphql-playground/route.ts
++++ /dev/null
+@@ -1,5 +0,0 @@
+-/* THIS FILE IS AUTO-GENERATED — PAYLOAD BOILERPLATE — DO NOT EDIT */
+-import { GRAPHQL_PLAYGROUND_GET } from "@payloadcms/next/routes";
+-import config from "@payload-config";
+-
+-export const GET = GRAPHQL_PLAYGROUND_GET(config);
+diff --git a/apps/web/src/app/(payload)/api/graphql/route.ts b/apps/web/src/app/(payload)/api/graphql/route.ts
+deleted file mode 100644
+index 6d0e72d..0000000
+--- a/apps/web/src/app/(payload)/api/graphql/route.ts
++++ /dev/null
+@@ -1,5 +0,0 @@
+-/* THIS FILE IS AUTO-GENERATED — PAYLOAD BOILERPLATE — DO NOT EDIT */
+-import { GRAPHQL_POST } from "@payloadcms/next/routes";
+-import config from "@payload-config";
+-
+-export const POST = GRAPHQL_POST(config);
+diff --git a/apps/web/src/app/(payload)/layout.tsx b/apps/web/src/app/(payload)/layout.tsx
+deleted file mode 100644
+index 1e96208..0000000
+--- a/apps/web/src/app/(payload)/layout.tsx
++++ /dev/null
+@@ -1,28 +0,0 @@
+-/* THIS FILE IS AUTO-GENERATED — PAYLOAD BOILERPLATE — DO NOT EDIT */
+-import React from "react";
+-import "@payloadcms/next/css";
+-import type { ServerFunctionClient } from "payload";
+-import { handleServerFunctions, RootLayout } from "@payloadcms/next/layouts";
+-import config from "@payload-config";
+-import { importMap } from "./admin/importMap";
+-
+-type Args = {
+-  children: React.ReactNode;
+-};
+-
+-const serverFunction: ServerFunctionClient = async function (args) {
+-  "use server";
+-  return handleServerFunctions({
+-    ...args,
+-    config,
+-    importMap,
+-  });
+-};
+-
+-const Layout = ({ children }: Args) => (
+-  <RootLayout config={config} importMap={importMap} serverFunction={serverFunction}>
+-    {children}
+-  </RootLayout>
+-);
+-
+-export default Layout;
+diff --git a/docs/project.config.md b/docs/project.config.md
+index 34017b2..124eb37 100644
+--- a/docs/project.config.md
++++ b/docs/project.config.md
+@@ -75,3 +75,31 @@ This is the single kill-switch for unattended PRD → decomposition → implemen
+ - **Still hard-stops (never bypassed):** any genuine `NEED_HUMAN` (missing product truth, unanswered open question that blocks a slice, missing secret/access, two materially different valid interpretations) — the agent sets `blocked` + `NEED_HUMAN:` and moves on.
+ - **Pause everything:** set this flag to `no` (and/or repo variable `ORCHESTRATOR_ENABLED=false`).
+ 
++## Architectural Guardrails
++
++These rules are **hard constraints** for all autonomous agents and human contributors. Violations must be caught in PR review or typecheck.
++
++### 1. No inline or arbitrary CSS
++- **Tailwind tokens only.** No raw `<style>` tags, no `.css` files generated at runtime, no `style={{}}` props with hardcoded px/color values.
++- Exception: global `globals.css` for CSS custom properties and Tailwind `@layer` directives only. Must live in `apps/web/src/app/`.
++
++### 2. No localized fields on system identifiers
++- `slug`, `status`, enum fields, and any field used as a database key/identifier **must NOT** have `localized: true`.
++- Only user-facing display strings (`title`, `body`, `label`, `description`, `tagline`, etc.) may be localized.
++- Rationale: localized slugs create duplicate URL spaces and break stable references across locales.
++
++### 3. All blocks must support live-preview natively
++- Every block added to a Payload `blocks` array must have a corresponding React component registered in `apps/web/src/components/cms/RenderBlocks.tsx`.
++- The block component must accept `locale` and render correctly with no extra data-fetching (all data flows through the page-level `useLivePreview` hook).
++- New block types without a matching renderer are forbidden from being merged.
++
++### 4. Payload separation of concerns
++- `apps/cms` is the **Single Source of Truth** for the Payload 3 schema, admin panel, Postgres adapter, and media uploads (S3/MinIO).
++- `apps/web` uses the Payload **Local API** (`getPayload()`) only for Server Actions that mutate data inline. It must NOT re-expose its own admin panel or REST/GraphQL endpoints.
++- The `(payload)` admin route group lives exclusively in `apps/cms/src/app/(payload)/`. Do not add it back to `apps/web`.
++- New Payload collections and globals must be defined in `apps/cms/src/collections/` and `apps/cms/src/globals/`, then mirrored to `apps/web/src/` only if web's Local API requires them for Server Actions.
++
++### 5. Media discipline
++- All user/client-uploaded media (product images, editorial photos) must be stored in S3/MinIO via the `@payloadcms/storage-s3` plugin configured in both app configs.
++- No binary assets (photos, videos) committed to git. Only static brand assets (SVG logos, favicons, OG placeholder) belong in `apps/web/public/`.
++- `apps/web/media/`, `apps/web/public/images/`, and `apps/web/public/media-uploads/` are **permanently forbidden** — these dirs were purged in the Little Biceps cleanup (2026-06-20) and must not be recreated.
+diff --git a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-30-32.jpg b/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-30-32.jpg
+deleted file mode 100644
+index b6a6694..0000000
+Binary files a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-30-32.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-30-46 2.jpg b/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-30-46 2.jpg
+deleted file mode 100644
+index fae23e6..0000000
+Binary files a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-30-46 2.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-30-46.jpg b/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-30-46.jpg
+deleted file mode 100644
+index d92b5a1..0000000
+Binary files a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-30-46.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-30-55.jpg b/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-30-55.jpg
+deleted file mode 100644
+index 9d9d29e..0000000
+Binary files a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-30-55.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-32-33.jpg b/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-32-33.jpg
+deleted file mode 100644
+index 269b809..0000000
+Binary files a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-32-33.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-34-10.jpg b/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-34-10.jpg
+deleted file mode 100644
+index 477d485..0000000
+Binary files a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-17-34-10.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-18-02-44.jpg b/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-18-02-44.jpg
+deleted file mode 100644
+index 9524a79..0000000
+Binary files a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-18-02-44.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-18-02-56.jpg b/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-18-02-56.jpg
+deleted file mode 100644
+index c56b34f..0000000
+Binary files a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-18-02-56.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-18-07-46.jpg b/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-18-07-46.jpg
+deleted file mode 100644
+index 31da341..0000000
+Binary files a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-18-07-46.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-22-37-23.jpg b/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-22-37-23.jpg
+deleted file mode 100644
+index 493be69..0000000
+Binary files a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-22-37-23.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-23-17-32 2.jpg b/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-23-17-32 2.jpg
+deleted file mode 100644
+index 8f78c04..0000000
+Binary files a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-23-17-32 2.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-23-17-32.jpg b/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-23-17-32.jpg
+deleted file mode 100644
+index 3304992..0000000
+Binary files a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-23-17-32.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-23-29-01.jpg b/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-23-29-01.jpg
+deleted file mode 100644
+index c84f130..0000000
+Binary files a/lenue-assets-bootstrap/pics/PHOTO-2026-06-12-23-29-01.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/PHOTO-2026-06-13-08-45-40.jpg b/lenue-assets-bootstrap/pics/PHOTO-2026-06-13-08-45-40.jpg
+deleted file mode 100644
+index 52b50fb..0000000
+Binary files a/lenue-assets-bootstrap/pics/PHOTO-2026-06-13-08-45-40.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-30-33.jpg b/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-30-33.jpg
+deleted file mode 100644
+index b6a6694..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-30-33.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-30-46.jpg b/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-30-46.jpg
+deleted file mode 100644
+index fae23e6..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-30-46.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-30-47.jpg b/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-30-47.jpg
+deleted file mode 100644
+index d92b5a1..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-30-47.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-30-56.jpg b/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-30-56.jpg
+deleted file mode 100644
+index 9d9d29e..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-30-56.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-32-34.jpg b/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-32-34.jpg
+deleted file mode 100644
+index 269b809..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-32-34.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-34-11.jpg b/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-34-11.jpg
+deleted file mode 100644
+index 477d485..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-17-34-11.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-18-02-45.jpg b/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-18-02-45.jpg
+deleted file mode 100644
+index 9524a79..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-18-02-45.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-18-02-57.jpg b/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-18-02-57.jpg
+deleted file mode 100644
+index c56b34f..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-18-02-57.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-18-07-47.jpg b/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-18-07-47.jpg
+deleted file mode 100644
+index 31da341..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-18-07-47.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-22-37-24.jpg b/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-22-37-24.jpg
+deleted file mode 100644
+index 493be69..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-22-37-24.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-23-17-32.jpg b/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-23-17-32.jpg
+deleted file mode 100644
+index 8f78c04..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-23-17-32.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-23-17-33.jpg b/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-23-17-33.jpg
+deleted file mode 100644
+index 3304992..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-23-17-33.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-23-29-2.jpg b/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-23-29-2.jpg
+deleted file mode 100644
+index c84f130..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-12-23-29-2.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-13-08-45-41.jpg b/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-13-08-45-41.jpg
+deleted file mode 100644
+index 52b50fb..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/PHOTO-2026-06-13-08-45-41.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/cafe-de-flore.jpg b/lenue-assets-bootstrap/pics/public/images/cafe-de-flore.jpg
+deleted file mode 100644
+index 8f78c04..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/cafe-de-flore.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/dress-camille.jpg b/lenue-assets-bootstrap/pics/public/images/dress-camille.jpg
+deleted file mode 100644
+index d92b5a1..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/dress-camille.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/dress-heloise.jpg b/lenue-assets-bootstrap/pics/public/images/dress-heloise.jpg
+deleted file mode 100644
+index 9524a79..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/dress-heloise.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/dress-louise.jpg b/lenue-assets-bootstrap/pics/public/images/dress-louise.jpg
+deleted file mode 100644
+index 269b809..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/dress-louise.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/dress-margot.jpg b/lenue-assets-bootstrap/pics/public/images/dress-margot.jpg
+deleted file mode 100644
+index 477d485..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/dress-margot.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/images/hero.jpg b/lenue-assets-bootstrap/pics/public/images/hero.jpg
+deleted file mode 100644
+index c84f130..0000000
+Binary files a/lenue-assets-bootstrap/pics/public/images/hero.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/pics/public/placeholder.svg b/lenue-assets-bootstrap/pics/public/placeholder.svg
+deleted file mode 100644
+index 09c1147..0000000
+--- a/lenue-assets-bootstrap/pics/public/placeholder.svg
++++ /dev/null
+@@ -1,31 +0,0 @@
+-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800">
+-  <defs>
+-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+-      <stop offset="0%" stop-color="#f7f3ef"/>
+-      <stop offset="100%" stop-color="#ece4da"/>
+-    </linearGradient>
+-  </defs>
+-  <rect width="600" height="800" fill="url(#bg)"/>
+-  <text
+-    x="300"
+-    y="385"
+-    text-anchor="middle"
+-    dominant-baseline="middle"
+-    font-family="Georgia, 'Times New Roman', serif"
+-    font-size="120"
+-    font-weight="300"
+-    fill="#d4c4b4"
+-    letter-spacing="4"
+-  >L</text>
+-  <text
+-    x="300"
+-    y="454"
+-    text-anchor="middle"
+-    dominant-baseline="middle"
+-    font-family="'Helvetica Neue', Arial, sans-serif"
+-    font-size="11"
+-    font-weight="400"
+-    fill="#b8a898"
+-    letter-spacing="10"
+-  >L�NUE PARIS</text>
+-</svg>
+diff --git a/lenue-assets-bootstrap/pics/ref-stock-harsh-01.jpg b/lenue-assets-bootstrap/pics/ref-stock-harsh-01.jpg
+deleted file mode 100644
+index a5edbf9..0000000
+Binary files a/lenue-assets-bootstrap/pics/ref-stock-harsh-01.jpg and /dev/null differ
+diff --git a/lenue-assets-bootstrap/reference-links.md b/lenue-assets-bootstrap/reference-links.md
+deleted file mode 100644
+index 2f95e80..0000000
+--- a/lenue-assets-bootstrap/reference-links.md
++++ /dev/null
+@@ -1,7 +0,0 @@
+-Domain name of the project will be lenue.paris.
+-
+-Links below are reference that our customer love and would like to take inspiration from : 
+-    - www.rouje.com
+-    - fr.loropiana.com
+-    - www.therow.com
+-    - www.shopdoen.com
+diff --git a/ship-first-pack/SHIP-FIRST.md b/ship-first-pack/SHIP-FIRST.md
+deleted file mode 100644
+index fa1a736..0000000
+--- a/ship-first-pack/SHIP-FIRST.md
++++ /dev/null
+@@ -1,7 +0,0 @@
+-# Ship-first (collapsed)
+-
+-See **START.md** — 3 steps tonight.
+-
+-Download: open `index.html` or unzip `ignition-kit.zip` into your repo root.
+-
+-Dispatch: `APPENDED > 0` OR `FIREABLE > 0`. Track A = quiet CI. Track B = one slice per promotion with pre-wired pipeline row.
+diff --git a/ship-first-pack/START.md b/ship-first-pack/START.md
+deleted file mode 100644
+index 6cf735a..0000000
+--- a/ship-first-pack/START.md
++++ /dev/null
+@@ -1,7 +0,0 @@
+-# Tonight (3 steps)
+-
+-1. **Download** `ignition-kit.zip` → unzip into your repo root (must already have `.cursor/` + GitHub workflows from this framework).
+-2. **GitHub** → Settings → Secrets → add `CURSOR_API_KEY`.
+-3. **Commit + merge to `main`** → validate runs → sync prints `FIREABLE=1` → orchestrator opens `orchestrator/*` PR.
+-
+-**While it builds:** Zedos **Save PRD** = narrative only (quiet CI). **Add to build queue** = next slice (pre-wire pipeline row + status seed).
+diff --git a/ship-first-pack/build-zip.sh b/ship-first-pack/build-zip.sh
+deleted file mode 100755
+index 876ea1b..0000000
+--- a/ship-first-pack/build-zip.sh
++++ /dev/null
+@@ -1,7 +0,0 @@
+-#!/usr/bin/env sh
+-set -euo pipefail
+-cd "$(dirname "$0")"
+-rm -f ignition-kit.zip
+-(cd ignition-kit && zip -r ../ignition-kit.zip . -x "*.DS_Store")
+-zip ignition-kit.zip START.md
+-echo "Built ignition-kit.zip ($(wc -c < ignition-kit.zip) bytes)"
+diff --git a/ship-first-pack/ignition-kit 2/START.md b/ship-first-pack/ignition-kit 2/START.md
+deleted file mode 100644
+index 6cf735a..0000000
+--- a/ship-first-pack/ignition-kit 2/START.md	
++++ /dev/null
+@@ -1,7 +0,0 @@
+-# Tonight (3 steps)
+-
+-1. **Download** `ignition-kit.zip` → unzip into your repo root (must already have `.cursor/` + GitHub workflows from this framework).
+-2. **GitHub** → Settings → Secrets → add `CURSOR_API_KEY`.
+-3. **Commit + merge to `main`** → validate runs → sync prints `FIREABLE=1` → orchestrator opens `orchestrator/*` PR.
+-
+-**While it builds:** Zedos **Save PRD** = narrative only (quiet CI). **Add to build queue** = next slice (pre-wire pipeline row + status seed).
+diff --git a/ship-first-pack/ignition-kit 2/docs/EXECUTION_LOCK.md b/ship-first-pack/ignition-kit 2/docs/EXECUTION_LOCK.md
+deleted file mode 100644
+index 52197d9..0000000
+--- a/ship-first-pack/ignition-kit 2/docs/EXECUTION_LOCK.md	
++++ /dev/null
+@@ -1,12 +0,0 @@
+-# EXECUTION_LOCK
+-
+-```yaml
+-active_item_id: none
+-type: none
+-parent_chain: []
+-current_action: none
+-started_at: null
+-allowed_files: []
+-forbidden_files: []
+-stale: false
+-```
+diff --git a/ship-first-pack/ignition-kit 2/docs/prd/PRD.md b/ship-first-pack/ignition-kit 2/docs/prd/PRD.md
+deleted file mode 100644
+index 485937e..0000000
+--- a/ship-first-pack/ignition-kit 2/docs/prd/PRD.md	
++++ /dev/null
+@@ -1,11 +0,0 @@
+-# PRD (ignition throttle)
+-
+-Only slice one is `Shipped = Yes`. Promote more flows from Zedos (Track B).
+-
+-# Flow Inventory
+-
+-| Flow | Shipped | Planned v0 |
+-|------|---------|------------|
+-| Sign up / sign in | Yes | — |
+-| Create / list / open projects | — | Yes |
+-| Post-PRD pipeline | — | — |
+diff --git a/ship-first-pack/ignition-kit 2/docs/prd/state.md b/ship-first-pack/ignition-kit 2/docs/prd/state.md
+deleted file mode 100644
+index 094f3d7..0000000
+--- a/ship-first-pack/ignition-kit 2/docs/prd/state.md	
++++ /dev/null
+@@ -1,3 +0,0 @@
+-# PRD state
+-
+-Living PRD — ignition slice only. Other v0 flows stay `—` until promoted from Zedos.
+diff --git a/ship-first-pack/ignition-kit 2/docs/product-decisions/PD-implementation-phase.md b/ship-first-pack/ignition-kit 2/docs/product-decisions/PD-implementation-phase.md
+deleted file mode 100644
+index 514cd5b..0000000
+--- a/ship-first-pack/ignition-kit 2/docs/product-decisions/PD-implementation-phase.md	
++++ /dev/null
+@@ -1,9 +0,0 @@
+----
+-id: PD-implementation-phase
+-status: approved
+-date: 2026-06-15
+----
+-
+-# Open the Implementation Phase
+-
+-Implementation authorized for delivery-ready Feature Areas with ready-for-implementation Specs.
+diff --git a/ship-first-pack/ignition-kit 2/docs/product/feature-areas/account-session.md b/ship-first-pack/ignition-kit 2/docs/product/feature-areas/account-session.md
+deleted file mode 100644
+index f2dea07..0000000
+--- a/ship-first-pack/ignition-kit 2/docs/product/feature-areas/account-session.md	
++++ /dev/null
+@@ -1,18 +0,0 @@
+-# Feature Area: Account session
+-
+-## Status
+-
+-`delivery-ready`
+-
+-## Product Intent
+-
+-Founders sign up and land in a signed-in workspace.
+-
+-## In Scope
+-
+-- Email signup and sign-in
+-- Session persists across refresh
+-
+-## Out of Scope
+-
+-- Team roles, SSO, magic links (later slices)
+diff --git a/ship-first-pack/ignition-kit 2/docs/product/scope-slices/account-session--signup-to-signed-in-dashboard.md b/ship-first-pack/ignition-kit 2/docs/product/scope-slices/account-session--signup-to-signed-in-dashboard.md
+deleted file mode 100644
+index 270d1a5..0000000
+--- a/ship-first-pack/ignition-kit 2/docs/product/scope-slices/account-session--signup-to-signed-in-dashboard.md	
++++ /dev/null
+@@ -1,13 +0,0 @@
+-# Scope Slice: Signup to signed-in dashboard
+-
+-## Status
+-
+-`ready-for-user-stories`
+-
+-## Parent Feature Area
+-
+-[Account session](../feature-areas/account-session.md)
+-
+-## Slice Intent
+-
+-Vertical minimum: new user signs up and sees a signed-in dashboard shell.
+diff --git a/ship-first-pack/ignition-kit 2/docs/product/specs/account-session--signup-to-signed-in-dashboard--SP-001--signup-vertical.md b/ship-first-pack/ignition-kit 2/docs/product/specs/account-session--signup-to-signed-in-dashboard--SP-001--signup-vertical.md
+deleted file mode 100644
+index df4f5ac..0000000
+--- a/ship-first-pack/ignition-kit 2/docs/product/specs/account-session--signup-to-signed-in-dashboard--SP-001--signup-vertical.md	
++++ /dev/null
+@@ -1,18 +0,0 @@
+-# Spec: Signup vertical (ignition)
+-
+-## Status
+-
+-`ready-for-implementation`
+-
+-## Parent User Story
+-
+-[Sign up and land signed in](../user-stories/account-session--signup-to-signed-in-dashboard--US-001--signup.md)
+-
+-## Implementation scope
+-
+-Thin ignition spec — signup form, session cookie/JWT, redirect to dashboard placeholder. Match stack in `docs/project.config.md` and PRD technical baseline when Zedos fills it.
+-
+-## Tasks
+-
+-1. **Auth routes** — signup + session; AC: signup ends signed in.
+-2. **Dashboard shell** — signed-in landing page; AC: root shows dashboard when session valid.
+diff --git a/ship-first-pack/ignition-kit 2/docs/product/user-stories/account-session--signup-to-signed-in-dashboard--US-001--signup.md b/ship-first-pack/ignition-kit 2/docs/product/user-stories/account-session--signup-to-signed-in-dashboard--US-001--signup.md
+deleted file mode 100644
+index 228c268..0000000
+--- a/ship-first-pack/ignition-kit 2/docs/product/user-stories/account-session--signup-to-signed-in-dashboard--US-001--signup.md	
++++ /dev/null
+@@ -1,18 +0,0 @@
+-# User Story: Sign up and land signed in
+-
+-## Parent Scope Slice
+-
+-[Signup to signed-in dashboard](../scope-slices/account-session--signup-to-signed-in-dashboard.md)
+-
+-## Status
+-
+-`ready-for-spec`
+-
+-## Story
+-
+-As a founder, I create an account and reach a signed-in home screen, so that I can start using the product.
+-
+-## Acceptance Criteria
+-
+-- Given I am logged out, when I complete signup with valid credentials, then I am signed in without a second login step.
+-- Given I am signed in, when I open the app root, then I see a dashboard shell (not the marketing/signup page).
+diff --git a/ship-first-pack/ignition-kit 2/docs/project.config.md b/ship-first-pack/ignition-kit 2/docs/project.config.md
+deleted file mode 100644
+index e503a14..0000000
+--- a/ship-first-pack/ignition-kit 2/docs/project.config.md	
++++ /dev/null
+@@ -1,13 +0,0 @@
+-# Project Config
+-
+-## Identity
+-
+-- **Project name:** Your product
+-- **One-line product:** Replace with your wedge.
+-- **Repo root layout:** monorepo
+-
+-## Implementation phase
+-
+-- **Implementation governance enabled:** yes
+-- **Autonomous decomposition enabled:** no
+-- **Forbidden-paths default when locked:** none (ignition unlocks code paths)
+diff --git a/ship-first-pack/ignition-kit 2/docs/state/HANDOFF.md b/ship-first-pack/ignition-kit 2/docs/state/HANDOFF.md
+deleted file mode 100644
+index b1fb081..0000000
+--- a/ship-first-pack/ignition-kit 2/docs/state/HANDOFF.md	
++++ /dev/null
+@@ -1,7 +0,0 @@
+-# HANDOFF
+-
+-Living PRD — build signup slice only. Credits, share, other flows not enqueued.
+-
+-**Active:** `orch-account-session--signup-to-signed-in-dashboard`
+-
+-**Next:** orchestrator opens tracking PR after `main` merge + `FIREABLE=1`.
+diff --git a/ship-first-pack/ignition-kit 2/docs/state/orchestration.pipeline.json b/ship-first-pack/ignition-kit 2/docs/state/orchestration.pipeline.json
+deleted file mode 100644
+index 452fbfe..0000000
+--- a/ship-first-pack/ignition-kit 2/docs/state/orchestration.pipeline.json	
++++ /dev/null
+@@ -1,31 +0,0 @@
+-{
+-  "version": 1,
+-  "description": "Ignition — one wired slice. Zedos pre-seeds; sync APPENDED=0, FIREABLE=1.",
+-  "steps": [
+-    {
+-      "id": "bootstrap",
+-      "dependsOn": [],
+-      "workload": {
+-        "kind": "slice",
+-        "title": "Pipeline anchor",
+-        "featureAreaFile": "docs/state/seed-anchor.md",
+-        "scopeSliceFile": "docs/state/seed-anchor.md",
+-        "userStoryFile": null,
+-        "planFile": null
+-      }
+-    },
+-    {
+-      "id": "orch-account-session--signup-to-signed-in-dashboard",
+-      "dependsOn": ["bootstrap"],
+-      "workload": {
+-        "kind": "slice",
+-        "title": "Signup to signed-in dashboard",
+-        "featureAreaFile": "docs/product/feature-areas/account-session.md",
+-        "scopeSliceFile": "docs/product/scope-slices/account-session--signup-to-signed-in-dashboard.md",
+-        "userStoryFile": "docs/product/user-stories/account-session--signup-to-signed-in-dashboard--US-001--signup.md",
+-        "planFile": "docs/product/specs/account-session--signup-to-signed-in-dashboard--SP-001--signup-vertical.md",
+-        "notes": "Zedos pre-wired — living PRD"
+-      }
+-    }
+-  ]
+-}
+diff --git a/ship-first-pack/ignition-kit 2/docs/state/orchestration.prd-flow-map.json b/ship-first-pack/ignition-kit 2/docs/state/orchestration.prd-flow-map.json
+deleted file mode 100644
+index 3264752..0000000
+--- a/ship-first-pack/ignition-kit 2/docs/state/orchestration.prd-flow-map.json	
++++ /dev/null
+@@ -1,14 +0,0 @@
+-{
+-  "version": 1,
+-  "attachAfterStepId": "bootstrap",
+-  "flows": {
+-    "sign up / sign in": {
+-      "slices": [
+-        {
+-          "file": "docs/product/scope-slices/account-session--signup-to-signed-in-dashboard.md",
+-          "title": "Signup to signed-in dashboard"
+-        }
+-      ]
+-    }
+-  }
+-}
+diff --git a/ship-first-pack/ignition-kit 2/docs/state/seed-anchor.md b/ship-first-pack/ignition-kit 2/docs/state/seed-anchor.md
+deleted file mode 100644
+index 1aaed42..0000000
+--- a/ship-first-pack/ignition-kit 2/docs/state/seed-anchor.md	
++++ /dev/null
+@@ -1,3 +0,0 @@
+-# Bootstrap anchor (pipeline only)
+-
+-Not a product slice. Keeps `bootstrap` step valid before slice one runs.
+diff --git a/ship-first-pack/ignition-kit 2/docs/state/status-events.ndjson b/ship-first-pack/ignition-kit 2/docs/state/status-events.ndjson
+deleted file mode 100644
+index c9b8c9f..0000000
+--- a/ship-first-pack/ignition-kit 2/docs/state/status-events.ndjson	
++++ /dev/null
+@@ -1,2 +0,0 @@
+-{"ts":"2026-06-15T00:00:00.000Z","step":"bootstrap","status":"complete","actor":"zedos-export","note":"ignition anchor"}
+-{"ts":"2026-06-15T00:00:01.000Z","step":"orch-account-session--signup-to-signed-in-dashboard","status":"todo","actor":"zedos-export","note":"queued from Zedos ignition"}
+diff --git a/ship-first-pack/ignition-kit 2/docs/state/status.json b/ship-first-pack/ignition-kit 2/docs/state/status.json
+deleted file mode 100644
+index 9e3cbec..0000000
+--- a/ship-first-pack/ignition-kit 2/docs/state/status.json	
++++ /dev/null
+@@ -1,8 +0,0 @@
+-{
+-  "orchestration": {
+-    "steps": {
+-      "bootstrap": "complete",
+-      "orch-account-session--signup-to-signed-in-dashboard": "not-started"
+-    }
+-  }
+-}
+diff --git a/ship-first-pack/ignition-kit 2/zedos.manifest.json b/ship-first-pack/ignition-kit 2/zedos.manifest.json
+deleted file mode 100644
+index a272ccd..0000000
+--- a/ship-first-pack/ignition-kit 2/zedos.manifest.json	
++++ /dev/null
+@@ -1,6 +0,0 @@
+-{
+-  "zedos_project_id": "REPLACE",
+-  "prd_version_id": "REPLACE",
+-  "export_kind": "ignition",
+-  "journey_mode": "standard"
+-}
+diff --git a/ship-first-pack/ignition-kit.zip b/ship-first-pack/ignition-kit.zip
+deleted file mode 100644
+index a55c22c..0000000
+Binary files a/ship-first-pack/ignition-kit.zip and /dev/null differ
+diff --git a/ship-first-pack/ignition-kit/docs/EXECUTION_LOCK.md b/ship-first-pack/ignition-kit/docs/EXECUTION_LOCK.md
+deleted file mode 100644
+index 52197d9..0000000
+--- a/ship-first-pack/ignition-kit/docs/EXECUTION_LOCK.md
++++ /dev/null
+@@ -1,12 +0,0 @@
+-# EXECUTION_LOCK
+-
+-```yaml
+-active_item_id: none
+-type: none
+-parent_chain: []
+-current_action: none
+-started_at: null
+-allowed_files: []
+-forbidden_files: []
+-stale: false
+-```
+diff --git a/ship-first-pack/ignition-kit/docs/prd/PRD.md b/ship-first-pack/ignition-kit/docs/prd/PRD.md
+deleted file mode 100644
+index 485937e..0000000
+--- a/ship-first-pack/ignition-kit/docs/prd/PRD.md
++++ /dev/null
+@@ -1,11 +0,0 @@
+-# PRD (ignition throttle)
+-
+-Only slice one is `Shipped = Yes`. Promote more flows from Zedos (Track B).
+-
+-# Flow Inventory
+-
+-| Flow | Shipped | Planned v0 |
+-|------|---------|------------|
+-| Sign up / sign in | Yes | — |
+-| Create / list / open projects | — | Yes |
+-| Post-PRD pipeline | — | — |
+diff --git a/ship-first-pack/ignition-kit/docs/prd/state.md b/ship-first-pack/ignition-kit/docs/prd/state.md
+deleted file mode 100644
+index 094f3d7..0000000
+--- a/ship-first-pack/ignition-kit/docs/prd/state.md
++++ /dev/null
+@@ -1,3 +0,0 @@
+-# PRD state
+-
+-Living PRD — ignition slice only. Other v0 flows stay `—` until promoted from Zedos.
+diff --git a/ship-first-pack/ignition-kit/docs/product-decisions/PD-implementation-phase.md b/ship-first-pack/ignition-kit/docs/product-decisions/PD-implementation-phase.md
+deleted file mode 100644
+index 514cd5b..0000000
+--- a/ship-first-pack/ignition-kit/docs/product-decisions/PD-implementation-phase.md
++++ /dev/null
+@@ -1,9 +0,0 @@
+----
+-id: PD-implementation-phase
+-status: approved
+-date: 2026-06-15
+----
+-
+-# Open the Implementation Phase
+-
+-Implementation authorized for delivery-ready Feature Areas with ready-for-implementation Specs.
+diff --git a/ship-first-pack/ignition-kit/docs/product/feature-areas/account-session.md b/ship-first-pack/ignition-kit/docs/product/feature-areas/account-session.md
+deleted file mode 100644
+index f2dea07..0000000
+--- a/ship-first-pack/ignition-kit/docs/product/feature-areas/account-session.md
++++ /dev/null
+@@ -1,18 +0,0 @@
+-# Feature Area: Account session
+-
+-## Status
+-
+-`delivery-ready`
+-
+-## Product Intent
+-
+-Founders sign up and land in a signed-in workspace.
+-
+-## In Scope
+-
+-- Email signup and sign-in
+-- Session persists across refresh
+-
+-## Out of Scope
+-
+-- Team roles, SSO, magic links (later slices)
+diff --git a/ship-first-pack/ignition-kit/docs/product/scope-slices/account-session--signup-to-signed-in-dashboard.md b/ship-first-pack/ignition-kit/docs/product/scope-slices/account-session--signup-to-signed-in-dashboard.md
+deleted file mode 100644
+index 270d1a5..0000000
+--- a/ship-first-pack/ignition-kit/docs/product/scope-slices/account-session--signup-to-signed-in-dashboard.md
++++ /dev/null
+@@ -1,13 +0,0 @@
+-# Scope Slice: Signup to signed-in dashboard
+-
+-## Status
+-
+-`ready-for-user-stories`
+-
+-## Parent Feature Area
+-
+-[Account session](../feature-areas/account-session.md)
+-
+-## Slice Intent
+-
+-Vertical minimum: new user signs up and sees a signed-in dashboard shell.
+diff --git a/ship-first-pack/ignition-kit/docs/product/specs/account-session--signup-to-signed-in-dashboard--SP-001--signup-vertical.md b/ship-first-pack/ignition-kit/docs/product/specs/account-session--signup-to-signed-in-dashboard--SP-001--signup-vertical.md
+deleted file mode 100644
+index df4f5ac..0000000
+--- a/ship-first-pack/ignition-kit/docs/product/specs/account-session--signup-to-signed-in-dashboard--SP-001--signup-vertical.md
++++ /dev/null
+@@ -1,18 +0,0 @@
+-# Spec: Signup vertical (ignition)
+-
+-## Status
+-
+-`ready-for-implementation`
+-
+-## Parent User Story
+-
+-[Sign up and land signed in](../user-stories/account-session--signup-to-signed-in-dashboard--US-001--signup.md)
+-
+-## Implementation scope
+-
+-Thin ignition spec — signup form, session cookie/JWT, redirect to dashboard placeholder. Match stack in `docs/project.config.md` and PRD technical baseline when Zedos fills it.
+-
+-## Tasks
+-
+-1. **Auth routes** — signup + session; AC: signup ends signed in.
+-2. **Dashboard shell** — signed-in landing page; AC: root shows dashboard when session valid.
+diff --git a/ship-first-pack/ignition-kit/docs/product/user-stories/account-session--signup-to-signed-in-dashboard--US-001--signup.md b/ship-first-pack/ignition-kit/docs/product/user-stories/account-session--signup-to-signed-in-dashboard--US-001--signup.md
+deleted file mode 100644
+index 228c268..0000000
+--- a/ship-first-pack/ignition-kit/docs/product/user-stories/account-session--signup-to-signed-in-dashboard--US-001--signup.md
++++ /dev/null
+@@ -1,18 +0,0 @@
+-# User Story: Sign up and land signed in
+-
+-## Parent Scope Slice
+-
+-[Signup to signed-in dashboard](../scope-slices/account-session--signup-to-signed-in-dashboard.md)
+-
+-## Status
+-
+-`ready-for-spec`
+-
+-## Story
+-
+-As a founder, I create an account and reach a signed-in home screen, so that I can start using the product.
+-
+-## Acceptance Criteria
+-
+-- Given I am logged out, when I complete signup with valid credentials, then I am signed in without a second login step.
+-- Given I am signed in, when I open the app root, then I see a dashboard shell (not the marketing/signup page).
+diff --git a/ship-first-pack/ignition-kit/docs/project.config.md b/ship-first-pack/ignition-kit/docs/project.config.md
+deleted file mode 100644
+index e503a14..0000000
+--- a/ship-first-pack/ignition-kit/docs/project.config.md
++++ /dev/null
+@@ -1,13 +0,0 @@
+-# Project Config
+-
+-## Identity
+-
+-- **Project name:** Your product
+-- **One-line product:** Replace with your wedge.
+-- **Repo root layout:** monorepo
+-
+-## Implementation phase
+-
+-- **Implementation governance enabled:** yes
+-- **Autonomous decomposition enabled:** no
+-- **Forbidden-paths default when locked:** none (ignition unlocks code paths)
+diff --git a/ship-first-pack/ignition-kit/docs/state/HANDOFF.md b/ship-first-pack/ignition-kit/docs/state/HANDOFF.md
+deleted file mode 100644
+index b1fb081..0000000
+--- a/ship-first-pack/ignition-kit/docs/state/HANDOFF.md
++++ /dev/null
+@@ -1,7 +0,0 @@
+-# HANDOFF
+-
+-Living PRD — build signup slice only. Credits, share, other flows not enqueued.
+-
+-**Active:** `orch-account-session--signup-to-signed-in-dashboard`
+-
+-**Next:** orchestrator opens tracking PR after `main` merge + `FIREABLE=1`.
+diff --git a/ship-first-pack/ignition-kit/docs/state/orchestration.pipeline.json b/ship-first-pack/ignition-kit/docs/state/orchestration.pipeline.json
+deleted file mode 100644
+index 452fbfe..0000000
+--- a/ship-first-pack/ignition-kit/docs/state/orchestration.pipeline.json
++++ /dev/null
+@@ -1,31 +0,0 @@
+-{
+-  "version": 1,
+-  "description": "Ignition — one wired slice. Zedos pre-seeds; sync APPENDED=0, FIREABLE=1.",
+-  "steps": [
+-    {
+-      "id": "bootstrap",
+-      "dependsOn": [],
+-      "workload": {
+-        "kind": "slice",
+-        "title": "Pipeline anchor",
+-        "featureAreaFile": "docs/state/seed-anchor.md",
+-        "scopeSliceFile": "docs/state/seed-anchor.md",
+-        "userStoryFile": null,
+-        "planFile": null
+-      }
+-    },
+-    {
+-      "id": "orch-account-session--signup-to-signed-in-dashboard",
+-      "dependsOn": ["bootstrap"],
+-      "workload": {
+-        "kind": "slice",
+-        "title": "Signup to signed-in dashboard",
+-        "featureAreaFile": "docs/product/feature-areas/account-session.md",
+-        "scopeSliceFile": "docs/product/scope-slices/account-session--signup-to-signed-in-dashboard.md",
+-        "userStoryFile": "docs/product/user-stories/account-session--signup-to-signed-in-dashboard--US-001--signup.md",
+-        "planFile": "docs/product/specs/account-session--signup-to-signed-in-dashboard--SP-001--signup-vertical.md",
+-        "notes": "Zedos pre-wired — living PRD"
+-      }
+-    }
+-  ]
+-}
+diff --git a/ship-first-pack/ignition-kit/docs/state/orchestration.prd-flow-map.json b/ship-first-pack/ignition-kit/docs/state/orchestration.prd-flow-map.json
+deleted file mode 100644
+index 3264752..0000000
+--- a/ship-first-pack/ignition-kit/docs/state/orchestration.prd-flow-map.json
++++ /dev/null
+@@ -1,14 +0,0 @@
+-{
+-  "version": 1,
+-  "attachAfterStepId": "bootstrap",
+-  "flows": {
+-    "sign up / sign in": {
+-      "slices": [
+-        {
+-          "file": "docs/product/scope-slices/account-session--signup-to-signed-in-dashboard.md",
+-          "title": "Signup to signed-in dashboard"
+-        }
+-      ]
+-    }
+-  }
+-}
+diff --git a/ship-first-pack/ignition-kit/docs/state/seed-anchor.md b/ship-first-pack/ignition-kit/docs/state/seed-anchor.md
+deleted file mode 100644
+index 1aaed42..0000000
+--- a/ship-first-pack/ignition-kit/docs/state/seed-anchor.md
++++ /dev/null
+@@ -1,3 +0,0 @@
+-# Bootstrap anchor (pipeline only)
+-
+-Not a product slice. Keeps `bootstrap` step valid before slice one runs.
+diff --git a/ship-first-pack/ignition-kit/docs/state/status-events.ndjson b/ship-first-pack/ignition-kit/docs/state/status-events.ndjson
+deleted file mode 100644
+index c9b8c9f..0000000
+--- a/ship-first-pack/ignition-kit/docs/state/status-events.ndjson
++++ /dev/null
+@@ -1,2 +0,0 @@
+-{"ts":"2026-06-15T00:00:00.000Z","step":"bootstrap","status":"complete","actor":"zedos-export","note":"ignition anchor"}
+-{"ts":"2026-06-15T00:00:01.000Z","step":"orch-account-session--signup-to-signed-in-dashboard","status":"todo","actor":"zedos-export","note":"queued from Zedos ignition"}
+diff --git a/ship-first-pack/ignition-kit/docs/state/status.json b/ship-first-pack/ignition-kit/docs/state/status.json
+deleted file mode 100644
+index 9e3cbec..0000000
+--- a/ship-first-pack/ignition-kit/docs/state/status.json
++++ /dev/null
+@@ -1,8 +0,0 @@
+-{
+-  "orchestration": {
+-    "steps": {
+-      "bootstrap": "complete",
+-      "orch-account-session--signup-to-signed-in-dashboard": "not-started"
+-    }
+-  }
+-}
+diff --git a/ship-first-pack/ignition-kit/zedos.manifest.json b/ship-first-pack/ignition-kit/zedos.manifest.json
+deleted file mode 100644
+index a272ccd..0000000
+--- a/ship-first-pack/ignition-kit/zedos.manifest.json
++++ /dev/null
+@@ -1,6 +0,0 @@
+-{
+-  "zedos_project_id": "REPLACE",
+-  "prd_version_id": "REPLACE",
+-  "export_kind": "ignition",
+-  "journey_mode": "standard"
+-}
+diff --git a/ship-first-pack/index.html b/ship-first-pack/index.html
+deleted file mode 100644
+index 4be452d..0000000
+--- a/ship-first-pack/index.html
++++ /dev/null
+@@ -1,58 +0,0 @@
+-<!DOCTYPE html>
+-<html lang="en">
+-<head>
+-  <meta charset="utf-8" />
+-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+-  <title>Ignition kit — Cursor + GitHub CI</title>
+-  <style>
+-    * { box-sizing: border-box; }
+-    body {
+-      font-family: system-ui, -apple-system, sans-serif;
+-      line-height: 1.5;
+-      color: #111;
+-      background: #f4f4f5;
+-      margin: 0;
+-      padding: 1rem;
+-      min-height: 100vh;
+-    }
+-    main {
+-      max-width: 22rem;
+-      margin: 0 auto;
+-      padding: 1.5rem 0 2rem;
+-    }
+-    h1 { font-size: 1.25rem; margin: 0 0 0.5rem; }
+-    p { margin: 0.5rem 0; font-size: 0.95rem; }
+-    .steps { font-size: 0.9rem; color: #333; margin: 1rem 0; padding-left: 1.1rem; }
+-    .steps li { margin: 0.35rem 0; }
+-    a.btn {
+-      display: block;
+-      text-align: center;
+-      margin: 1.25rem 0;
+-      padding: 0.85rem 1rem;
+-      min-height: 44px;
+-      background: #111;
+-      color: #fff;
+-      text-decoration: none;
+-      border-radius: 8px;
+-      font-size: 1rem;
+-      font-weight: 500;
+-    }
+-    a.btn:hover, a.btn:focus { background: #333; }
+-    .muted { color: #666; font-size: 0.8rem; }
+-    code { font-size: 0.85em; background: #e8e8ea; padding: 0.1em 0.35em; border-radius: 4px; }
+-  </style>
+-</head>
+-<body>
+-  <main>
+-    <h1>Ignition kit</h1>
+-    <p>One wired slice · living PRD · motor runs when <code>FIREABLE=1</code>.</p>
+-    <ol class="steps">
+-      <li>Unzip into repo root (needs this framework’s <code>.cursor/</code> + workflows).</li>
+-      <li>Add <code>CURSOR_API_KEY</code> secret.</li>
+-      <li>Merge to <code>main</code>.</li>
+-    </ol>
+-    <a class="btn" href="ignition-kit.zip" download="ignition-kit.zip">Download ignition-kit.zip</a>
+-    <p class="muted">Local: <code>open docs/ship-first-pack/index.html</code></p>
+-  </main>
+-</body>
+-</html>

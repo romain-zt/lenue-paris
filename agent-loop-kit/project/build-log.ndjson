@@ -1,6 +1,0 @@
-{"ts":"2026-06-15T21:06:52.582Z","event":"scribe_complete","state":"idea_seed"}
-{"ts":"2026-06-15T21:06:52.583Z","event":"vision_complete","state":"vision_prd"}
-{"ts":"2026-06-15T21:06:52.583Z","event":"convergence_complete","state":"veto","diverged":false}
-{"ts":"2026-06-15T21:06:52.583Z","event":"human_veto","state":"veto","approved":"auto-offline"}
-{"ts":"2026-06-15T21:06:52.585Z","event":"build_complete","state":"building"}
-{"ts":"2026-06-15T21:06:52.586Z","event":"slice_complete","state":"slice_complete"}
