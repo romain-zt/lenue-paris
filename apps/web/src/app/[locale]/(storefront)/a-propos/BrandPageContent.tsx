@@ -3,15 +3,14 @@
 import Image from "next/image";
 import type { PageCover } from "@/types/page";
 import { EditableField } from "@/components/cms/EditableField";
+import type { ContentLocale } from "@/lib/cms/types";
 
 export interface BrandPageContentProps {
   title: string;
   body: string;
   cover: PageCover | null;
-  /** Payload document ID — enables inline editing in admin edit mode */
   docId?: string;
-  /** Locale of the content */
-  locale?: string;
+  locale?: ContentLocale;
 }
 
 export function BrandPageContent({ title, body, cover, docId, locale }: BrandPageContentProps) {
@@ -40,26 +39,24 @@ export function BrandPageContent({ title, body, cover, docId, locale }: BrandPag
       )}
 
       <article className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
-        {title && (
-          canEdit ? (
-            <EditableField
-              collection="pages"
-              id={docId!}
-              field="title"
-              fieldLabel="Titre"
-              currentValue={title}
-              locale={locale}
-            >
-              <h1 className="mb-8 font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">
+        {title ? (
+          <h1 className="mb-8 font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">
+            {canEdit ? (
+              <EditableField
+                collection="pages"
+                id={docId!}
+                field="title"
+                fieldLabel="Titre"
+                currentValue={title}
+                locale={locale}
+              >
                 {title}
-              </h1>
-            </EditableField>
-          ) : (
-            <h1 className="mb-8 font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">
-              {title}
-            </h1>
-          )
-        )}
+              </EditableField>
+            ) : (
+              title
+            )}
+          </h1>
+        ) : null}
 
         {canEdit ? (
           <EditableField

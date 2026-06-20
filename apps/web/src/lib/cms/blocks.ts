@@ -134,7 +134,7 @@ export function mapHomePageBlocks(blocks: PayloadPage["blocks"]): MappedHomeBloc
         blockType: "featuredProducts",
         blockIndex: i,
         props: {
-          season: "",
+          season: block.season ?? "",
           title: block.title,
           viewCollectionLabel: block.viewCollectionLabel ?? "",
           viewFullCollectionLabel: "",
@@ -185,7 +185,7 @@ export function enrichFeaturedBlock(
     blockIndex: block.blockIndex,
     props: {
       ...block.props,
-      season: labels.season,
+      season: block.props.season || labels.season,
       viewFullCollectionLabel: labels.viewFullCollectionLabel,
       outOfStockBadge: labels.outOfStockBadge,
       locale,

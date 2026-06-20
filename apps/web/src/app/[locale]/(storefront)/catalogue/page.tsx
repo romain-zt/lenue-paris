@@ -1,7 +1,5 @@
-import { Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { CatalogueGridSkeleton } from "@/components/skeletons/CatalogueGridSkeleton";
-import { CatalogueClient } from "./CatalogueClient";
+import { CataloguePageContent } from "./CataloguePageContent";
 import { getCataloguePage } from "@/lib/cms/queries";
 import type { ContentLocale } from "@/lib/cms/types";
 import type { Product } from "@/types/product";
@@ -29,28 +27,32 @@ export default async function CataloguePage({ params }: CataloguePageProps) {
   setRequestLocale(locale);
 
   const t = await getTranslations("catalogue");
+  const contentLocale = locale as ContentLocale;
   let products: Product[] = [];
   let error: string | null = null;
   let pageTitle = t("title");
+  let pageId: string | undefined;
+  let gridBlockIndex: number | undefined;
 
   try {
-    const catalogue = await getCataloguePage(locale as ContentLocale);
+    const catalogue = await getCataloguePage(contentLocale);
     products = catalogue.products;
     pageTitle = catalogue.title || pageTitle;
+    pageId = catalogue.pageId;
+    gridBlockIndex = catalogue.gridBlockIndex;
   } catch {
     products = [];
     error = "fetch_failed";
   }
 
   return (
-    <main className="mx-auto max-w-screen-xl px-4 py-10 sm:px-6 lg:px-8">
-      <h1 className="mb-8 text-2xl font-semibold tracking-tight sm:text-3xl">{pageTitle}</h1>
-      <Suspense fallback={<CatalogueGridSkeleton />}>
-        <CatalogueClient
-          initialProducts={products}
-          initialError={error}
-        />
-      </Suspense>
-    </main>
+    <CataloguePageContent
+      pageTitle={pageTitle}
+      products={products}
+      error={error}
+      pageId={pageId}
+      gridBlockIndex={gridBlockIndex}
+      locale={contentLocale}
+    />
   );
 }

@@ -4,8 +4,11 @@ import { cookies } from 'next/headers'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { revalidatePath } from 'next/cache'
+import type { EditableCollection } from '@/lib/cms/editable'
 
 type CookieStore = Awaited<ReturnType<typeof cookies>>
+
+type PayloadLocale = 'fr' | 'en' | 'ru'
 
 async function isEditorAuthorized(cookieStore: CookieStore): Promise<boolean> {
   if (cookieStore.get('payload-token')) return true
@@ -20,7 +23,7 @@ export async function updateLiveField({
   value,
   locale,
 }: {
-  collection: 'pages' | 'products'
+  collection: EditableCollection
   id: string
   field: string
   value: string
@@ -33,17 +36,16 @@ export async function updateLiveField({
 
   const payload = await getPayload({ config })
   const payloadId = parseInt(id, 10)
-  const payloadLocale = (locale as 'fr' | 'en' | 'ru' | undefined) ?? 'fr'
+  const payloadLocale = (locale as PayloadLocale | undefined) ?? 'fr'
 
   // Handle nested block fields like 'blocks.0.tagline'
   const blockMatch = field.match(/^blocks\.(\d+)\.(.+)$/)
-  if (blockMatch) {
+  if (blockMatch && collection === 'pages') {
     const blockIndex = parseInt(blockMatch[1] ?? '0', 10)
     const subField = blockMatch[2] ?? ''
 
-    // Fetch the current document to get the full blocks array
     const doc = await payload.findByID({
-      collection,
+      collection: 'pages',
       id: payloadId,
       depth: 0,
       locale: payloadLocale,
@@ -61,7 +63,7 @@ export async function updateLiveField({
     }
 
     await payload.update({
-      collection,
+      collection: 'pages',
       id: payloadId,
       data: { blocks } as Record<string, unknown>,
       locale: payloadLocale,
@@ -82,7 +84,7 @@ export async function updateLiveField({
 
 // ─── Block structural mutations ───────────────────────────────────────────────
 
-type BlockCollection = 'pages' | 'products'
+type BlockCollection = 'pages' | 'products' | 'collections'
 
 async function fetchBlocks(
   payload: Awaited<ReturnType<typeof getPayload>>,
@@ -242,7 +244,7 @@ export async function publishDocument({
   collection,
   id,
 }: {
-  collection: 'pages' | 'products' | 'globals'
+  collection: EditableCollection | 'globals'
   id: string
 }) {
   const cookieStore = await cookies()

@@ -2,13 +2,14 @@ import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { EditableField } from "@/components/cms/EditableField";
 import type { EditorialStripBlockProps } from "@/lib/cms/types";
+import type { EditableCollection } from "@/lib/cms/editable";
 
 interface EditorialStripBlockComponentProps extends EditorialStripBlockProps {
   /** Payload blocks array index — used to generate data-payload-path attributes for live preview. */
   blockIndex?: number;
   /** Payload document ID — required for inline editing via EditableField. */
   docId?: string;
-  docCollection?: 'pages' | 'products';
+  docCollection?: EditableCollection;
   locale?: string;
 }
 
@@ -84,7 +85,7 @@ export function EditorialStripBlock({
           </em>
         </h2>
         <div className="my-8 h-px w-12 bg-stone-300" aria-hidden="true" />
-        <p
+        <div
           data-payload-path={p ? `${p}.body` : undefined}
           className="max-w-xs text-sm leading-relaxed text-stone-500"
         >
@@ -100,8 +101,10 @@ export function EditorialStripBlock({
             >
               {body}
             </EditableField>
-          ) : body}
-        </p>
+          ) : (
+            body
+          )}
+        </div>
         <div className="mt-10" data-payload-path={p ? `${p}.ctaLabel` : undefined}>
           <Link
             href={ctaLink}
@@ -123,6 +126,21 @@ export function EditorialStripBlock({
             </span>
             <span aria-hidden="true">→</span>
           </Link>
+          {canEdit ? (
+            <p className="mt-2 text-[9px] uppercase tracking-[0.15em] text-stone-400">
+              <span>Lien : </span>
+              <EditableField
+                collection={docCollection}
+                id={docId!}
+                field={`${p}.ctaLink`}
+                fieldLabel="URL du bouton (bande éditoriale)"
+                currentValue={ctaLink}
+                locale={locale}
+              >
+                {ctaLink}
+              </EditableField>
+            </p>
+          ) : null}
         </div>
       </div>
       <div

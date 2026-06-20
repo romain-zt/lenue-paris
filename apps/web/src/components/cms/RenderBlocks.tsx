@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import type { ContentLocale, MappedHomeBlock } from "@/lib/cms/types";
+import type { EditableCollection } from "@/lib/cms/editable";
 import { HeroBlock } from "./HeroBlock";
 import { FeaturedProductsBlock } from "./FeaturedProductsBlock";
 import { EditorialStripBlock } from "./EditorialStripBlock";
@@ -10,7 +11,7 @@ interface RenderBlocksProps {
   blocks: MappedHomeBlock[];
   quote: string;
   docId?: string;
-  docCollection?: 'pages' | 'products';
+  docCollection?: EditableCollection;
   locale?: ContentLocale;
 }
 
@@ -32,7 +33,7 @@ export function RenderBlocks({ blocks, quote, docId, docCollection, locale }: Re
                   locale={locale}
                 />
               </BlockOverlay>
-              <HomeQuoteSection quote={quote} />
+              <HomeQuoteSection quote={quote} docId={docId} locale={locale} />
             </Fragment>
           );
         }
@@ -45,6 +46,7 @@ export function RenderBlocks({ blocks, quote, docId, docCollection, locale }: Re
                 blockIndex={block.blockIndex}
                 docId={docId}
                 docCollection={docCollection}
+                locale={locale ?? block.props.locale}
               />
             </BlockOverlay>
           );

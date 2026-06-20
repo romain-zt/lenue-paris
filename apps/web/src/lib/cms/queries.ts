@@ -186,6 +186,8 @@ export interface CataloguePageDto {
   title: string;
   products: Product[];
   sourceType: "all" | "collection";
+  pageId?: string;
+  gridBlockIndex?: number;
 }
 
 export async function getCataloguePage(locale: ContentLocale): Promise<CataloguePageDto> {
@@ -203,12 +205,21 @@ export async function getCataloguePage(locale: ContentLocale): Promise<Catalogue
   });
 
   const page = pageResult.docs[0] as PayloadPage | undefined;
-  const gridBlock = findProductGridBlock(page?.blocks);
+  const gridBlockIndex = page?.blocks?.findIndex((b) => b.blockType === "productGrid") ?? -1;
+  const gridBlock =
+    gridBlockIndex >= 0 && page?.blocks ? findProductGridBlock(page.blocks) : undefined;
+  const pageId = page?.id != null ? String(page.id) : undefined;
 
   if (gridBlock?.sourceType === "collection" && gridBlock.collection) {
     const mapped = mapProductGridBlock(gridBlock);
     if (mapped && mapped.products.length > 0) {
-      return { title: mapped.title, products: mapped.products, sourceType: "collection" };
+      return {
+        title: mapped.title,
+        products: mapped.products,
+        sourceType: "collection",
+        pageId,
+        gridBlockIndex: gridBlockIndex >= 0 ? gridBlockIndex : undefined,
+      };
     }
   }
 
@@ -237,7 +248,13 @@ export async function getCataloguePage(locale: ContentLocale): Promise<Catalogue
     gridBlock?.title ??
     (locale === "fr" ? "Catalogue" : locale === "en" ? "Catalogue" : "Каталог");
 
-  return { title, products, sourceType: "all" };
+  return {
+    title,
+    products,
+    sourceType: "all",
+    pageId,
+    gridBlockIndex: gridBlockIndex >= 0 ? gridBlockIndex : undefined,
+  };
 }
 
 export async function getPageDocument(

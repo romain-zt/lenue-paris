@@ -86,6 +86,14 @@ const FeaturedProductsBlock: Block = {
       ],
     },
     {
+      name: "season",
+      type: "text",
+      label: FIELD_LABELS.season,
+      admin: {
+        description: FIELD_DESCRIPTIONS.featuredSeason,
+      },
+    },
+    {
       name: "title",
       type: "text",
       required: true,
@@ -286,6 +294,24 @@ export const Pages: CollectionConfig = {
       type: "upload",
       relationTo: "media",
       label: FIELD_LABELS.cover,
+    },
+    {
+      name: "philosophyQuote",
+      type: "textarea",
+      localized: true,
+      label: FIELD_LABELS.philosophyQuote,
+      admin: {
+        description: FIELD_DESCRIPTIONS.philosophyQuote,
+      },
+    },
+    {
+      name: "exploreLabel",
+      type: "text",
+      localized: true,
+      label: FIELD_LABELS.exploreLabel,
+      admin: {
+        description: FIELD_DESCRIPTIONS.exploreLabel,
+      },
     },
   ],
 };

@@ -37,6 +37,11 @@ export function HomePageContent({ initialPage, locale, labels }: HomePageContent
   });
 
   const mapped = mapHomePageBlocks(page.blocks);
+  const pageExtras = page as PayloadPage & { philosophyQuote?: string | null; exploreLabel?: string | null };
+  const philosophyQuote = pageExtras.philosophyQuote?.trim() || labels.quote;
+  const exploreLabel = pageExtras.exploreLabel?.trim() || labels.exploreLabel;
+  const docId = String(page.id);
+
   const blocks = mapped.map((block) => {
     if (block.blockType === "featuredProducts") {
       return enrichFeaturedBlock(block, locale, labels);
@@ -54,12 +59,17 @@ export function HomePageContent({ initialPage, locale, labels }: HomePageContent
     <main>
       <RenderBlocks
         blocks={blocks}
-        quote={labels.quote}
-        docId={String(page.id)}
+        quote={philosophyQuote}
+        docId={docId}
         docCollection="pages"
         locale={locale}
       />
-      <HomeCategoryStrip exploreLabel={labels.exploreLabel} categoryLinks={labels.categoryLinks} />
+      <HomeCategoryStrip
+        exploreLabel={exploreLabel}
+        categoryLinks={labels.categoryLinks}
+        docId={docId}
+        locale={locale}
+      />
       <InlineEditor />
     </main>
   );

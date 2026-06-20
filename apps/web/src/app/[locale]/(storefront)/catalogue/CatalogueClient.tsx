@@ -2,14 +2,16 @@
 
 import { useTranslations } from "next-intl";
 import { ProductGrid } from "@/components/product/ProductGrid";
+import type { ContentLocale } from "@/lib/cms/types";
 import type { Product } from "@/types/product";
 
 interface CatalogueClientProps {
   initialProducts: Product[];
   initialError: string | null;
+  locale?: ContentLocale;
 }
 
-export function CatalogueClient({ initialProducts, initialError }: CatalogueClientProps) {
+export function CatalogueClient({ initialProducts, initialError, locale }: CatalogueClientProps) {
   const t = useTranslations("catalogue");
 
   const sortedProducts = [...initialProducts].sort((a, b) => {
@@ -20,7 +22,12 @@ export function CatalogueClient({ initialProducts, initialError }: CatalogueClie
 
   return (
     <div>
-      <ProductGrid products={sortedProducts} error={initialError} emptyMessage={t("emptyDefault")} />
+      <ProductGrid
+        products={sortedProducts}
+        error={initialError}
+        emptyMessage={t("emptyDefault")}
+        contentLocale={locale}
+      />
     </div>
   );
 }

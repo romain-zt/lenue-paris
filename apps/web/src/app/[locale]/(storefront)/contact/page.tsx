@@ -34,6 +34,8 @@ export default async function ContactPage({ params }: PageProps) {
     <ContactPageContent
       title={data.title}
       body={data.body}
+      docId={data.docId}
+      locale={locale as "fr" | "en" | "ru"}
       whatsAppLabel={t("whatsAppLabel")}
       whatsAppMessage={t("whatsAppMessage")}
       instagramUrl={siteSettings.instagramUrl ?? "https://www.instagram.com"}

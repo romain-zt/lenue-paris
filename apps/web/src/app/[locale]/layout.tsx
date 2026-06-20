@@ -72,8 +72,17 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   const siteSettings = await getSiteSettings();
 
   return (
-    <html lang={locale} className={`${cormorant.variable} ${jost.variable}`}>
+    <html
+      lang={locale}
+      className={`${cormorant.variable} ${jost.variable}`}
+      suppressHydrationWarning
+    >
       <body className="bg-white font-sans text-stone-900 antialiased">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(sessionStorage.getItem('lp-edit-mode')==='1'){document.documentElement.classList.add('admin-edit-mode')}}catch(e){}`,
+          }}
+        />
         <NextIntlClientProvider messages={messages}>
           <SelectionProvider>
             {isDraft && <LivePreviewListener />}

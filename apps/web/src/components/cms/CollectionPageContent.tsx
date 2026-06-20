@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useLivePreview } from "@payloadcms/live-preview-react";
 import { ProductGrid } from "@/components/product/ProductGrid";
+import { EditableField } from "@/components/cms/EditableField";
 import { mapPayloadProductToStorefront } from "@/lib/cms/blocks";
 import { getPreviewSiteUrl } from "@/lib/cms/generatePreviewPath";
 import { resolveMediaAlt, resolveMediaUrl } from "@/lib/cms/media";
@@ -45,6 +46,7 @@ export function CollectionPageContent({ initialCollection, locale }: CollectionP
   });
 
   const collection = mapCollectionForDisplay(liveDoc, locale);
+  const docId = String(liveDoc.id);
 
   return (
     <main className="min-h-screen bg-[var(--color-background)]">
@@ -69,11 +71,20 @@ export function CollectionPageContent({ initialCollection, locale }: CollectionP
       >
         <header className="mb-12 border-b border-stone-100 pb-8">
           <h1 className="font-serif text-3xl font-light text-stone-900 sm:text-4xl">
-            {collection.title}
+            <EditableField
+              collection="collections"
+              id={docId}
+              field="title"
+              fieldLabel="Titre collection"
+              currentValue={collection.title}
+              locale={locale}
+            >
+              {collection.title}
+            </EditableField>
           </h1>
         </header>
 
-        <ProductGrid products={collection.products} />
+        <ProductGrid products={collection.products} contentLocale={locale} />
       </section>
       <InlineEditor />
     </main>
