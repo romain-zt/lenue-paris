@@ -16,6 +16,12 @@ import { resolveMediaAlt, resolveMediaUrl } from "./media";
 const HOME_SLUG = "home";
 const CATALOGUE_SLUG = "catalogue";
 
+export const CATALOGUE_TITLE_FALLBACK: Record<ContentLocale, string> = {
+  fr: "Collection",
+  en: "Collection",
+  ru: "Коллекция",
+};
+
 async function getPayloadClient() {
   return getPayload({ config });
 }
@@ -233,9 +239,7 @@ export async function getCataloguePage(locale: ContentLocale): Promise<Catalogue
       .filter((p): p is Product => p != null),
   );
 
-  const title =
-    gridBlock?.title ??
-    (locale === "fr" ? "Catalogue" : locale === "en" ? "Catalogue" : "Каталог");
+  const title = gridBlock?.title ?? CATALOGUE_TITLE_FALLBACK[locale];
 
   return { title, products, sourceType: "all" };
 }
