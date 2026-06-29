@@ -46,7 +46,6 @@ export function Header() {
 
   const navLeft = navLinks.filter((link) => link.href === "/catalogue");
   const navRight = navLinks.filter((link) => link.href !== "/catalogue");
-  const allNav = navLinks;
 
   function switchLocale(next: string) {
     router.replace(pathname, { locale: next });
@@ -187,7 +186,7 @@ export function Header() {
           open ? "pointer-events-auto" : "pointer-events-none"
         }`}
       >
-        {allNav.map((link, index) => (
+        {navLinks.map((link, index) => (
           <div
             key={link.href}
             className={`overflow-hidden bg-white transition-[max-height] ${cardDuration} ${softEase}`}
@@ -195,7 +194,7 @@ export function Header() {
               maxHeight: open ? cardRowHeight : "0px",
               transitionDelay: open
                 ? `${index * 70}ms`
-                : `${(allNav.length - 1 - index) * 40}ms`,
+                : `${(navLinks.length - 1 - index) * 40}ms`,
             }}
           >
             <Link
@@ -215,7 +214,7 @@ export function Header() {
           }`}
           style={{
             maxHeight: open ? cardRowHeight : "0px",
-            transitionDelay: open ? `${allNav.length * 70}ms` : "0ms",
+            transitionDelay: open ? `${navLinks.length * 70}ms` : "0ms",
           }}
         >
           <div className="flex items-center gap-3 px-6 py-4">
