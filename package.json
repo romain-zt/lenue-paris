@@ -9,6 +9,7 @@
     "next": "catalog:"
   },
   "scripts": {
+    "migrate": "pnpm -F web migrate",
     "seed": "pnpm --filter web seed",
     "dev": "turbo run dev",
     "build": "turbo run build",

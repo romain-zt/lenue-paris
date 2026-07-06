@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { useSiteBrand } from "@/lib/site/SiteBrandProvider";
 import { AddToSelectionButton } from "@/components/selection/AddToSelectionButton";
 import { getProductMainImageUrl } from "@/lib/productImages";
 import type { Product } from "@/types/product";
@@ -13,6 +14,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const t = useTranslations("product");
+  const { wordmarkPrimary } = useSiteBrand();
   const imageUrl = getProductMainImageUrl(product.slug, product.mainImage?.url);
   const isOutOfStock = product.inStock === false;
 
@@ -23,14 +25,14 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <article className="group">
-      <div className="relative aspect-[3/4] overflow-hidden bg-stone-100">
+      <div className="relative aspect-[3/4] overflow-hidden bg-surface">
         <Link
           href={`/produits/${product.slug}`}
           className="absolute inset-0"
           aria-label={product.title}
         >
           {isOutOfStock && (
-            <span className="absolute left-2 top-2 z-10 max-w-[calc(100%-1rem)] bg-white/95 px-2.5 py-1 text-[9px] font-medium uppercase leading-snug tracking-[0.12em] text-stone-800 shadow-sm">
+            <span className="absolute left-2 top-2 z-10 max-w-[calc(100%-1rem)] bg-white/95 px-2.5 py-1 text-[9px] font-medium uppercase leading-snug tracking-[0.12em] text-secondary shadow-sm">
               {t("outOfStockBadge")}
             </span>
           )}
@@ -45,18 +47,18 @@ export function ProductCard({ product }: ProductCardProps) {
               }`}
             />
           ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-stone-50 to-stone-200 transition-transform duration-700 group-hover:scale-[1.02]">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-surface to-skeleton transition-transform duration-700 group-hover:scale-[1.02]">
               <span
-                className="select-none font-serif text-7xl font-light text-stone-300"
+                className="select-none font-serif text-7xl font-light text-subtle"
                 aria-hidden="true"
               >
-                L
+                {wordmarkPrimary.charAt(0) || "·"}
               </span>
               <span
-                className="mt-1 select-none text-[8px] tracking-[0.4em] text-stone-400"
+                className="mt-1 select-none text-[8px] tracking-[0.4em] text-subtle"
                 aria-hidden="true"
               >
-                LÉNUE
+                {wordmarkPrimary}
               </span>
             </div>
           )}
@@ -80,8 +82,8 @@ export function ProductCard({ product }: ProductCardProps) {
         aria-hidden="true"
       >
         <div className="mt-3 space-y-1 px-0.5">
-          <p className="text-sm font-medium leading-snug text-stone-900">{product.title}</p>
-          <p className="text-sm font-light text-stone-400">{formattedPrice}</p>
+          <p className="text-sm font-medium leading-snug text-primary">{product.title}</p>
+          <p className="text-sm font-light text-subtle">{formattedPrice}</p>
         </div>
       </Link>
     </article>

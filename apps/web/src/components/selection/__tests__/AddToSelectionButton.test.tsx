@@ -47,7 +47,7 @@ describe("AddToSelectionButton", () => {
     render(<AddToSelectionButton item={mockItem} />);
     const button = screen.getByRole("button", { name: "inSelection" });
     expect(button).toBeDefined();
-    expect(button.className).toContain("text-stone-400");
+    expect(button.className).toContain("text-subtle");
   });
 
   it("calls addItem on click when not selected", () => {

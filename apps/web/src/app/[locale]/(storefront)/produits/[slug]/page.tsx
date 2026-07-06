@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ProductPageContent } from "@/components/cms/ProductPageContent";
 import { getProductBySlug, getProductDocumentBySlug } from "@/lib/cms/queries";
+import { getSiteSettings, resolveBrandName } from "@/lib/cms/siteSettings";
 import type { ContentLocale } from "@/lib/cms/types";
 
 export const dynamic = "force-dynamic";
@@ -13,14 +14,18 @@ interface ProductDetailPageProps {
 
 export async function generateMetadata({ params }: ProductDetailPageProps) {
   const { slug, locale } = await params;
-  const t = await getTranslations({ locale, namespace: "product" });
   const { isEnabled: isDraft } = await draftMode();
-  const product = await getProductBySlug(slug, locale as ContentLocale, { draft: isDraft });
+  const [t, product, siteSettings] = await Promise.all([
+    getTranslations({ locale, namespace: "product" }),
+    getProductBySlug(slug, locale as ContentLocale, { draft: isDraft }),
+    getSiteSettings(),
+  ]);
+  const brandName = resolveBrandName(siteSettings);
   if (!product) {
     return { title: t("notFoundTitle") };
   }
   return {
-    title: `${product.title} — Lénue Paris`,
+    title: `${product.title} — ${brandName}`,
     description: product.description ?? t("metaDescriptionFallback", { title: product.title }),
   };
 }

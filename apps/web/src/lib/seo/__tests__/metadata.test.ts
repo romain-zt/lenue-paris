@@ -18,15 +18,16 @@ describe("buildPageMetadata", () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://www.lenue.paris");
 
     const meta = buildPageMetadata({
-      title: "Lénue Paris",
+      title: "Maison Test",
       description: "Pour les moments que vous voulez garder.",
       locale: "fr",
       pathname: "",
       imagePath: "/images/hero.jpg",
+      siteName: "Maison Test",
     });
 
     expect(meta.openGraph?.images).toEqual([
-      { url: "https://www.lenue.paris/images/hero.jpg", alt: "Lénue Paris" },
+      { url: "https://www.lenue.paris/images/hero.jpg", alt: "Maison Test" },
     ]);
     expect(meta.twitter?.images).toEqual(["https://www.lenue.paris/images/hero.jpg"]);
     expect(meta.openGraph?.url).toBe("https://www.lenue.paris/");

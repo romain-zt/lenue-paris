@@ -4,12 +4,15 @@ import { useState, useEffect } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter, usePathname } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import type { ContentLocale } from "@/lib/cms/types";
+import { useSiteBrand } from "@/lib/site/SiteBrandProvider";
 import { SelectionPill } from "@/components/selection/SelectionPill";
 import { STOREFRONT_NAV_LINKS, type StorefrontNavHref } from "@/lib/navigation/storefrontNav";
 
 export function Header() {
   const t = useTranslations("nav");
   const tLocale = useTranslations("locale");
+  const { wordmarkPrimary, wordmarkSecondary } = useSiteBrand();
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
@@ -55,7 +58,7 @@ export function Header() {
   const linkClass = `text-[10px] font-medium uppercase tracking-[0.22em] transition-colors duration-300 ${
     overlayMode
       ? "text-white/70 hover:text-white"
-      : "text-stone-500 hover:text-stone-900"
+      : "text-muted hover:text-primary"
   }`;
 
   const softEase = "ease-[cubic-bezier(0.25,0.8,0.25,1)]";
@@ -70,7 +73,7 @@ export function Header() {
           `sticky top-0 z-50 transition-[background-color,border-color,box-shadow] duration-[400ms] ${softEase}`,
           overlayMode
             ? "border-b border-white/15 bg-transparent"
-            : "border-b border-stone-200 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.03)]",
+            : "border-b border-subtle bg-surface shadow-[0_1px_0_0_rgba(0,0,0,0.03)]",
         ].join(" ")}
       >
         <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
@@ -95,18 +98,20 @@ export function Header() {
             >
               <span
                 className={`font-serif text-xl tracking-[0.42em] transition-colors duration-300 sm:text-2xl ${
-                  overlayMode ? "text-white" : "text-stone-900"
+                  overlayMode ? "text-white" : "text-primary"
                 }`}
               >
-                LÉNUE
+                {wordmarkPrimary}
               </span>
+              {wordmarkSecondary ? (
               <span
                 className={`mt-0.5 font-serif text-[9px] tracking-[0.62em] transition-colors duration-300 sm:text-[10px] ${
-                  overlayMode ? "text-white/60" : "text-stone-400"
+                  overlayMode ? "text-white/60" : "text-subtle"
                 }`}
               >
-                PARIS
+                {wordmarkSecondary}
               </span>
+              ) : null}
             </Link>
 
             <nav className="hidden flex-1 items-center justify-end gap-5 md:flex" aria-label={t("rightNav")}>
@@ -119,7 +124,7 @@ export function Header() {
 
               <div
                 className={`flex items-center gap-1.5 border-l pl-5 transition-colors duration-300 ${
-                  overlayMode ? "border-white/20" : "border-stone-200"
+                  overlayMode ? "border-white/20" : "border-subtle"
                 }`}
                 aria-label={tLocale("switchLabel")}
               >
@@ -132,13 +137,13 @@ export function Header() {
                       locale === l
                         ? overlayMode
                           ? "text-white"
-                          : "text-stone-900"
+                          : "text-primary"
                         : overlayMode
                           ? "text-white/40 hover:text-white/80"
-                          : "text-stone-300 hover:text-stone-600"
+                          : "text-subtle hover:text-muted"
                     }`}
                   >
-                    {tLocale(l as "fr" | "en" | "ru")}
+                    {tLocale(l as ContentLocale)}
                   </button>
                 ))}
               </div>
@@ -148,7 +153,7 @@ export function Header() {
             <SelectionPill overlayMode={overlayMode} />
             <button
               className={`flex min-h-[44px] min-w-[44px] items-center justify-center transition-colors duration-[400ms] ${softEase} ${
-                overlayMode ? "text-white hover:text-white/80" : "text-stone-800 hover:text-stone-600"
+                overlayMode ? "text-white hover:text-white/80" : "text-secondary hover:text-muted"
               }`}
               onClick={() => setOpen((v) => !v)}
               aria-expanded={open}
@@ -190,7 +195,7 @@ export function Header() {
         {allNav.map((link, index) => (
           <div
             key={link.href}
-            className={`overflow-hidden bg-white transition-[max-height] ${cardDuration} ${softEase}`}
+            className={`overflow-hidden bg-surface transition-[max-height] ${cardDuration} ${softEase}`}
             style={{
               maxHeight: open ? cardRowHeight : "0px",
               transitionDelay: open
@@ -202,7 +207,7 @@ export function Header() {
               href={link.href as StorefrontNavHref}
               onClick={() => setOpen(false)}
               tabIndex={open ? 0 : -1}
-              className="block border-b border-stone-100 px-6 py-4 text-xs font-medium uppercase tracking-[0.2em] text-stone-700 hover:bg-stone-50/60 hover:text-stone-900"
+              className="block border-b border-subtle px-6 py-4 text-xs font-medium uppercase tracking-[0.2em] text-secondary hover:bg-surface/60 hover:text-primary"
             >
               {link.label}
             </Link>
@@ -210,7 +215,7 @@ export function Header() {
         ))}
 
         <div
-          className={`overflow-hidden bg-white transition-[max-height] ${cardDuration} ${softEase} ${
+          className={`overflow-hidden bg-surface transition-[max-height] ${cardDuration} ${softEase} ${
             open ? "shadow-[0_8px_24px_rgba(0,0,0,0.04)]" : ""
           }`}
           style={{
@@ -219,7 +224,7 @@ export function Header() {
           }}
         >
           <div className="flex items-center gap-3 px-6 py-4">
-            <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-stone-400">
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-subtle">
               {tLocale("switchLabel")}
             </span>
             {routing.locales.map((l) => (
@@ -231,7 +236,7 @@ export function Header() {
                 }}
                 aria-current={locale === l ? "true" : undefined}
                 className={`min-h-[44px] px-2 text-xs font-medium uppercase tracking-[0.15em] transition-colors ${
-                  locale === l ? "text-stone-900" : "text-stone-400 hover:text-stone-700"
+                  locale === l ? "text-primary" : "text-subtle hover:text-secondary"
                 }`}
               >
                 {tLocale(l as "fr" | "en" | "ru")}

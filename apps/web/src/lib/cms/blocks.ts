@@ -95,7 +95,7 @@ function resolveFeaturedProducts(block: Extract<PayloadBlock, { blockType: "feat
   return { products };
 }
 
-export function mapHomePageBlocks(blocks: PayloadPage["blocks"]): MappedHomeBlock[] {
+export function mapHomePageBlocks(blocks: PayloadPage["blocks"], brandName = ""): MappedHomeBlock[] {
   if (!blocks?.length) return [];
 
   const mapped: MappedHomeBlock[] = [];
@@ -119,7 +119,7 @@ export function mapHomePageBlocks(blocks: PayloadPage["blocks"]): MappedHomeBloc
           ctaLabel: block.ctaLabel,
           ctaLink: block.ctaLink,
           heroImageUrl,
-          heroImageAlt: resolveMediaAlt(block.heroImage, "Lénue Paris"),
+          heroImageAlt: resolveMediaAlt(block.heroImage, brandName),
           showCapsuleBadge: Boolean(block.showCapsuleBadge),
           ...(heroVideoUrl ? { heroVideoUrl } : {}),
         },

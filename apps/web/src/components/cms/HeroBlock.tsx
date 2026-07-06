@@ -2,6 +2,7 @@ import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { CapsuleBadge } from "@/components/editorial/CapsuleBadge";
 import { EditableField } from "@/components/cms/EditableField";
+import { useSiteBrand } from "@/lib/site/SiteBrandProvider";
 import type { HeroBlockProps } from "@/lib/cms/types";
 
 interface HeroBlockComponentProps extends HeroBlockProps {
@@ -27,6 +28,7 @@ export function HeroBlock({
   docCollection = 'pages',
   locale,
 }: HeroBlockComponentProps) {
+  const { wordmarkPrimary, wordmarkSecondary } = useSiteBrand();
   const hasVideo = Boolean(heroVideoUrl);
   const p = blockIndex !== undefined ? `blocks.${blockIndex}` : undefined;
   const canEdit = Boolean(docId && blockIndex !== undefined);
@@ -102,9 +104,15 @@ export function HeroBlock({
           id="hero-heading"
           className="font-serif text-5xl font-light leading-[0.95] tracking-wide text-white sm:text-6xl lg:text-7xl"
         >
-          LÉNUE
-          <br />
-          <span className="text-3xl tracking-[0.35em] text-white/80 sm:text-4xl lg:text-5xl">PARIS</span>
+          {wordmarkPrimary}
+          {wordmarkSecondary ? (
+            <>
+              <br />
+              <span className="text-3xl tracking-[0.35em] text-white/80 sm:text-4xl lg:text-5xl">
+                {wordmarkSecondary}
+              </span>
+            </>
+          ) : null}
         </h1>
         <p
           data-payload-path={p ? `${p}.tagline` : undefined}

@@ -91,7 +91,7 @@ let agentsPaused = sessionState.agentsPaused;
 let waitingForHuman = sessionState.waitingForHuman;
 let turnsThisCycle = sessionState.turnsThisCycle;
 
-const MAX_AGENT_TURNS_PER_CYCLE = 24;
+const MAX_AGENT_TURNS_PER_CYCLE = 1024;
 const MAX_AUTO_RETRIES = 5;
 const AUTO_RETRY_DELAY_MS = 8000;
 const STUCK_RUN_MS = 5000;

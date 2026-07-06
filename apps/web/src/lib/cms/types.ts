@@ -1,6 +1,7 @@
 import type { Product } from "@/types/product";
+import type { ContentLocale } from "@repo/payload-schema/i18n/content-locales";
 
-export type ContentLocale = "fr" | "en" | "ru";
+export type { ContentLocale };
 
 export interface HeroBlockProps {
   season: string;

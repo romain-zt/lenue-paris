@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BrandPageContent } from "../a-propos/BrandPageContent";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { getPageDocument } from "@/lib/cms/queries";
+import { getSiteSettings, resolveBrandName } from "@/lib/cms/siteSettings";
 import { resolveMediaAlt, resolveMediaUrl } from "@/lib/cms/media";
 import type { ContentLocale } from "@/lib/cms/types";
 
@@ -29,7 +30,11 @@ export default async function DeliveryPage({ params }: PageProps) {
   setRequestLocale(locale);
 
   const { isEnabled: isDraft } = await draftMode();
-  const page = await getPageDocument("livraison", locale as ContentLocale, { draft: isDraft });
+  const [page, siteSettings] = await Promise.all([
+    getPageDocument("livraison", locale as ContentLocale, { draft: isDraft }),
+    getSiteSettings(),
+  ]);
+  const brandName = resolveBrandName(siteSettings);
 
   if (page) {
     const cover =
@@ -45,6 +50,7 @@ export default async function DeliveryPage({ params }: PageProps) {
         title={page.title ?? ""}
         body={(page.body as string | null | undefined) ?? ""}
         cover={cover?.url ? cover : null}
+        brandName={brandName}
         docId={String(page.id)}
         locale={locale}
       />
@@ -53,5 +59,5 @@ export default async function DeliveryPage({ params }: PageProps) {
 
   // Fallback when page not yet seeded
   const t = await getTranslations({ locale, namespace: "delivery" });
-  return <BrandPageContent title={t("title")} body={t("body")} cover={null} />;
+  return <BrandPageContent title={t("title")} body={t("body")} cover={null} brandName={brandName} />;
 }

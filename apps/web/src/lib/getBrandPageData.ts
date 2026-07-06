@@ -4,11 +4,11 @@ import config from "@payload-config";
 import type { Page as PayloadPage } from "@/payload-types";
 import { resolveMediaUrl, resolveMediaAlt } from "@/lib/cms/media";
 
-export type { BrandPageContentProps };
+export type BrandPageData = Omit<BrandPageContentProps, "brandName">;
 
 const A_PROPOS_SLUG = "a-propos";
 
-export async function getBrandPageData(locale: string = "fr"): Promise<BrandPageContentProps> {
+export async function getBrandPageData(locale: string = "fr"): Promise<BrandPageData> {
   try {
     const payload = await getPayload({ config });
     const result = await payload.find({

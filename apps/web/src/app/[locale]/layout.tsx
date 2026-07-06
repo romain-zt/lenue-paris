@@ -13,9 +13,11 @@ import { Header } from "@/components/Header";
 import { LivePreviewListener } from "@/components/cms/LivePreviewListener";
 import { SelectionProvider } from "@/lib/selection/SelectionProvider";
 import { buildPageMetadata } from "@/lib/seo/metadata";
+import { getSiteSettings, resolveBrandName, resolveWordmarkPrimary, resolveWordmarkSecondary } from "@/lib/cms/siteSettings";
 import { STOREFRONT_NAV_LINKS } from "@/lib/navigation/storefrontNav";
-import { getSiteSettings } from "@/lib/cms/siteSettings";
+import { SiteBrandProvider } from "@/lib/site/SiteBrandProvider";
 import { PublicAdminFAB } from "@/components/cms/PublicAdminFAB";
+import { TokenInjector } from "@/components/cms/TokenInjector";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin", "cyrillic"],
@@ -42,13 +44,18 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "home" });
+  const [t, siteSettings] = await Promise.all([
+    getTranslations({ locale, namespace: "home" }),
+    getSiteSettings(),
+  ]);
+  const brandName = resolveBrandName(siteSettings);
 
   return buildPageMetadata({
-    title: "Lénue Paris",
+    title: brandName,
     description: t("heroTagline"),
     locale,
     pathname: "",
+    siteName: brandName,
   });
 }
 
@@ -70,25 +77,34 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   const tNav = await getTranslations("nav");
   const { isEnabled: isDraft } = await draftMode();
   const siteSettings = await getSiteSettings();
+  const siteBrand = {
+    brandName: resolveBrandName(siteSettings),
+    wordmarkPrimary: resolveWordmarkPrimary(siteSettings),
+    wordmarkSecondary: resolveWordmarkSecondary(siteSettings),
+  };
 
   return (
     <html lang={locale} className={`${cormorant.variable} ${jost.variable}`}>
-      <body className="bg-white font-sans text-stone-900 antialiased">
+      <head>
+        <TokenInjector />
+      </head>
+      <body className="font-sans text-primary antialiased" style={{ backgroundColor: "var(--color-page-bg)" }}>
         <NextIntlClientProvider messages={messages}>
+          <SiteBrandProvider value={siteBrand}>
           <SelectionProvider>
             {isDraft && <LivePreviewListener />}
             <Header />
             {children}
-          <footer data-maison="footer" className="mt-12 border-t border-stone-200 py-6">
+          <footer data-maison="footer" className="mt-12 border-t border-subtle py-6">
             <nav
-              className="mx-auto flex max-w-screen-xl flex-wrap items-center gap-x-6 gap-y-2 px-4 text-sm text-stone-500 sm:px-6"
+              className="mx-auto flex max-w-screen-xl flex-wrap items-center gap-x-6 gap-y-2 px-4 text-sm text-muted sm:px-6"
               aria-label={tNav("footerNav")}
             >
               {STOREFRONT_NAV_LINKS.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="min-h-[44px] py-2 transition-colors hover:text-stone-900"
+                  className="min-h-[44px] py-2 transition-colors hover:text-primary"
                 >
                   {tNav(link.labelKey)}
                 </Link>
@@ -99,7 +115,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="WhatsApp"
-                  className="flex min-h-[44px] items-center py-2 transition-colors hover:text-stone-900"
+                  className="flex min-h-[44px] items-center py-2 transition-colors hover:text-primary"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -116,7 +132,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Instagram"
-                  className="flex min-h-[44px] items-center py-2 transition-colors hover:text-stone-900"
+                  className="flex min-h-[44px] items-center py-2 transition-colors hover:text-primary"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -139,6 +155,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
           </footer>
           <PublicAdminFAB />
           </SelectionProvider>
+          </SiteBrandProvider>
         </NextIntlClientProvider>
       </body>
     </html>

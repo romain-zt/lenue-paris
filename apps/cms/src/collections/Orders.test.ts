@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { Orders } from "./Orders";
+import { Orders } from "@repo/payload-schema/collections";
+import { ADMIN_GROUPS } from "@repo/payload-schema/i18n/admin-labels";
 
 describe("Orders collection", () => {
   const field = (name: string) => Orders.fields.find((f) => "name" in f && f.name === name);
@@ -45,8 +46,8 @@ describe("Orders collection", () => {
     expect(Orders.admin?.defaultColumns).toContain("price");
   });
 
-  it('groups the collection under "Boutique" in the admin sidebar', () => {
-    expect(Orders.admin?.group).toBe("Boutique");
+  it('groups the collection under "Orders" in the admin sidebar', () => {
+    expect(Orders.admin?.group).toEqual(ADMIN_GROUPS.orders);
   });
 
   it("sorts orders by newest first", () => {

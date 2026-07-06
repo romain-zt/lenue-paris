@@ -7,14 +7,16 @@ import { s3Storage } from "@payloadcms/storage-s3";
 import { en } from "@payloadcms/translations/languages/en";
 import { fr } from "@payloadcms/translations/languages/fr";
 import { ru } from "@payloadcms/translations/languages/ru";
+import {
+  CONTENT_LOCALES,
+  PAYLOAD_DEFAULT_LOCALE,
+} from "@repo/payload-schema/i18n/content-locales";
+import { Users, Orders } from "@repo/payload-schema/collections";
+import { SiteSettings, DesignTokens } from "@repo/payload-schema/globals";
+import { migrations } from "@repo/payload-schema/migrations";
 
-import { Users } from "./collections/Users";
-import { Media } from "./collections/Media";
-import { Collections } from "./collections/Collections";
-import { Pages } from "./collections/Pages";
-import { Products } from "./collections/Products";
-import { Orders } from "./collections/Orders";
-import { SiteSettings } from "./globals/SiteSettings";
+import { Collections, Pages, Products } from "./payload/collections";
+import { Media } from "./payload/media";
 import { getPostgresPoolConfig } from "./lib/database";
 import { getPreviewSiteUrl } from "./lib/cms/generatePreviewPath";
 
@@ -29,22 +31,20 @@ export default buildConfig({
   cors: [getPreviewSiteUrl(), "http://localhost:3001"],
 
   i18n: {
-    // Admin UI language (separate from content localization below).
-    // Browser defaults to fr if supported; user can override in Account → Language.
     fallbackLanguage: "fr",
     supportedLanguages: { en, fr, ru },
   },
 
   localization: {
-    locales: ["en", "fr", "ru"],
-    defaultLocale: "en",
+    locales: [...CONTENT_LOCALES],
+    defaultLocale: PAYLOAD_DEFAULT_LOCALE,
     fallback: true,
   },
 
   admin: {
     user: Users.slug,
     components: {
-      providers: ['@/components/admin/AIPanel#AIPanel'],
+      providers: ["@/components/admin/AIPanel#AIPanel"],
     },
     livePreview: {
       breakpoints: [
@@ -56,16 +56,21 @@ export default buildConfig({
   },
 
   collections: [Users, Media, Collections, Pages, Products, Orders],
-  globals: [SiteSettings],
+  globals: [SiteSettings, DesignTokens],
 
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || "",
   typescript: {
-    outputFile: path.resolve(dirname, "payload-types.ts"),
+    outputFile: path.resolve(
+      dirname,
+      "../../../packages/payload-schema/src/payload-types.ts",
+    ),
   },
 
   db: postgresAdapter({
     pool: getPostgresPoolConfig(),
+    push: false,
+    prodMigrations: migrations,
   }),
 
   plugins: hasS3Config

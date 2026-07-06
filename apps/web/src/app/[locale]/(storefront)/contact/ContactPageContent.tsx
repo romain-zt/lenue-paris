@@ -5,26 +5,27 @@ import { buildWhatsAppUrl } from "@/lib/whatsapp/config";
 interface ContactPageContentProps {
   title: string;
   body: string;
+  brandName: string;
   whatsAppLabel: string;
   whatsAppMessage: string;
   instagramUrl: string;
 }
 
-export function ContactPageContent({ title, body, whatsAppLabel, whatsAppMessage, instagramUrl }: ContactPageContentProps) {
+export function ContactPageContent({ title, body, brandName, whatsAppLabel, whatsAppMessage, instagramUrl }: ContactPageContentProps) {
   const paragraphs = body.split("\n\n").filter(Boolean);
   const whatsAppUrl = buildWhatsAppUrl(whatsAppMessage);
 
   return (
     <main>
-      <header className="border-b border-stone-200 bg-stone-50 py-12 sm:py-16">
-        <p className="text-center font-serif text-2xl italic tracking-tight text-stone-900 sm:text-3xl">
-          Lénue Paris
+      <header className="border-b border-subtle bg-surface py-12 sm:py-16">
+        <p className="text-center font-serif text-2xl italic tracking-tight text-primary sm:text-3xl">
+          {brandName}
         </p>
       </header>
 
       <article className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
         {title && (
-          <h1 className="mb-8 font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">
+          <h1 className="mb-8 font-serif text-3xl italic tracking-tight text-primary sm:text-4xl">
             {title}
           </h1>
         )}
@@ -32,7 +33,7 @@ export function ContactPageContent({ title, body, whatsAppLabel, whatsAppMessage
           {paragraphs.map((paragraph, i) => {
             const lines = paragraph.split("\n");
             return (
-              <p key={i} className="text-base leading-relaxed text-stone-700 sm:text-lg">
+              <p key={i} className="text-base leading-relaxed text-secondary sm:text-lg">
                 {lines.map((line, j) => (
                   <span key={j}>
                     {line}
@@ -49,7 +50,7 @@ export function ContactPageContent({ title, body, whatsAppLabel, whatsAppMessage
             href={whatsAppUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-[48px] items-center justify-center bg-stone-900 px-8 py-3 text-sm font-medium tracking-wide text-white transition-colors hover:bg-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2"
+            className="inline-flex min-h-[48px] items-center justify-center bg-accent px-8 py-3 text-sm font-medium tracking-wide text-accent-text transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
           >
             {whatsAppLabel}
           </a>
@@ -57,8 +58,8 @@ export function ContactPageContent({ title, body, whatsAppLabel, whatsAppMessage
             href={instagramUrl}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Instagram Lénue"
-            className="inline-flex min-h-[48px] items-center justify-center gap-2 border border-stone-200 px-6 py-3 text-sm text-stone-600 transition-colors hover:border-stone-400 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2"
+            aria-label={brandName ? `Instagram ${brandName}` : "Instagram"}
+            className="inline-flex min-h-[48px] items-center justify-center gap-2 border border-subtle px-6 py-3 text-sm text-muted transition-colors hover:border-accent hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

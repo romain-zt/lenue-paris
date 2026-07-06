@@ -114,6 +114,9 @@ importers:
       '@payloadcms/translations':
         specifier: 'catalog:'
         version: 3.85.1
+      '@repo/payload-schema':
+        specifier: workspace:*
+        version: link:../../packages/payload-schema
       next:
         specifier: 'catalog:'
         version: 15.5.19(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.61.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass@1.77.4)
@@ -184,6 +187,12 @@ importers:
       '@payloadcms/ui':
         specifier: 'catalog:'
         version: 3.85.1(@types/react@19.2.17)(monaco-editor@0.55.1)(next@15.5.19(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.61.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass@1.77.4))(payload@3.85.1(graphql@16.14.2)(typescript@5.9.3))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)
+      '@repo/cms-data':
+        specifier: workspace:*
+        version: link:../../packages/cms-data
+      '@repo/payload-schema':
+        specifier: workspace:*
+        version: link:../../packages/payload-schema
       ai:
         specifier: ^6.0.208
         version: 6.0.208(zod@4.4.3)
@@ -257,6 +266,53 @@ importers:
       tsx:
         specifier: ^4.22.4
         version: 4.22.4
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.9(@types/node@22.19.21)(happy-dom@20.10.3)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.77.4)
+
+  packages/cms-data:
+    dependencies:
+      '@repo/payload-schema':
+        specifier: workspace:*
+        version: link:../payload-schema
+      payload:
+        specifier: 'catalog:'
+        version: 3.85.1(graphql@16.14.2)(typescript@5.9.3)
+    devDependencies:
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.19.21
+      next:
+        specifier: 'catalog:'
+        version: 15.5.19(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.61.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass@1.77.4)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.9(@types/node@22.19.21)(happy-dom@20.10.3)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.77.4)
+
+  packages/payload-schema:
+    dependencies:
+      '@payloadcms/db-postgres':
+        specifier: 'catalog:'
+        version: 3.85.1(@opentelemetry/api@1.9.1)(payload@3.85.1(graphql@16.14.2)(typescript@5.9.3))
+      payload:
+        specifier: 'catalog:'
+        version: 3.85.1(graphql@16.14.2)(typescript@5.9.3)
+    devDependencies:
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.19.21
       typescript:
         specifier: 'catalog:'
         version: 5.9.3

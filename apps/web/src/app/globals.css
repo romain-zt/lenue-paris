@@ -3,10 +3,34 @@
 @theme {
   --font-sans: var(--font-jost), "Helvetica Neue", Arial, sans-serif;
   --font-serif: var(--font-cormorant), Georgia, "Times New Roman", serif;
+
+  /*
+    Semantic colour tokens. Each variable name here generates a full set of
+    Tailwind utilities (bg-primary, text-primary, border-primary, ring-primary…).
+    Default values match the DesignTokens CMS global defaults.
+    At runtime, <TokenInjector> overwrites these variables via a <style> tag —
+    changing a value in the admin panel propagates without a deploy.
+  */
+  --color-primary: #1c1917;
+  --color-secondary: #44403c;
+  --color-muted: #78716c;
+  --color-subtle: #a8a29e;
+  --color-surface: #ffffff;
+  --color-page-bg: #faf7f4;
+  --color-editorial: #f0ebe4;
+  --color-section: #f5f0ea;
+  --color-skeleton: #e8e5e2;
+  --color-accent: #1c1917;
+  --color-accent-hover: #44403c;
+  --color-accent-text: #ffffff;
 }
 
-/* Maison layout tokens (Step 3a) — full-bleed hero width for layout-metrics in 3b */
+/*
+  Structural tokens not exposed as Tailwind colour utilities.
+  Used by .border-subtle, .divide-subtle, and the TokenInjector override target.
+*/
 :root {
+  --color-border: #e7e5e4;
   --maison-hero-width: 100vw;
 }
 
@@ -15,7 +39,22 @@
   max-width: 100vw;
 }
 
-/* Warm off-white page base — matches brand identity */
 body {
-  background-color: #faf7f4;
+  background-color: var(--color-page-bg);
+}
+
+/*
+  Custom utilities that can't map cleanly to a single @theme colour variable.
+  Tailwind v4 applies variants (hover:, focus:, responsive) to these automatically.
+*/
+@layer utilities {
+  .border-subtle {
+    border-color: var(--color-border);
+  }
+  .divide-subtle > :not(:first-child) {
+    border-color: var(--color-border);
+  }
+  .bg-overlay {
+    background-color: color-mix(in srgb, var(--color-accent) 20%, transparent);
+  }
 }

@@ -67,8 +67,8 @@ export function CollectionPageContent({ initialCollection, locale }: CollectionP
         data-maison="catalogue-grid"
         className="mx-auto max-w-screen-xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8"
       >
-        <header className="mb-12 border-b border-stone-100 pb-8">
-          <h1 className="font-serif text-3xl font-light text-stone-900 sm:text-4xl">
+        <header className="mb-12 border-b border-subtle pb-8">
+          <h1 className="font-serif text-3xl font-light text-primary sm:text-4xl">
             {collection.title}
           </h1>
         </header>

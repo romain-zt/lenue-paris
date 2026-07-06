@@ -29,8 +29,8 @@ export function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
                 className={[
                   "min-h-[44px] min-w-[44px] px-4 text-sm transition-colors",
                   isActive
-                    ? "bg-stone-900 text-white"
-                    : "bg-transparent text-stone-600 hover:text-stone-900 border border-stone-200",
+                    ? "bg-accent text-accent-text"
+                    : "bg-transparent text-muted hover:text-primary border border-subtle",
                 ].join(" ")}
               >
                 {label}

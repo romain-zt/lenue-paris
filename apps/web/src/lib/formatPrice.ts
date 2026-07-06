@@ -1,14 +1,15 @@
-type StorefrontLocale = "fr" | "en" | "ru";
+import {
+  type ContentLocale,
+  NUMBER_FORMAT_LOCALE,
+  STOREFRONT_DEFAULT_LOCALE,
+} from "@repo/payload-schema/i18n/content-locales";
 
-const NUMBER_FORMAT_LOCALE: Record<StorefrontLocale, string> = {
-  fr: "fr-FR",
-  en: "en-GB",
-  ru: "ru-RU",
-};
-
-export function formatPrice(price: number, locale: StorefrontLocale): string {
-  return new Intl.NumberFormat(NUMBER_FORMAT_LOCALE[locale] ?? "fr-FR", {
-    style: "currency",
-    currency: "EUR",
-  }).format(price);
+export function formatPrice(price: number, locale: ContentLocale): string {
+  return new Intl.NumberFormat(
+    NUMBER_FORMAT_LOCALE[locale] ?? NUMBER_FORMAT_LOCALE[STOREFRONT_DEFAULT_LOCALE],
+    {
+      style: "currency",
+      currency: "EUR",
+    },
+  ).format(price);
 }

@@ -1,15 +1,9 @@
 import type { Metadata } from "next";
 import { routing } from "@/i18n/routing";
+import { OPEN_GRAPH_LOCALE } from "@repo/payload-schema/i18n/content-locales";
 import { HERO_PUBLIC_FALLBACK } from "@/lib/cms/media";
 
-export const SITE_NAME = "Lénue Paris";
 export const DEFAULT_OG_IMAGE_PATH = HERO_PUBLIC_FALLBACK;
-
-const OG_LOCALE: Record<(typeof routing.locales)[number], string> = {
-  fr: "fr_FR",
-  en: "en_GB",
-  ru: "ru_RU",
-};
 
 /** Canonical site origin for absolute OG/Twitter URLs (WhatsApp, iMessage, etc.). */
 export function getSiteUrl(): string {
@@ -17,7 +11,8 @@ export function getSiteUrl(): string {
   if (fromEnv) return fromEnv;
   const vercel = process.env.VERCEL_URL;
   if (vercel) return `https://${vercel}`;
-  return "https://www.lenue.paris";
+  if (process.env.NODE_ENV === "development") return "http://localhost:3001";
+  return "";
 }
 
 export function absoluteUrl(path: string): string {
@@ -40,6 +35,8 @@ export type PageMetadataInput = {
   pathname?: string;
   /** Relative path under `public/` or absolute URL for share preview image. */
   imagePath?: string;
+  /** Site name for OG tags — pass from getSiteSettings().brandName at call site. */
+  siteName?: string;
 };
 
 /** Shared Open Graph + Twitter card metadata for maison-grade link previews. */
@@ -49,6 +46,7 @@ export function buildPageMetadata({
   locale,
   pathname = "",
   imagePath = DEFAULT_OG_IMAGE_PATH,
+  siteName = process.env.NEXT_PUBLIC_BRAND_NAME ?? "",
 }: PageMetadataInput): Metadata {
   const safeLocale = routing.locales.includes(locale as (typeof routing.locales)[number])
     ? (locale as (typeof routing.locales)[number])
@@ -64,23 +62,25 @@ export function buildPageMetadata({
   return {
     title,
     description,
-    metadataBase: new URL(getSiteUrl()),
+    ...(getSiteUrl() ? { metadataBase: new URL(getSiteUrl()) } : {}),
     alternates: {
       canonical: pageUrl,
       languages,
     },
     openGraph: {
       type: "website",
-      siteName: SITE_NAME,
+      siteName: siteName,
       title,
       description,
       url: pageUrl,
-      locale: OG_LOCALE[safeLocale],
-      alternateLocale: routing.locales.filter((l) => l !== safeLocale).map((l) => OG_LOCALE[l]),
+      locale: OPEN_GRAPH_LOCALE[safeLocale],
+      alternateLocale: routing.locales
+        .filter((l) => l !== safeLocale)
+        .map((l) => OPEN_GRAPH_LOCALE[l]),
       images: [
         {
           url: ogImage,
-          alt: SITE_NAME,
+          alt: siteName,
         },
       ],
     },

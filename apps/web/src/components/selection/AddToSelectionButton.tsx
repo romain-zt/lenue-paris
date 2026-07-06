@@ -103,12 +103,12 @@ export function AddToSelectionButton({
       onClick={handleClick}
       disabled={selected}
       aria-disabled={selected}
-      className={`w-full min-h-[44px] text-[10px] font-medium uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2 disabled:cursor-default ${
+      className={`w-full min-h-[44px] text-[10px] font-medium uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-default ${
         selected
-          ? "text-stone-400"
+          ? "text-subtle"
           : feedback === "full"
             ? "text-amber-700"
-            : "text-stone-600 hover:text-stone-900"
+            : "text-muted hover:text-primary"
       } ${className}`}
     >
       {label}

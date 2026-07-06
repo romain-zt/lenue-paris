@@ -13,7 +13,8 @@ import type { ContentLocale } from "@/lib/cms/types";
 type HomePageContentProps = {
   initialPage: PayloadPage;
   locale: ContentLocale;
-    labels: {
+  brandName?: string;
+  labels: {
     season: string;
     viewFullCollectionLabel: string;
     outOfStockBadge: string;
@@ -24,7 +25,7 @@ type HomePageContentProps = {
   };
 };
 
-export function HomePageContent({ initialPage, locale, labels }: HomePageContentProps) {
+export function HomePageContent({ initialPage, locale, brandName = "", labels }: HomePageContentProps) {
   const serverURL =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || getPreviewSiteUrl();
 
@@ -36,7 +37,7 @@ export function HomePageContent({ initialPage, locale, labels }: HomePageContent
     depth: 2,
   });
 
-  const mapped = mapHomePageBlocks(page.blocks);
+  const mapped = mapHomePageBlocks(page.blocks, brandName);
   const blocks = mapped.map((block) => {
     if (block.blockType === "featuredProducts") {
       return enrichFeaturedBlock(block, locale, labels);
