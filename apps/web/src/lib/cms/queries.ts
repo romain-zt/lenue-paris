@@ -24,6 +24,11 @@ type QueryOptions = {
   draft?: boolean;
 };
 
+function buildSlugWhere(slug: string, draft: boolean): Where {
+  if (draft) return { and: [{ slug: { equals: slug } }] };
+  return { and: [{ slug: { equals: slug } }, { _status: { equals: "published" } }] };
+}
+
 export async function getHomePageDocument(
   locale: ContentLocale,
   options?: QueryOptions,
@@ -31,15 +36,11 @@ export async function getHomePageDocument(
   const payload = await getPayloadClient();
   const draft = options?.draft ?? false;
 
-  const where: Where = draft
-    ? { and: [{ slug: { equals: HOME_SLUG } }] }
-    : { and: [{ slug: { equals: HOME_SLUG } }, { _status: { equals: "published" } }] };
-
   const result = await payload.find({
     collection: "pages",
     locale,
     fallbackLocale: "fr",
-    where,
+    where: buildSlugWhere(HOME_SLUG, draft),
     depth: 3,
     limit: 1,
     draft,
@@ -82,13 +83,9 @@ export async function getProductDocumentBySlug(
   const payload = await getPayloadClient();
   const draft = options?.draft ?? false;
 
-  const where: Where = draft
-    ? { and: [{ slug: { equals: slug } }] }
-    : { and: [{ slug: { equals: slug } }, { _status: { equals: "published" } }] };
-
   const query = {
     collection: "products" as const,
-    where,
+    where: buildSlugWhere(slug, draft),
     locale,
     fallbackLocale: "fr" as const,
     limit: 1,
@@ -125,13 +122,9 @@ export async function getCollectionDocumentBySlug(
   const payload = await getPayloadClient();
   const draft = options?.draft ?? false;
 
-  const where: Where = draft
-    ? { and: [{ slug: { equals: slug } }] }
-    : { and: [{ slug: { equals: slug } }, { _status: { equals: "published" } }] };
-
   const query = {
     collection: "collections" as const,
-    where,
+    where: buildSlugWhere(slug, draft),
     locale,
     fallbackLocale: "fr" as const,
     limit: 1,
@@ -248,15 +241,11 @@ export async function getPageDocument(
   const payload = await getPayloadClient();
   const draft = options?.draft ?? false;
 
-  const where: Where = draft
-    ? { and: [{ slug: { equals: slug } }] }
-    : { and: [{ slug: { equals: slug } }, { _status: { equals: "published" } }] };
-
   const result = await payload.find({
     collection: "pages",
     locale,
     fallbackLocale: "fr",
-    where,
+    where: buildSlugWhere(slug, draft),
     depth: 3,
     limit: 1,
     draft,
