@@ -29,7 +29,11 @@
     "S3_SECRET_ACCESS_KEY",
     "S3_FORCE_PATH_STYLE",
     "NEXT_PUBLIC_WHATSAPP_NUMBER",
-    "SEED_SECRET"
+    "SEED_SECRET",
+    "OPENAI_API_KEY",
+    "AI_EMBEDDING_MODEL",
+    "AI_MODEL_CONTENU",
+    "AI_MODEL_DEV"
   ],
   "tasks": {
     "dev": {

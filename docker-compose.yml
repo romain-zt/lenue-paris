@@ -1,10 +1,11 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    # pgvector required for semantic content search (content_chunks table)
+    image: pgvector/pgvector:pg16
     container_name: lenueparis-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "5434:5432"
     environment:
       POSTGRES_DB: lenueparis
       POSTGRES_USER: lenueparis
@@ -35,6 +36,25 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+
+  # One-shot: create the media bucket on startup, then exit.
+  createbuckets:
+    image: minio/mc:latest
+    container_name: lenueparis-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: lenueparis
+      MINIO_ROOT_PASSWORD: lenueparis123
+      S3_BUCKET: media
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD;
+      mc mb --ignore-existing local/$$S3_BUCKET;
+      mc anonymous set download local/$$S3_BUCKET;
+      exit 0;
+      "
 
 volumes:
   postgres_data:

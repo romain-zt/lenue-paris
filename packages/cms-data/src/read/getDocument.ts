@@ -2,6 +2,10 @@ import type { Where } from "payload";
 import { assertReadableTarget } from "../allowlists";
 import { getCmsClient } from "../client";
 import type { ContentLocale } from "../types";
+import {
+  appendSearchableTextToSnapshot,
+  type SearchableSource,
+} from "./extractSearchableText";
 
 type GetDocumentParams = {
   collection: string;
@@ -64,6 +68,7 @@ export async function getDocumentFieldNames(
 export function buildDocumentSnapshot(
   doc: Record<string, unknown>,
   collectionLabel: string,
+  collection?: SearchableSource,
 ): string {
   const fields = Object.keys(doc).filter(
     (k) => !["id", "createdAt", "updatedAt", "globalType"].includes(k),
@@ -75,7 +80,13 @@ export function buildDocumentSnapshot(
     )
     .join("\n");
 
-  return `\n\nChamps disponibles sur ${collectionLabel} (utilisez exactement ces noms) :\n${fieldLines}`;
+  const base = `\n\nChamps disponibles sur ${collectionLabel} (utilisez exactement ces noms) :\n${fieldLines}`;
+
+  if (collection) {
+    return appendSearchableTextToSnapshot(base, collection, doc);
+  }
+
+  return base;
 }
 
 export function buildWhereClause(

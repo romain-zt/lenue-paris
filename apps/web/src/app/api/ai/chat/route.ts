@@ -17,6 +17,7 @@ import {
   patchDocument,
   parseContentLocale,
 } from '@repo/cms-data'
+import { semanticSearch } from '@repo/cms-data/indexing'
 
 setPayloadConfig(config)
 
@@ -38,7 +39,9 @@ Tu parles français par défaut et tu t'adaptes à la langue de l'utilisateur si
 Tu peux lire et modifier le contenu du site directement via les outils disponibles. Quand on te demande de modifier quelque chose, fais-le immédiatement sans demander de confirmation, sauf si c'est irréversible ou ambigu.
 
 ## Règles de récupération (obligatoires)
-- Avant toute réponse factuelle sur le contenu (prix, stock, titres, couleurs de design tokens), appelle search_content ou get_site_snapshot — ne réponds jamais depuis ta mémoire d'entraînement
+- Avant toute réponse factuelle sur le contenu (prix, stock, titres, couleurs de design tokens), appelle semantic_search (recherche sémantique) ou search_content (recherche exacte) ou get_site_snapshot — ne réponds jamais depuis ta mémoire d'entraînement
+- Préfère semantic_search pour les questions en langage naturel (« où parle-t-on de la livraison ? », « quels produits évoquent la soie ? »)
+- Utilise search_content pour les filtres structurés (catégorie, stock, statut) ou les correspondances exactes
 - Pour connaître la structure des champs, appelle get_schema — jamais de supposition sur les noms de champs
 - Utilise get_document pour lire un document complet avant de le modifier si besoin
 - Utilise patch_field pour mettre à jour des champs (collections modifiables : pages, products, collections ; globaux : site-settings, design-tokens)
@@ -117,6 +120,7 @@ export async function POST(request: NextRequest) {
       docSnapshot = buildDocumentSnapshot(
         doc,
         `collection="${context.collection}", id="${context.id}"`,
+        context.collection as 'pages' | 'products' | 'collections' | 'media',
       )
       docSnapshot += `\n\nRègle critique : pour modifier le titre, utilisez patch_field avec data={"title":"…"} — jamais "data.title" ni un chemin imbriqué inventé.`
     }
@@ -128,7 +132,11 @@ export async function POST(request: NextRequest) {
       depth: 1,
     })
     if (!('error' in doc)) {
-      docSnapshot = buildDocumentSnapshot(doc, `global="${context.slug}"`)
+      docSnapshot = buildDocumentSnapshot(
+        doc,
+        `global="${context.slug}"`,
+        context.slug as 'site-settings' | 'design-tokens',
+      )
     }
   }
 
@@ -201,10 +209,10 @@ export async function POST(request: NextRequest) {
         }),
 
         search_content: tool({
-          description: 'Rechercher du contenu dans la base (produits, pages, collections). Utilise des filtres pour compter (ex: category=dresses, inStock=true, status=published).',
+          description: 'Rechercher du contenu dans la base (produits, pages avec blocs, collections, médias). Utilise des filtres pour compter (ex: category=dresses, inStock=true, status=published).',
           inputSchema: zodSchema(z.object({
-            query: z.string().optional().describe('Texte à rechercher dans titre, slug ou description'),
-            collections: z.array(z.enum(['products', 'pages', 'collections'])).optional(),
+            query: z.string().optional().describe('Texte à rechercher dans titre, slug, description, blocs de page ou alt média'),
+            collections: z.array(z.enum(['products', 'pages', 'collections', 'media'])).optional(),
             locale: z.string().optional().describe('Locale: fr, en ou ru'),
             category: z.string().optional().describe('Filtre catégorie produit: dresses, bags, scarfs'),
             inStock: z.boolean().optional().describe('Filtre stock produit'),
@@ -217,6 +225,23 @@ export async function POST(request: NextRequest) {
               collections,
               locale: parseContentLocale(locale),
               filters: { category, inStock, status },
+              limit,
+            }),
+        }),
+
+        semantic_search: tool({
+          description: 'Recherche sémantique vectorielle dans tout le contenu du site (pages, blocs, produits, collections, médias, paramètres). Idéal pour les questions en langage naturel.',
+          inputSchema: zodSchema(z.object({
+            query: z.string().describe('Question ou phrase à rechercher par similarité sémantique'),
+            collections: z.array(z.enum(['products', 'pages', 'collections', 'media', 'site-settings', 'design-tokens'])).optional(),
+            locale: z.string().optional().describe('Locale: fr, en ou ru'),
+            limit: z.number().optional().describe('Nombre max de passages retournés (défaut 10)'),
+          })),
+          execute: async ({ query, collections, locale, limit }) =>
+            semanticSearch({
+              query,
+              collections,
+              locale: parseContentLocale(locale),
               limit,
             }),
         }),
