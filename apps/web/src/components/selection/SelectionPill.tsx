@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { buildMultiPieceWhatsAppMessage } from "@/lib/selection/buildMultiPieceWhatsAppMessage";
 import { useSelection } from "@/lib/selection/SelectionProvider";
 import { buildWhatsAppUrl } from "@/lib/whatsapp/config";
+import { formatPrice } from "@/lib/formatPrice";
 
 type SelectionPanelProps = {
   open: boolean;
@@ -104,10 +105,7 @@ export function SelectionPanel({ open, onClose }: SelectionPanelProps) {
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-stone-900">{item.title}</p>
                   <p className="mt-0.5 text-sm text-stone-400">
-                    {new Intl.NumberFormat("fr-FR", {
-                      style: "currency",
-                      currency: "EUR",
-                    }).format(item.price)}
+                    {formatPrice(item.price, locale as "fr" | "en" | "ru")}
                   </p>
                 </div>
                 <button

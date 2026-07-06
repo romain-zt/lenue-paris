@@ -8,6 +8,7 @@ import { OrderCTA } from "@/components/product/OrderCTA";
 import { CapsuleBadge } from "@/components/editorial/CapsuleBadge";
 import { mapPayloadProductDetail } from "@/lib/cms/blocks";
 import { getPreviewSiteUrl } from "@/lib/cms/generatePreviewPath";
+import { formatPrice } from "@/lib/formatPrice";
 import { useLivePreviewFieldBridge } from "@/hooks/useLivePreviewFieldBridge";
 import type { Product as PayloadProduct } from "@/payload-types";
 import type { ContentLocale } from "@/lib/cms/types";
@@ -34,10 +35,7 @@ export function ProductPageContent({ initialProduct, locale }: ProductPageConten
   const product = mapPayloadProductDetail(liveDoc, locale);
   if (!product) return null;
 
-  const formattedPrice = new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-  }).format(product.price);
+  const formattedPrice = formatPrice(product.price, locale);
 
   return (
     <main className="mx-auto max-w-screen-xl px-4 py-8 sm:px-6 lg:px-8">

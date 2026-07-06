@@ -1,10 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { AddToSelectionButton } from "@/components/selection/AddToSelectionButton";
 import { getProductMainImageUrl } from "@/lib/productImages";
+import { formatPrice } from "@/lib/formatPrice";
 import type { Product } from "@/types/product";
 
 interface ProductCardProps {
@@ -13,13 +14,11 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const t = useTranslations("product");
+  const locale = useLocale() as "fr" | "en" | "ru";
   const imageUrl = getProductMainImageUrl(product.slug, product.mainImage?.url);
   const isOutOfStock = product.inStock === false;
 
-  const formattedPrice = new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-  }).format(product.price);
+  const formattedPrice = formatPrice(product.price, locale);
 
   return (
     <article className="group">
