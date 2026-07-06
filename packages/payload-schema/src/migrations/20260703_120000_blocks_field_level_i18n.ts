@@ -82,7 +82,35 @@ async function transformBlockTable(db: MigrateUpArgs['db'], spec: BlockTableSpec
   if (!(await columnExists(db, spec.blockTable, '_locale'))) return
 
   const before = await snapshotBlockI18n(db, spec)
-  if (before.blockRows === 0) return
+  if (before.blockRows === 0) {
+    await runSql(db, localeTableDDL(spec))
+    await runSql(
+      db,
+      `
+    CREATE UNIQUE INDEX IF NOT EXISTS "${spec.localeTable}_locale_parent_id_unique"
+    ON "${spec.localeTable}" USING btree ("_locale", "_parent_id");
+    `,
+    )
+    for (const column of spec.localizedColumns) {
+      await runSql(db, `ALTER TABLE "${spec.blockTable}" DROP COLUMN IF EXISTS "${column}" CASCADE;`)
+    }
+    await runSql(db, `ALTER TABLE "${spec.blockTable}" DROP COLUMN IF EXISTS "_locale" CASCADE;`)
+    await runSql(db, `DROP INDEX IF EXISTS "${spec.blockTable}_locale_idx";`)
+    await runSql(
+      db,
+      `
+    DO $$ BEGIN
+      ALTER TABLE "${spec.localeTable}"
+        ADD CONSTRAINT "${spec.localeTable}_parent_id_fk"
+        FOREIGN KEY ("_parent_id") REFERENCES "public"."${spec.blockTable}"("id")
+        ON DELETE cascade ON UPDATE no action;
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $$;
+    `,
+    )
+    return
+  }
 
   const expectedCanonical = await countDistinctBlocks(db, spec)
 

@@ -2,6 +2,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import type { CollectionConfig } from "payload";
 import { Media as BaseMedia } from "@repo/payload-schema/collections";
+import { withCollectionContentIndex } from "./withContentIndex";
 
 const hasS3Config =
   !!process.env.S3_BUCKET &&
@@ -18,10 +19,13 @@ const baseUpload =
     ? BaseMedia.upload
     : {};
 
-export const Media: CollectionConfig = {
-  ...BaseMedia,
-  upload: {
-    ...baseUpload,
-    ...(hasS3Config ? {} : { staticDir: mediaDir }),
+export const Media: CollectionConfig = withCollectionContentIndex(
+  {
+    ...BaseMedia,
+    upload: {
+      ...baseUpload,
+      ...(hasS3Config ? {} : { staticDir: mediaDir }),
+    },
   },
-};
+  "media",
+);

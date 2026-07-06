@@ -172,6 +172,7 @@ function ToolCallCard({ toolName, state }: { toolName: string; state: string }) 
     patch_field: 'Modification du contenu',
     get_schema: 'Récupération du schéma',
     search_content: 'Recherche dans la base',
+    semantic_search: 'Recherche sémantique',
     get_site_snapshot: 'Instantané du site',
   }
   const isLoading = state === 'partial-call' || state === 'call'

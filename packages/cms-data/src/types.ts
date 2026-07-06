@@ -20,7 +20,7 @@ export interface GetDocumentParams {
 }
 
 export interface SearchContentParams {
-  query: string;
+  query?: string;
   collections?: SearchCollection[];
   locale?: ContentLocale;
   filters?: {
@@ -34,9 +34,13 @@ export interface SearchContentParams {
 export interface SearchResult {
   id: number;
   collection: SearchCollection;
-  slug?: string;
-  title?: string;
-  snippet?: string;
+  slug?: string | null;
+  title?: string | null;
+  snippet?: string | null;
+  category?: string | null;
+  price?: number | null;
+  inStock?: boolean | null;
+  status?: string | null;
 }
 
 export interface SearchContentResult {
@@ -46,15 +50,14 @@ export interface SearchContentResult {
 }
 
 export interface SiteSnapshot {
-  brandName: string;
-  instagramUrl?: string | null;
-  whatsappPhone?: string | null;
+  siteSettings: Record<string, unknown>;
   designTokens: Record<string, unknown>;
   counts: {
-    pages: number;
-    products: number;
-    collections: number;
-    productsByCategory: Record<string, number>;
+    productsPublished: number;
+    productsInStock: number;
+    pagesPublished: number;
+    collectionsPublished: number;
+    ordersPending: number;
   };
 }
 
@@ -81,4 +84,25 @@ export interface SchemaCollectionManifest {
 export interface SchemaManifest {
   collections: SchemaCollectionManifest[];
   globals: SchemaCollectionManifest[];
+}
+
+export type SemanticSearchCollection =
+  | SearchCollection
+  | "site-settings"
+  | "design-tokens";
+
+export interface SemanticSearchParams {
+  query: string;
+  locale?: ContentLocale;
+  collections?: SemanticSearchCollection[];
+  limit?: number;
+}
+
+export interface SemanticSearchResult {
+  collection: SemanticSearchCollection;
+  docId: string;
+  locale: ContentLocale;
+  fieldPath: string;
+  text: string;
+  similarity: number;
 }

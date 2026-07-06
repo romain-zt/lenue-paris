@@ -5,6 +5,7 @@ import {
   Products as BaseProducts,
 } from "@repo/payload-schema/collections";
 import { generatePreviewPath, getPreviewSiteUrl } from "@/lib/cms/generatePreviewPath";
+import { withCollectionContentIndex } from "./withContentIndex";
 
 type PreviewCollection = "pages" | "products" | "collections";
 
@@ -55,6 +56,15 @@ function withStorefrontLivePreview(
   } as CollectionConfig;
 }
 
-export const Pages = withStorefrontLivePreview(BasePages, "pages");
-export const Products = withStorefrontLivePreview(BaseProducts, "products");
-export const Collections = withStorefrontLivePreview(BaseCollections, "collections");
+export const Pages = withCollectionContentIndex(
+  withStorefrontLivePreview(BasePages, "pages"),
+  "pages",
+);
+export const Products = withCollectionContentIndex(
+  withStorefrontLivePreview(BaseProducts, "products"),
+  "products",
+);
+export const Collections = withCollectionContentIndex(
+  withStorefrontLivePreview(BaseCollections, "collections"),
+  "collections",
+);

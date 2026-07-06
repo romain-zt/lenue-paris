@@ -8,6 +8,8 @@ import * as migration_20260619_160000_pages_v_autosave from './20260619_160000_p
 import * as migration_20260703_120000_blocks_field_level_i18n from './20260703_120000_blocks_field_level_i18n';
 import * as migration_20260703_180000_design_tokens from './20260703_180000_design_tokens';
 import * as migration_20260703_190000_site_wordmarks from './20260703_190000_site_wordmarks';
+import * as migration_20260706_120000_content_chunks from './20260706_120000_content_chunks';
+import * as migration_20260706_140000_blocks_field_level_i18n_schema_fix from './20260706_140000_blocks_field_level_i18n_schema_fix';
 
 export const migrations = [
   {
@@ -59,5 +61,15 @@ export const migrations = [
     up: migration_20260703_190000_site_wordmarks.up,
     down: migration_20260703_190000_site_wordmarks.down,
     name: '20260703_190000_site_wordmarks',
+  },
+  {
+    up: migration_20260706_120000_content_chunks.up,
+    down: migration_20260706_120000_content_chunks.down,
+    name: '20260706_120000_content_chunks',
+  },
+  {
+    up: migration_20260706_140000_blocks_field_level_i18n_schema_fix.up,
+    down: migration_20260706_140000_blocks_field_level_i18n_schema_fix.down,
+    name: '20260706_140000_blocks_field_level_i18n_schema_fix',
   },
 ];
