@@ -16,7 +16,8 @@ export function getPreviewSiteUrl(): string {
   if (process.env.NODE_ENV === "development" || !process.env.VERCEL) {
     return "http://localhost:3001";
   }
-  return "https://www.lenue.paris";
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "";
 }
 
 function buildStorefrontPath(collection: PreviewCollection, slug: string, locale: string): string {

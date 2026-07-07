@@ -5,13 +5,21 @@ import { useRouter } from 'next/navigation'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import type { UIMessage } from 'ai'
+import { useLocale } from '@payloadcms/ui'
 import { ensureHighlightStyle, focusAdminField, scrollAndHighlight } from './live-preview/utils'
+
+import {
+  isContentLocale,
+  parseContentLocale,
+  type ContentLocale,
+} from "@repo/payload-schema/i18n/content-locales";
 
 type DocContext = {
   type: 'collection' | 'global' | 'dashboard'
   collection?: string
   id?: string
   slug?: string
+  locale?: ContentLocale
 }
 
 type LastEdit = {
@@ -49,8 +57,8 @@ const QUICK_ACTIONS = {
   ],
   dev: [
     { label: 'Nouveau bloc', prompt: 'Aide-moi à créer un nouveau bloc Payload (schema + composant React).' },
-    { label: 'Nouveau composant', prompt: 'Génère un composant React et pousse-le sur GitHub.' },
     { label: 'Structure du site', prompt: 'Montre-moi toutes les collections et globaux disponibles avec leurs champs.' },
+    { label: 'État du catalogue', prompt: 'Combien de produits publiés sont en stock ? Liste les robes disponibles.' },
   ],
 }
 
@@ -162,8 +170,9 @@ function ToolCallCard({ toolName, state }: { toolName: string; state: string }) 
   const labels: Record<string, string> = {
     get_document: 'Lecture du document',
     patch_field: 'Modification du contenu',
-    list_schema: 'Récupération du schéma',
-    push_to_github: 'Push vers GitHub',
+    get_schema: 'Récupération du schéma',
+    search_content: 'Recherche dans la base',
+    get_site_snapshot: 'Instantané du site',
   }
   const isLoading = state === 'partial-call' || state === 'call'
   return (
@@ -235,6 +244,7 @@ function MessageBubble({ message }: { message: UIMessage }) {
 
 export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const router = useRouter()
+  const locale = useLocale()
   const [open, setOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'contenu' | 'dev'>('contenu')
   const [docContext, setDocContext] = useState<DocContext>({ type: 'dashboard' })
@@ -303,7 +313,15 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
   }, [docContext])
 
   useEffect(() => {
-    const update = () => setDocContext(parseAdminPath(window.location.pathname))
+    const adminLocale = isContentLocale(locale.code)
+      ? (locale.code as ContentLocale)
+      : parseContentLocale()
+    const update = () => {
+      setDocContext({
+        ...parseAdminPath(window.location.pathname),
+        locale: adminLocale,
+      })
+    }
     update()
     window.addEventListener('popstate', update)
     const observer = new MutationObserver(update)
@@ -312,7 +330,7 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
       window.removeEventListener('popstate', update)
       observer.disconnect()
     }
-  }, [])
+  }, [locale.code])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

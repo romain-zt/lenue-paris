@@ -4,12 +4,12 @@ type HomeQuoteSectionProps = {
 
 export function HomeQuoteSection({ quote }: HomeQuoteSectionProps) {
   return (
-    <section aria-label="Philosophie" className="bg-[#f5f0ea] px-4 py-16 sm:py-20 lg:py-24">
+    <section aria-label="Philosophie" className="bg-section px-4 py-16 sm:py-20 lg:py-24">
       <div className="mx-auto max-w-xl text-center">
-        <p className="font-serif text-xl font-light italic leading-relaxed text-stone-600 sm:text-2xl sm:leading-relaxed">
+        <p className="font-serif text-xl font-light italic leading-relaxed text-muted sm:text-2xl sm:leading-relaxed">
           {quote}
         </p>
-        <div className="mx-auto mt-7 h-px w-10 bg-stone-300" aria-hidden="true" />
+        <div className="mx-auto mt-7 h-px w-10 bg-subtle" aria-hidden="true" />
       </div>
     </section>
   );

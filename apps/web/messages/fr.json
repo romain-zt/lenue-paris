@@ -21,6 +21,7 @@
     "ru": "РУ"
   },
   "home": {
+    "loading": "Chargement",
     "season": "Printemps · Été 2026",
     "heroTagline": "Pour les moments que vous voulez garder.",
     "heroCta": "Découvrir la collection",
@@ -106,6 +107,15 @@
     "metaDescription": "Écrivez à Lénue Paris sur WhatsApp — maison de robes, réponse personnelle.",
     "whatsAppLabel": "Écrire sur WhatsApp",
     "whatsAppMessage": "Bonjour, je souhaite en savoir plus sur la collection Lénue."
+  },
+  "error": {
+    "loading": "Chargement",
+    "notFound": "Introuvable",
+    "productNotFound": "Ce produit n'existe pas",
+    "productGone": "Il a peut-être été retiré ou l'adresse est incorrecte.",
+    "backToCollection": "Retour à la collection",
+    "pageNotFound": "Cette page est introuvable.",
+    "backToShop": "← Retour à la boutique"
   },
   "selection": {
     "pillCount": "Ma sélection · {count}",

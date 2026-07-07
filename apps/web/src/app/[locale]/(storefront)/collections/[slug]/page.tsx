@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 import { CollectionPageContent } from "@/components/cms/CollectionPageContent";
 import { getCollectionBySlug, getCollectionDocumentBySlug } from "@/lib/cms/queries";
+import { getSiteSettings, resolveBrandName } from "@/lib/cms/siteSettings";
 import type { ContentLocale } from "@/lib/cms/types";
 
 export const dynamic = "force-dynamic";
@@ -15,10 +16,14 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
   const { isEnabled: isDraft } = await draftMode();
-  const collection = await getCollectionBySlug(slug, locale as ContentLocale, { draft: isDraft });
-  if (!collection) return { title: "Collection — Lénue Paris" };
+  const [collection, siteSettings] = await Promise.all([
+    getCollectionBySlug(slug, locale as ContentLocale, { draft: isDraft }),
+    getSiteSettings(),
+  ]);
+  const brandName = resolveBrandName(siteSettings);
+  if (!collection) return { title: `Collection — ${brandName}` };
   return {
-    title: `${collection.title} — Lénue Paris`,
+    title: `${collection.title} — ${brandName}`,
     description: collection.title,
   };
 }

@@ -21,6 +21,7 @@
     "ru": "РУ"
   },
   "home": {
+    "loading": "Загрузка",
     "season": "Весна · Лето 2026",
     "heroTagline": "Для моментов, которые хочется сохранить.",
     "heroCta": "Смотреть коллекцию",
@@ -106,6 +107,15 @@
     "metaDescription": "Напишите Lénue Paris в WhatsApp — дом платьев, личный ответ.",
     "whatsAppLabel": "Написать в WhatsApp",
     "whatsAppMessage": "Здравствуйте, хочу узнать больше о коллекции Lénue."
+  },
+  "error": {
+    "loading": "Загрузка",
+    "notFound": "Не найдено",
+    "productNotFound": "Этого товара не существует",
+    "productGone": "Возможно, он был удалён или адрес указан неверно.",
+    "backToCollection": "Вернуться в коллекцию",
+    "pageNotFound": "Эта страница не найдена.",
+    "backToShop": "← Вернуться в магазин"
   },
   "selection": {
     "pillCount": "Мой выбор · {count}",

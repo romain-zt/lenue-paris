@@ -30,11 +30,11 @@ export function EditorialStripBlock({
   const canEdit = Boolean(docId && blockIndex !== undefined);
 
   return (
-    <section aria-label={label} className="overflow-hidden bg-[#f0ebe4] lg:flex">
+    <section aria-label={label} className="overflow-hidden lg:flex" style={{ backgroundColor: "var(--color-editorial)" }}>
       <div className="flex flex-col justify-center px-8 py-16 sm:px-12 sm:py-20 lg:w-[42%] lg:px-14 lg:py-24">
         <p
           data-payload-path={p ? `${p}.label` : undefined}
-          className="mb-6 text-[9px] font-medium uppercase tracking-[0.38em] text-stone-400"
+          className="mb-6 text-[9px] font-medium uppercase tracking-[0.38em] text-subtle"
         >
           {canEdit ? (
             <EditableField
@@ -49,7 +49,7 @@ export function EditorialStripBlock({
             </EditableField>
           ) : label}
         </p>
-        <h2 className="font-serif text-3xl font-light leading-snug text-stone-800 sm:text-4xl lg:text-[2.6rem] lg:leading-snug">
+        <h2 className="font-serif text-3xl font-light leading-snug text-secondary sm:text-4xl lg:text-[2.6rem] lg:leading-snug">
           <span data-payload-path={p ? `${p}.headline` : undefined}>
             {canEdit ? (
               <EditableField
@@ -67,7 +67,7 @@ export function EditorialStripBlock({
           <br />
           <em
             data-payload-path={p ? `${p}.subline` : undefined}
-            className="font-light not-italic text-stone-600"
+            className="font-light not-italic text-muted"
           >
             {canEdit ? (
               <EditableField
@@ -83,10 +83,10 @@ export function EditorialStripBlock({
             ) : subline}
           </em>
         </h2>
-        <div className="my-8 h-px w-12 bg-stone-300" aria-hidden="true" />
+        <div className="my-8 h-px w-12 bg-subtle" aria-hidden="true" />
         <p
           data-payload-path={p ? `${p}.body` : undefined}
-          className="max-w-xs text-sm leading-relaxed text-stone-500"
+          className="max-w-xs text-sm leading-relaxed text-muted"
         >
           {canEdit ? (
             <EditableField
@@ -105,9 +105,9 @@ export function EditorialStripBlock({
         <div className="mt-10" data-payload-path={p ? `${p}.ctaLabel` : undefined}>
           <Link
             href={ctaLink}
-            className="group inline-flex items-center gap-2.5 text-[10px] font-medium uppercase tracking-[0.25em] text-stone-600 transition-colors hover:text-stone-900"
+            className="group inline-flex items-center gap-2.5 text-[10px] font-medium uppercase tracking-[0.25em] text-muted transition-colors hover:text-primary"
           >
-            <span className="border-b border-stone-400 pb-px transition-colors group-hover:border-stone-900">
+            <span className="border-b border-subtle pb-px transition-colors group-hover:border-accent">
               {canEdit ? (
                 <EditableField
                   collection={docCollection}
@@ -137,7 +137,8 @@ export function EditorialStripBlock({
           className="object-cover object-top"
         />
         <div
-          className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-[#f0ebe4] to-transparent lg:block"
+          className="absolute inset-y-0 left-0 w-12 to-transparent lg:block bg-gradient-to-r"
+          style={{ backgroundImage: "linear-gradient(to right, var(--color-editorial), transparent)" }}
           aria-hidden="true"
         />
       </div>

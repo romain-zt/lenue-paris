@@ -44,7 +44,7 @@ export function ProductPageContent({ initialProduct, locale }: ProductPageConten
       <nav className="mb-6">
         <Link
           href="/catalogue"
-          className="text-sm text-stone-500 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900"
+          className="text-sm text-muted hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           {t("backToCollection")}
         </Link>
@@ -66,19 +66,19 @@ export function ProductPageContent({ initialProduct, locale }: ProductPageConten
               <CapsuleBadge className="mb-3">{t("limitedSeriesBadge")}</CapsuleBadge>
             ) : null}
             <h1
-              className="text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl"
+              className="text-2xl font-semibold tracking-tight text-primary sm:text-3xl"
               data-payload-path="title"
             >
               {product.title}
             </h1>
-            <p className="mt-2 text-xl text-stone-700" data-payload-path="price">
+            <p className="mt-2 text-xl text-secondary" data-payload-path="price">
               {formattedPrice}
             </p>
           </div>
 
           {product.description && (
             <p
-              className="text-sm leading-relaxed text-stone-600"
+              className="text-sm leading-relaxed text-muted"
               data-payload-path="description"
             >
               {product.description}

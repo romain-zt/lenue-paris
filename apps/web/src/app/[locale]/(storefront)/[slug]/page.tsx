@@ -3,6 +3,7 @@ import { draftMode } from 'next/headers'
 import { setRequestLocale } from 'next-intl/server'
 import { GenericPageContent } from './GenericPageContent'
 import { getPageDocument } from '@/lib/cms/queries'
+import { getSiteSettings, resolveBrandName } from '@/lib/cms/siteSettings'
 import { buildPageMetadata } from '@/lib/seo/metadata'
 import type { ContentLocale } from '@/lib/cms/types'
 
@@ -31,7 +32,10 @@ export default async function GenericPage({ params }: PageProps) {
   setRequestLocale(locale)
 
   const { isEnabled: isDraft } = await draftMode()
-  const page = await getPageDocument(slug, locale as ContentLocale, { draft: isDraft })
+  const [page, siteSettings] = await Promise.all([
+    getPageDocument(slug, locale as ContentLocale, { draft: isDraft }),
+    getSiteSettings(),
+  ])
 
   if (!page) notFound()
 
@@ -39,6 +43,7 @@ export default async function GenericPage({ params }: PageProps) {
     <GenericPageContent
       initialPage={JSON.parse(JSON.stringify(page))}
       locale={locale as ContentLocale}
+      brandName={resolveBrandName(siteSettings)}
     />
   )
 }

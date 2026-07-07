@@ -67,7 +67,7 @@ export function SelectionPanel({ open, onClose }: SelectionPanelProps) {
       <button
         type="button"
         aria-label={t("closePanel")}
-        className={`fixed inset-0 z-[60] bg-stone-900/20 transition-opacity duration-200 ${panelEase} motion-reduce:!transition-none ${
+        className={`fixed inset-0 z-[60] bg-overlay transition-opacity duration-200 ${panelEase} motion-reduce:!transition-none ${
           visible ? "opacity-100" : "opacity-0"
         }`}
         onClick={onClose}
@@ -76,34 +76,34 @@ export function SelectionPanel({ open, onClose }: SelectionPanelProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="selection-panel-title"
-        className={`fixed bottom-0 left-0 right-0 z-[70] max-h-[85vh] overflow-y-auto rounded-t-lg border border-stone-200 bg-white shadow-[0_-8px_32px_rgba(0,0,0,0.08)] transition-transform duration-300 ${panelEase} motion-reduce:!transition-none sm:bottom-auto sm:left-auto sm:right-4 sm:top-20 sm:max-h-[calc(100vh-6rem)] sm:w-[min(100%,22rem)] sm:rounded-lg sm:transition-[opacity,transform] sm:duration-[250ms] sm:ease-[cubic-bezier(0.25,0.8,0.25,1)] ${
+        className={`fixed bottom-0 left-0 right-0 z-[70] max-h-[85vh] overflow-y-auto rounded-t-lg border border-subtle bg-surface shadow-[0_-8px_32px_rgba(0,0,0,0.08)] transition-transform duration-300 ${panelEase} motion-reduce:!transition-none sm:bottom-auto sm:left-auto sm:right-4 sm:top-20 sm:max-h-[calc(100vh-6rem)] sm:w-[min(100%,22rem)] sm:rounded-lg sm:transition-[opacity,transform] sm:duration-[250ms] sm:ease-[cubic-bezier(0.25,0.8,0.25,1)] ${
           visible
             ? "translate-y-0 sm:opacity-100 sm:translate-y-0"
             : "translate-y-full sm:opacity-0 sm:-translate-y-1.5"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-stone-100 px-4 py-4 sm:px-5">
-          <h2 id="selection-panel-title" className="text-sm font-medium tracking-wide text-stone-900">
+        <div className="flex items-center justify-between border-b border-subtle px-4 py-4 sm:px-5">
+          <h2 id="selection-panel-title" className="text-sm font-medium tracking-wide text-primary">
             {t("panelTitle")}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[44px] min-w-[44px] text-xs uppercase tracking-[0.15em] text-stone-500 hover:text-stone-900"
+            className="min-h-[44px] min-w-[44px] text-xs uppercase tracking-[0.15em] text-muted hover:text-primary"
           >
             {t("closePanel")}
           </button>
         </div>
 
         {items.length === 0 ? (
-          <p className="px-4 py-8 text-sm text-stone-500 sm:px-5">{t("empty")}</p>
+          <p className="px-4 py-8 text-sm text-muted sm:px-5">{t("empty")}</p>
         ) : (
-          <ul className="divide-y divide-stone-100 px-4 sm:px-5">
+          <ul className="divide-subtle px-4 sm:px-5">
             {items.map((item) => (
-              <li key={item.slug} className="flex items-start justify-between gap-3 py-4">
+              <li key={item.slug} className="flex items-start justify-between gap-3 border-b border-subtle py-4 last:border-0">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-stone-900">{item.title}</p>
-                  <p className="mt-0.5 text-sm text-stone-400">
+                  <p className="text-sm font-medium text-primary">{item.title}</p>
+                  <p className="mt-0.5 text-sm text-subtle">
                     {new Intl.NumberFormat("fr-FR", {
                       style: "currency",
                       currency: "EUR",
@@ -113,7 +113,7 @@ export function SelectionPanel({ open, onClose }: SelectionPanelProps) {
                 <button
                   type="button"
                   onClick={() => removeItem(item.slug)}
-                  className="shrink-0 min-h-[44px] px-2 text-[10px] font-medium uppercase tracking-[0.12em] text-stone-500 hover:text-stone-900"
+                  className="shrink-0 min-h-[44px] px-2 text-[10px] font-medium uppercase tracking-[0.12em] text-muted hover:text-primary"
                 >
                   {t("remove")}
                 </button>
@@ -122,12 +122,12 @@ export function SelectionPanel({ open, onClose }: SelectionPanelProps) {
           </ul>
         )}
 
-        <div className="space-y-3 border-t border-stone-100 px-4 py-4 sm:px-5">
+        <div className="space-y-3 border-t border-subtle px-4 py-4 sm:px-5">
           {items.length > 0 && (
             <button
               type="button"
               onClick={clear}
-              className="min-h-[44px] w-full text-[10px] font-medium uppercase tracking-[0.15em] text-stone-400 hover:text-stone-700"
+              className="min-h-[44px] w-full text-[10px] font-medium uppercase tracking-[0.15em] text-subtle hover:text-secondary"
             >
               {t("clearAll")}
             </button>
@@ -137,7 +137,7 @@ export function SelectionPanel({ open, onClose }: SelectionPanelProps) {
               href={whatsAppUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex min-h-[44px] w-full items-center justify-center bg-stone-900 px-6 py-3 text-sm font-semibold tracking-wide text-white transition-colors hover:bg-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2"
+              className="flex min-h-[44px] w-full items-center justify-center bg-accent px-6 py-3 text-sm font-semibold tracking-wide text-accent-text transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
               {t("continueWhatsApp")}
             </a>
@@ -167,7 +167,7 @@ export function SelectionPill({ overlayMode = false }: SelectionPillProps) {
         aria-haspopup="dialog"
         aria-expanded={isPanelOpen}
         className={`relative flex min-h-[44px] min-w-[44px] items-center justify-center transition-colors ${
-          overlayMode ? "text-white/80 hover:text-white" : "text-stone-600 hover:text-stone-900"
+          overlayMode ? "text-white/80 hover:text-white" : "text-muted hover:text-primary"
         }`}
       >
         <svg
@@ -187,7 +187,7 @@ export function SelectionPill({ overlayMode = false }: SelectionPillProps) {
         </svg>
         <span
           className={`absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-semibold leading-none ${
-            overlayMode ? "bg-white text-stone-900" : "bg-stone-900 text-white"
+            overlayMode ? "bg-white text-primary" : "bg-accent text-accent-text"
           }`}
           aria-hidden="true"
         >

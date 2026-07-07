@@ -13,9 +13,10 @@ import type { ContentLocale } from '@/lib/cms/types'
 interface GenericPageContentProps {
   initialPage: PayloadPage
   locale: ContentLocale
+  brandName?: string
 }
 
-export function GenericPageContent({ initialPage, locale }: GenericPageContentProps) {
+export function GenericPageContent({ initialPage, locale, brandName = "" }: GenericPageContentProps) {
   const serverURL =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || getPreviewSiteUrl()
 
@@ -28,7 +29,7 @@ export function GenericPageContent({ initialPage, locale }: GenericPageContentPr
   })
 
   const hasBlocks = Array.isArray(page.blocks) && page.blocks.length > 0
-  const mappedBlocks = hasBlocks ? mapHomePageBlocks(page.blocks) : []
+  const mappedBlocks = hasBlocks ? mapHomePageBlocks(page.blocks, brandName) : []
 
   const docId = String(page.id)
   const titleStr = typeof page.title === 'string' ? page.title : ''
@@ -49,7 +50,7 @@ export function GenericPageContent({ initialPage, locale }: GenericPageContentPr
               currentValue={titleStr}
               locale={locale}
             >
-              <h1 className="mb-8 font-serif text-3xl font-light tracking-tight text-stone-900 sm:text-4xl lg:text-5xl">
+              <h1 className="mb-8 font-serif text-3xl font-light tracking-tight text-primary sm:text-4xl lg:text-5xl">
                 {titleStr}
               </h1>
             </EditableField>
@@ -64,7 +65,7 @@ export function GenericPageContent({ initialPage, locale }: GenericPageContentPr
               locale={locale}
               multiline
             >
-              <p className="whitespace-pre-wrap text-base leading-relaxed text-stone-700 sm:text-lg">
+              <p className="whitespace-pre-wrap text-base leading-relaxed text-secondary sm:text-lg">
                 {bodyStr}
               </p>
             </EditableField>

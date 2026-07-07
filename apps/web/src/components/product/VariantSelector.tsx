@@ -21,17 +21,17 @@ export function VariantSelector({ selected, onChange }: VariantSelectorProps) {
 
   return (
     <fieldset>
-      <legend className="mb-2 text-sm font-medium text-stone-900">{t("lengthLabel")}</legend>
+      <legend className="mb-2 text-sm font-medium text-primary">{t("lengthLabel")}</legend>
       <div className="flex gap-2">
         {dressLengths.map(({ value, label }) => (
           <button
             key={value}
             type="button"
             onClick={() => onChange(value)}
-            className={`min-h-[44px] min-w-[44px] flex-1 border px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 ${
+            className={`min-h-[44px] min-w-[44px] flex-1 border px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
               selected === value
-                ? "border-stone-900 bg-stone-900 text-white"
-                : "border-stone-300 bg-white text-stone-700 hover:border-stone-600"
+                ? "border-accent bg-accent text-accent-text"
+                : "border-subtle bg-white text-secondary hover:border-muted"
             }`}
             aria-pressed={selected === value}
           >

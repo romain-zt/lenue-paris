@@ -75,3 +75,31 @@ This is the single kill-switch for unattended PRD → decomposition → implemen
 - **Still hard-stops (never bypassed):** any genuine `NEED_HUMAN` (missing product truth, unanswered open question that blocks a slice, missing secret/access, two materially different valid interpretations) — the agent sets `blocked` + `NEED_HUMAN:` and moves on.
 - **Pause everything:** set this flag to `no` (and/or repo variable `ORCHESTRATOR_ENABLED=false`).
 
+## Architectural Guardrails
+
+These rules are **hard constraints** for all autonomous agents and human contributors. Violations must be caught in PR review or typecheck.
+
+### 1. No inline or arbitrary CSS
+- **Tailwind tokens only.** No raw `<style>` tags, no `.css` files generated at runtime, no `style={{}}` props with hardcoded px/color values.
+- Exception: global `globals.css` for CSS custom properties and Tailwind `@layer` directives only. Must live in `apps/web/src/app/`.
+
+### 2. No localized fields on system identifiers
+- `slug`, `status`, enum fields, and any field used as a database key/identifier **must NOT** have `localized: true`.
+- Only user-facing display strings (`title`, `body`, `label`, `description`, `tagline`, etc.) may be localized.
+- Rationale: localized slugs create duplicate URL spaces and break stable references across locales.
+
+### 3. All blocks must support live-preview natively
+- Every block added to a Payload `blocks` array must have a corresponding React component registered in `apps/web/src/components/cms/RenderBlocks.tsx`.
+- The block component must accept `locale` and render correctly with no extra data-fetching (all data flows through the page-level `useLivePreview` hook).
+- New block types without a matching renderer are forbidden from being merged.
+
+### 4. Payload separation of concerns
+- `apps/cms` is the **Single Source of Truth** for the Payload 3 schema, admin panel, Postgres adapter, and media uploads (S3/MinIO).
+- `apps/web` uses the Payload **Local API** (`getPayload()`) only for Server Actions that mutate data inline. It must NOT re-expose its own admin panel or REST/GraphQL endpoints.
+- The `(payload)` admin route group lives exclusively in `apps/cms/src/app/(payload)/`. Do not add it back to `apps/web`.
+- New Payload collections and globals must be defined in `apps/cms/src/collections/` and `apps/cms/src/globals/`, then mirrored to `apps/web/src/` only if web's Local API requires them for Server Actions.
+
+### 5. Media discipline
+- All user/client-uploaded media (product images, editorial photos) must be stored in S3/MinIO via the `@payloadcms/storage-s3` plugin configured in both app configs.
+- No binary assets (photos, videos) committed to git. Only static brand assets (SVG logos, favicons, OG placeholder) belong in `apps/web/public/`.
+- `apps/web/media/`, `apps/web/public/images/`, and `apps/web/public/media-uploads/` are **permanently forbidden** — these dirs were purged in the Little Biceps cleanup (2026-06-20) and must not be recreated.
