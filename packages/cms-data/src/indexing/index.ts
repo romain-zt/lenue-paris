@@ -23,3 +23,4 @@ export {
   createCollectionDeleteHook,
   createGlobalIndexHook,
 } from "./contentIndexHooks";
+export { closePgPool } from "../db/pool";

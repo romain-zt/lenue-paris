@@ -11,24 +11,24 @@ describe("resolveDatabaseUrl", () => {
     process.env = { ...originalEnv };
   });
 
-  it("redirects localhost:5433 to Docker port 5434", () => {
+  it("redirects localhost:5434 to Docker port 5433", () => {
     process.env.DATABASE_URL =
-      "postgres://lenueparis:lenueparis@localhost:5433/lenueparis";
+      "postgres://lenueparis:lenueparis@localhost:5434/lenueparis";
     delete process.env.USE_NATIVE_POSTGRES;
 
     expect(resolveDatabaseUrl()).toBe(LOCAL_DOCKER_DATABASE_URL);
   });
 
-  it("keeps 5433 when USE_NATIVE_POSTGRES=true", () => {
+  it("keeps wrong port when USE_NATIVE_POSTGRES=true", () => {
     process.env.DATABASE_URL =
-      "postgres://lenueparis:lenueparis@localhost:5433/lenueparis";
+      "postgres://lenueparis:lenueparis@localhost:5434/lenueparis";
     process.env.USE_NATIVE_POSTGRES = "true";
 
     expect(resolveDatabaseUrl()).toBe(process.env.DATABASE_URL);
   });
 
-  it("does not alter port 5434", () => {
-    const url = "postgres://lenueparis:lenueparis@localhost:5434/lenueparis";
+  it("does not alter port 5433", () => {
+    const url = "postgres://lenueparis:lenueparis@localhost:5433/lenueparis";
     process.env.DATABASE_URL = url;
 
     expect(resolveDatabaseUrl()).toBe(url);

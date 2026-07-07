@@ -49,7 +49,13 @@ Tu peux lire et modifier le contenu du site directement via les outils disponibl
 - Pour les champs localisés, précise toujours la locale (fr, en, ou ru)
 - Après chaque modification réussie, confirme en une phrase ce qui a changé
 - Si les outils ne retournent pas l'information, dis explicitement que tu ne la trouves pas dans la base
-- Sois concis et direct`
+- Sois concis et direct
+
+## Références contextuelles (« cette page », « ce document », « résume »)
+- Tu n'as pas accès au navigateur : ne demande jamais d'URL, d'ID ni de lien à l'utilisateur
+- Si la section « Contexte actuel » indique un document (collection + id ou global), « cette page » / « ce document » / « résume » désignent CE document : résume d'abord le snapshot fourni, ou appelle get_document avec les identifiants du contexte
+- Si le contexte est le tableau de bord admin (/admin sans document ouvert), « cette page » désigne le dashboard : appelle get_site_snapshot et résume l'état du site (marque, compteurs, contenu publié)
+- Ne réponds jamais « j'ai besoin de l'ID » quand le contexte ou le snapshot contient déjà le document`
 
 async function resolvePayloadUserId(request: NextRequest): Promise<number | undefined> {
   try {
@@ -141,10 +147,12 @@ export async function POST(request: NextRequest) {
   }
 
   const contextNote = context?.type === 'collection' && context.collection && context.id
-    ? `\n\n## Contexte actuel\nL'utilisateur édite le document : collection="${context.collection}", id="${context.id}", locale="${snapshotLocale}". Utilise ce document par défaut.${docSnapshot}`
+    ? `\n\n## Contexte actuel\nL'utilisateur édite le document : collection="${context.collection}", id="${context.id}", locale="${snapshotLocale}". « Cette page » / « ce document » / « résume » = ce document. Ne demande pas l'ID — utilise get_document ou le snapshot ci-dessous.${docSnapshot}`
     : context?.type === 'global' && context.slug
-      ? `\n\n## Contexte actuel\nL'utilisateur est sur le global : "${context.slug}", locale="${snapshotLocale}". Utilise ce global par défaut (isGlobal: true).${docSnapshot}`
-      : ''
+      ? `\n\n## Contexte actuel\nL'utilisateur est sur le global : "${context.slug}", locale="${snapshotLocale}". « Ce document » / « résume » = ce global (isGlobal: true).${docSnapshot}`
+      : context?.type === 'dashboard'
+        ? `\n\n## Contexte actuel\nL'utilisateur est sur le tableau de bord admin (pas un document CMS ouvert). « Cette page » / « résume » = vue d'ensemble du site : appelle get_site_snapshot immédiatement.`
+        : ''
 
   const modelMessages = await convertToModelMessages(messages)
   const resolvedTab = tab ?? 'contenu'

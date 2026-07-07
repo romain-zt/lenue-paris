@@ -25,7 +25,7 @@ Set these on the Vercel project (and locally in `.env`):
 
 | Variable | Required | Example | Purpose |
 |----------|----------|---------|---------|
-| `DATABASE_URI` | yes | `postgresql://…` | Neon connection |
+| `DATABASE_URL` | yes | `postgresql://…` | Neon connection |
 | `PAYLOAD_SECRET` | yes | random 32+ chars | Payload auth |
 | `NEXT_PUBLIC_SITE_URL` | yes | `https://shop.example.com` | OG URLs, preview links |
 | `NEXT_PUBLIC_BRAND_NAME` | yes | `Maison Example` | Fallback before CMS globals load |
@@ -130,4 +130,4 @@ SEED_BRAND=template curl -X POST \
   https://shop.example.com/api/seed
 ```
 
-(If `/api/seed` does not yet read `SEED_BRAND`, use CLI seed from a machine with prod `DATABASE_URI`.)
+(If `/api/seed` does not yet read `SEED_BRAND`, use CLI seed from a machine with prod `DATABASE_URL`.)

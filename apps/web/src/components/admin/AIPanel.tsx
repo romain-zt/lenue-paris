@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import type { UIMessage } from 'ai'
@@ -32,7 +32,7 @@ function parseAdminPath(pathname: string): DocContext {
   const adminIdx = parts.indexOf('admin')
   if (adminIdx === -1) return { type: 'dashboard' }
   const after = parts.slice(adminIdx + 1)
-  if (after[0] === 'collections' && after[1] && after[2]) {
+  if (after[0] === 'collections' && after[1] && after[2] && after[2] !== 'create') {
     return { type: 'collection', collection: after[1], id: after[2] }
   }
   if (after[0] === 'globals' && after[1]) {
@@ -51,6 +51,7 @@ function timeAgo(date: Date): string {
 
 const QUICK_ACTIONS = {
   contenu: [
+    { label: 'Résumer ce document', prompt: 'Résume le contenu du document que je suis en train d\'éditer.' },
     { label: 'Modifier ce contenu', prompt: 'Montre-moi les champs de ce document et aide-moi à les modifier.' },
     { label: 'Expliquer les champs', prompt: 'Explique-moi à quoi servent les différents champs de ce document.' },
     { label: 'Traduire FR/EN/RU', prompt: 'Traduis le contenu de ce document en français, anglais et russe.' },
@@ -245,6 +246,7 @@ function MessageBubble({ message }: { message: UIMessage }) {
 
 export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const router = useRouter()
+  const pathname = usePathname()
   const locale = useLocale()
   const [open, setOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'contenu' | 'dev'>('contenu')
@@ -317,21 +319,11 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
     const adminLocale = isContentLocale(locale.code)
       ? (locale.code as ContentLocale)
       : parseContentLocale()
-    const update = () => {
-      setDocContext({
-        ...parseAdminPath(window.location.pathname),
-        locale: adminLocale,
-      })
-    }
-    update()
-    window.addEventListener('popstate', update)
-    const observer = new MutationObserver(update)
-    observer.observe(document, { subtree: true, childList: true })
-    return () => {
-      window.removeEventListener('popstate', update)
-      observer.disconnect()
-    }
-  }, [locale.code])
+    setDocContext({
+      ...parseAdminPath(pathname),
+      locale: adminLocale,
+    })
+  }, [pathname, locale.code])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -529,7 +521,7 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
           background: 'var(--theme-text, #1a1a1a)',
           border: 'none',
           borderRadius: 40,
-          color: '#fff',
+          color: '#000',
           cursor: 'pointer',
           fontSize: 13,
           fontWeight: 500,

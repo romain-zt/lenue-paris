@@ -14,7 +14,7 @@ export function getPgPool(): pg.Pool {
   const connectionString = resolveDatabaseUrl();
   if (!connectionString) {
     throw new Error(
-      "@repo/cms-data: DATABASE_URL (or DATABASE_URI) is required for vector search",
+      "@repo/cms-data: DATABASE_URL is required for vector search",
     );
   }
 
@@ -27,6 +27,13 @@ export function getPgPool(): pg.Pool {
   });
 
   return pool;
+}
+
+export async function closePgPool(): Promise<void> {
+  if (!pool) return;
+  const active = pool;
+  pool = undefined;
+  await active.end();
 }
 
 /** @internal test helper */

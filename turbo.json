@@ -3,7 +3,6 @@
   "globalDependencies": [".env"],
   "globalPassThroughEnv": [
     "PAYLOAD_SECRET",
-    "DATABASE_URI",
     "DATABASE_URL",
     "DATABASE_URL_UNPOOLED",
     "POSTGRES_URL",

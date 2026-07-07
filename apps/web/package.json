@@ -19,7 +19,8 @@
     "generate:types": "payload generate:types",
     "seed": "tsx --env-file=../../.env src/seed.ts",
     "seed:placeholders": "tsx scripts/generate-seed-placeholders.ts",
-    "reindex-content": "tsx --env-file=../../.env src/scripts/reindex-content.ts"
+    "reindex-content": "tsx --env-file=../../.env src/scripts/reindex-content.ts",
+    "test:rag": "tsx --env-file=../../.env src/scripts/test-rag.ts"
   },
   "dependencies": {
     "@repo/cms-data": "workspace:*",

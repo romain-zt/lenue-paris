@@ -1,6 +1,8 @@
-/** Docker Compose maps Postgres to host port 5434 (5432/5433 are often taken on Windows). */
+/** Docker Compose maps Postgres to host port 5433 (see docker-compose.yml). */
+export const DOCKER_HOST_PORT = 5433;
+
 export const LOCAL_DOCKER_DATABASE_URL =
-  "postgres://lenueparis:lenueparis@127.0.0.1:5434/lenueparis";
+  `postgres://lenueparis:lenueparis@127.0.0.1:${DOCKER_HOST_PORT}/lenueparis`;
 
 function parseLocalPort(connectionString: string): number | null {
   const match = connectionString.match(
@@ -14,7 +16,6 @@ function pickDatabaseUrlFromEnv(): string {
   return (
     process.env.POSTGRES_URL ||
     process.env.DATABASE_URL ||
-    process.env.DATABASE_URI ||
     process.env.POSTGRES_PRISMA_URL ||
     ""
   );
@@ -22,7 +23,7 @@ function pickDatabaseUrlFromEnv(): string {
 
 /**
  * Resolves the Postgres URL from env vars.
- * Auto-corrects localhost:5433 → 5434 (stale local .env after docker-compose port change).
+ * Redirects legacy/wrong local ports (5432, 5434, …) to Docker host port 5433.
  * Set USE_NATIVE_POSTGRES=true to disable the redirect.
  */
 export function resolveDatabaseUrl(): string {
@@ -31,12 +32,13 @@ export function resolveDatabaseUrl(): string {
 
   const port = parseLocalPort(fromEnv);
   if (
-    port === 5433 &&
+    port !== null &&
+    port !== DOCKER_HOST_PORT &&
     process.env.USE_NATIVE_POSTGRES !== "true"
   ) {
     console.warn(
-      "[db] DATABASE_URL points to localhost:5433 but Docker Postgres uses port 5434 — redirecting. " +
-        "Update .env or set USE_NATIVE_POSTGRES=true to keep 5433.",
+      `[db] DATABASE_URL points to localhost:${port} but Docker Postgres uses port ${DOCKER_HOST_PORT} — redirecting. ` +
+        `Update .env or set USE_NATIVE_POSTGRES=true to keep ${port}.`,
     );
     return LOCAL_DOCKER_DATABASE_URL;
   }

@@ -1,4 +1,5 @@
 import type { ContentLocale, SemanticSearchParams, SemanticSearchResult } from "../types";
+import { getPgPool } from "../db/pool";
 import { createEmbedding, isEmbeddingConfigured, toVectorLiteral } from "./embeddings";
 
 interface ChunkRow {

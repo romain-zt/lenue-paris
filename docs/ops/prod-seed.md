@@ -4,7 +4,7 @@ One-time bootstrap for home blocks, collections, products, and look-elise routes
 
 ## Prerequisites
 
-- `DATABASE_URI` / `DATABASE_URL` points at Neon (Vercel env)
+- `DATABASE_URL` / `DATABASE_URL` points at Neon (Vercel env)
 - Migrations have run (`payload migrate` on deploy)
 
 ## Environment
@@ -17,7 +17,7 @@ One-time bootstrap for home blocks, collections, products, and look-elise routes
 
 ## Option A — CLI (recommended)
 
-From repo root, with prod `DATABASE_URI` in env:
+From repo root, with prod `DATABASE_URL` in env:
 
 ```bash
 pnpm --filter web seed
