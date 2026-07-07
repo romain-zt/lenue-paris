@@ -19,8 +19,6 @@ const DEFAULTS: Tokens = {
   colorAccentHover: "#44403c",
   colorAccentText: "#ffffff",
   colorBorder: "#e7e5e4",
-  fontSerif: "Cormorant Garamond, Georgia, serif",
-  fontSans: "Jost, Helvetica Neue, Arial, sans-serif",
 };
 
 /** Per-request cached token fetch. Falls back to defaults if CMS is unreachable. */
@@ -42,8 +40,6 @@ export const getDesignTokens = cache(async (): Promise<Tokens> => {
       colorAccentHover: t.colorAccentHover ?? DEFAULTS.colorAccentHover,
       colorAccentText: t.colorAccentText ?? DEFAULTS.colorAccentText,
       colorBorder: t.colorBorder ?? DEFAULTS.colorBorder,
-      fontSerif: t.fontSerif ?? DEFAULTS.fontSerif,
-      fontSans: t.fontSans ?? DEFAULTS.fontSans,
     };
   } catch {
     return DEFAULTS;

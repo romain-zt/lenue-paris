@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev:legacy": "next dev -p 3000",
-    "build": "payload generate:importmap && payload migrate && next build",
-    "start": "payload migrate && next start -p 3000",
-    "migrate": "payload migrate",
+    "build": "node --env-file=../../.env ./node_modules/payload/bin.js generate:importmap && node --env-file=../../.env ./node_modules/payload/bin.js migrate && next build",
+    "start": "node --env-file=../../.env ./node_modules/payload/bin.js migrate && next start -p 3000",
+    "migrate": "node --env-file=../../.env ./node_modules/payload/bin.js migrate",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "generate:types": "payload generate:types",
