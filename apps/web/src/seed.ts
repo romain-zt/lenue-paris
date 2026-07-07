@@ -1,22 +1,22 @@
 /**
- * Lénue Paris — CMS seed script
- *
- * Populates the database with a curated catalogue of dresses, bags and scarves
- * using product photos from apps/web/public/images/.
+ * CMS seed script — populates catalogue, pages, and site globals.
  *
  * Idempotent: reuses existing media by filename and upserts products by slug.
  *
- * Run:  pnpm --filter web seed
+ * Run:
+ *   pnpm --filter web seed                  # default brand: lenue
+ *   pnpm --filter web seed -- --brand=template
  */
 
 import path from "path";
 import { fileURLToPath } from "url";
+import { loadBrandFixture, parseBrandArg, type BrandFixture } from "@repo/cms-data/fixtures";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import fs from "fs";
 import { getPayload } from "payload";
-import config from "./payload.config";
+import config from "@payload-config";
 import { PRODUCT_IMAGES } from "./lib/productImages";
 import { PUBLIC_DRESS_SLUGS, isPublicStorefrontSlug } from "./lib/catalogue/storefrontCatalogue";
 
@@ -838,23 +838,29 @@ async function seedLivraisonPage(payload: Awaited<ReturnType<typeof getPayload>>
   console.log(`  ✅ Published livraison page (${PRODUCT_LOCALES.join(", ")})`);
 }
 
-async function seedSiteSettings(payload: Awaited<ReturnType<typeof getPayload>>): Promise<void> {
+async function seedSiteSettings(
+  payload: Awaited<ReturnType<typeof getPayload>>,
+  brand: BrandFixture,
+): Promise<void> {
   console.log("\n⚙️  Syncing site settings");
   await payload.updateGlobal({
     slug: "site-settings",
     data: {
-      brandName: "Lénue Paris",
-      instagramUrl: "https://www.instagram.com/alisa.inwonderland.21",
-      whatsappPhone: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "79117126262",
+      brandName: brand.brandName,
+      brandWordmarkPrimary: brand.brandWordmarkPrimary,
+      brandWordmarkSecondary: brand.brandWordmarkSecondary,
+      instagramUrl: brand.instagramUrl || undefined,
+      whatsappPhone: brand.whatsappPhone || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || undefined,
     } as any,
   });
-  console.log("  ✅ Site settings synced");
+  console.log(`  ✅ Site settings synced (${brand.slug})`);
 }
 
-export async function seed() {
+export async function seed(brandSlug?: string) {
+  const brand = loadBrandFixture(brandSlug ?? parseBrandArg());
   const payload = await getPayload({ config });
 
-  console.log("⚙  Payload initialized");
+  console.log(`⚙  Payload initialized — brand: ${brand.slug}`);
 
   // 1. Create admin user if none exists
   const existingUsers = await payload.find({ collection: "users", limit: 1 });
@@ -862,12 +868,12 @@ export async function seed() {
     await payload.create({
       collection: "users",
       data: {
-        email: "admin@lenue.paris",
-        password: "lenue2026",
-        name: "Lénue Admin",
+        email: brand.adminEmail,
+        password: brand.adminPassword,
+        name: brand.adminName,
       },
     });
-    console.log("👤 Admin user created — admin@lenue.paris / lenue2026");
+    console.log(`👤 Admin user created — ${brand.adminEmail} / ${brand.adminPassword}`);
   } else {
     console.log("👤 Admin user already exists — skipping");
   }
@@ -919,7 +925,7 @@ export async function seed() {
       throw new Error(`Missing image mapping for slug: ${product.slug}`);
     }
 
-    const alt = `${product.title.fr} — Lénue Paris`;
+    const alt = `${product.title.fr} — ${brand.brandName}`;
     const mainImageId = await findOrUploadImage(images.main, alt);
 
     const galleryItems: { image: number | string }[] = [];
@@ -985,7 +991,7 @@ export async function seed() {
   await seedAProposPage(payload);
   await seedContactPage(payload);
   await seedLivraisonPage(payload);
-  await seedSiteSettings(payload);
+  await seedSiteSettings(payload, brand);
 
   console.log(`\n🎉 Seed complete — ${created} created, ${updated} updated (${PRODUCT_LOCALES.join(", ")} locales)`);
 }

@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { Pages } from "./Pages";
+import { Pages } from "@repo/payload-schema/collections";
 
-// Example of the test-first doctrine (.cursor/core/rules/30-test-strategy.mdc):
-// a focused unit test on config, not a browser e2e.
 describe("Pages collection", () => {
   const field = (name: string) => Pages.fields.find((f) => "name" in f && f.name === name);
 
@@ -10,6 +8,17 @@ describe("Pages collection", () => {
     expect((field("title") as { localized?: boolean }).localized).toBe(true);
     expect((field("body") as { localized?: boolean }).localized).toBe(true);
     expect((field("slug") as { localized?: boolean }).localized).toBeUndefined();
+  });
+
+  it("uses field-level i18n on blocks, not block-level localization", () => {
+    const blocksField = field("blocks") as {
+      localized?: boolean;
+      blocks?: Array<{ slug: string; fields: Array<{ name: string; localized?: boolean }> }>;
+    };
+    expect(blocksField.localized).toBeUndefined();
+    const heroBlock = blocksField.blocks?.find((b) => b.slug === "hero");
+    const season = heroBlock?.fields.find((f) => f.name === "season");
+    expect(season?.localized).toBe(true);
   });
 
   it("denies writes to anonymous users", () => {

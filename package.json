@@ -9,11 +9,13 @@
     "next": "catalog:"
   },
   "scripts": {
+    "migrate": "pnpm -F web migrate",
     "seed": "pnpm --filter web seed",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test",
+    "test:rag": "pnpm --filter web test:rag",
     "typecheck": "turbo run typecheck",
     "test:e2e": "pnpm --filter web test:e2e"
   },

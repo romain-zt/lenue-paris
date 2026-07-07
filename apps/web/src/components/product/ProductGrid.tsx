@@ -31,10 +31,10 @@ export function ProductGrid({
         role="alert"
         className="flex flex-col items-center justify-center py-24 text-center"
       >
-        <p className="text-stone-600 text-sm">{t("loadError")}</p>
+        <p className="text-muted text-sm">{t("loadError")}</p>
         <button
           onClick={() => window.location.reload()}
-          className="mt-4 text-sm underline text-stone-900 min-h-[44px] min-w-[44px] px-4"
+          className="mt-4 text-sm underline text-primary min-h-[44px] min-w-[44px] px-4"
         >
           {t("retry")}
         </button>
@@ -59,7 +59,7 @@ export function ProductGrid({
         aria-live="polite"
         className="flex items-center justify-center py-24 text-center"
       >
-        <p className="text-stone-500 text-sm">{emptyMessage ?? t("emptyDefault")}</p>
+        <p className="text-muted text-sm">{emptyMessage ?? t("emptyDefault")}</p>
       </div>
     );
   }

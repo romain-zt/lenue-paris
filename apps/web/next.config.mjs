@@ -1,5 +1,12 @@
+import { config as loadEnv } from "dotenv";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
 import { withPayload } from "@payloadcms/next/withPayload";
 import createNextIntlPlugin from "next-intl/plugin";
+
+// Monorepo root .env (same file as migrate/seed/reindex --env-file=../../.env)
+const monorepoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+loadEnv({ path: resolve(monorepoRoot, ".env") });
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 

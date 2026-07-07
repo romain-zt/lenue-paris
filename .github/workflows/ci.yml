@@ -21,7 +21,7 @@ jobs:
 
     services:
       postgres:
-        image: public.ecr.aws/docker/library/postgres:16-alpine
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: ci
           POSTGRES_PASSWORD: ci
@@ -66,10 +66,14 @@ jobs:
         if: steps.detect.outputs.has_app == 'true'
         run: pnpm install --no-frozen-lockfile
 
+      - name: Prepare CI env
+        if: steps.detect.outputs.has_app == 'true'
+        run: bash scripts/create-ci-env.sh
+
       - name: Migrate DB
         if: steps.detect.outputs.has_app == 'true'
         run: |
-          pnpm --filter cms run migrate
+          node scripts/wait-for-postgres.mjs
           pnpm --filter web run migrate
 
       - name: Typecheck

@@ -21,6 +21,7 @@
     "ru": "RU"
   },
   "home": {
+    "loading": "Loading",
     "season": "Spring · Summer 2026",
     "heroTagline": "For the moments you want to keep.",
     "heroCta": "Explore the collection",
@@ -106,6 +107,15 @@
     "metaDescription": "Write to Lénue Paris on WhatsApp — a house of dresses, personal replies.",
     "whatsAppLabel": "Write on WhatsApp",
     "whatsAppMessage": "Hello, I would like to learn more about the Lénue collection."
+  },
+  "error": {
+    "loading": "Loading",
+    "notFound": "Not found",
+    "productNotFound": "This product does not exist",
+    "productGone": "It may have been removed or the address is incorrect.",
+    "backToCollection": "Back to collection",
+    "pageNotFound": "This page could not be found.",
+    "backToShop": "← Back to the shop"
   },
   "selection": {
     "pillCount": "My selection · {count}",

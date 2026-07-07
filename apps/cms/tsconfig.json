@@ -6,6 +6,7 @@
       "@/*": [
         "./src/*"
       ],
+      "@/payload-types": ["../../packages/payload-schema/src/payload-types.ts"],
       "@payload-config": [
         "./src/payload.config.ts"
       ]

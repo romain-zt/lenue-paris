@@ -4,6 +4,7 @@ import { HomePageContent } from "@/components/cms/HomePageContent";
 import { HomeEmptyState } from "@/components/cms/HomeEmptyState";
 import { findHeroTagline } from "@/lib/cms/blocks";
 import { getHomePage, getHomePageDocument } from "@/lib/cms/queries";
+import { getSiteSettings, resolveBrandName } from "@/lib/cms/siteSettings";
 import type { ContentLocale } from "@/lib/cms/types";
 import { buildPageMetadata, DEFAULT_OG_IMAGE_PATH } from "@/lib/seo/metadata";
 
@@ -16,7 +17,10 @@ interface HomePageProps {
 export async function generateMetadata({ params }: HomePageProps) {
   const { locale } = await params;
   const { isEnabled: isDraft } = await draftMode();
-  const home = await getHomePage(locale as ContentLocale, { draft: isDraft });
+  const [home, siteSettings] = await Promise.all([
+    getHomePage(locale as ContentLocale, { draft: isDraft }),
+    getSiteSettings(),
+  ]);
   const heroTagline = home ? findHeroTagline(home.blocks) : null;
   const t = await getTranslations({ locale, namespace: "home" });
   const description = heroTagline ?? t("heroTagline");
@@ -26,11 +30,12 @@ export async function generateMetadata({ params }: HomePageProps) {
     heroBlock?.blockType === "hero" ? heroBlock.props.heroImageUrl : DEFAULT_OG_IMAGE_PATH;
 
   return buildPageMetadata({
-    title: "Lénue Paris",
+    title: resolveBrandName(siteSettings),
     description,
     locale,
     pathname: "",
     imagePath: heroImagePath,
+    siteName: resolveBrandName(siteSettings),
   });
 }
 
@@ -43,9 +48,12 @@ export default async function Home({ params }: HomePageProps) {
   const contentLocale = locale as ContentLocale;
   const { isEnabled: isDraft } = await draftMode();
 
-  const homeDoc = await getHomePageDocument(contentLocale, { draft: isDraft });
+  const [homeDoc, siteSettings] = await Promise.all([
+    getHomePageDocument(contentLocale, { draft: isDraft }),
+    getSiteSettings(),
+  ]);
   if (!homeDoc?.blocks?.length) {
-    return <HomeEmptyState />;
+    return <HomeEmptyState brandName={resolveBrandName(siteSettings)} />;
   }
 
   const labels = {
@@ -62,6 +70,7 @@ export default async function Home({ params }: HomePageProps) {
     <HomePageContent
       initialPage={JSON.parse(JSON.stringify(homeDoc))}
       locale={contentLocale}
+      brandName={resolveBrandName(siteSettings)}
       labels={labels}
     />
   );

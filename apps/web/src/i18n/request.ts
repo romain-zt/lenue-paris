@@ -1,4 +1,5 @@
 import { getRequestConfig } from "next-intl/server";
+import { STOREFRONT_DEFAULT_LOCALE } from "@repo/payload-schema/i18n/content-locales";
 import { routing } from "./routing";
 
 export default getRequestConfig(async ({ requestLocale }) => {
@@ -8,11 +9,12 @@ export default getRequestConfig(async ({ requestLocale }) => {
     locale = routing.defaultLocale;
   }
 
-  const frMessages = (await import(`../../messages/fr.json`)).default;
+  const baseLocale = STOREFRONT_DEFAULT_LOCALE;
+  const baseMessages = (await import(`../../messages/${baseLocale}.json`)).default;
   const localeMessages =
-    locale === "fr"
-      ? frMessages
-      : { ...frMessages, ...(await import(`../../messages/${locale}.json`)).default };
+    locale === baseLocale
+      ? baseMessages
+      : { ...baseMessages, ...(await import(`../../messages/${locale}.json`)).default };
 
   return {
     locale,

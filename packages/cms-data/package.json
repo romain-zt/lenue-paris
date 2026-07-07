@@ -1,0 +1,34 @@
+{
+  "name": "@repo/cms-data",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./read": "./src/read/index.ts",
+    "./write": "./src/write/index.ts",
+    "./indexing": "./src/indexing/index.ts",
+    "./db/resolveDatabaseUrl": "./src/db/resolveDatabaseUrl.ts",
+    "./fixtures": "./src/fixtures/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@repo/payload-schema": "workspace:*",
+    "payload": "catalog:",
+    "pg": "^8.20.0"
+  },
+  "peerDependencies": {
+    "next": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/pg": "^8.11.10",
+    "next": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

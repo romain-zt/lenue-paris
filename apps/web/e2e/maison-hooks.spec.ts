@@ -22,13 +22,12 @@ let serverProc: ChildProcess | undefined;
 function requireDatabaseUrl(): string {
   const url =
     process.env.DATABASE_URL ||
-    process.env.DATABASE_URI ||
     process.env.POSTGRES_URL;
 
   if (!url) {
     throw new Error(
       [
-        "test:maison-hooks requires DATABASE_URL (or DATABASE_URI / POSTGRES_URL).",
+        "test:maison-hooks requires DATABASE_URL (or POSTGRES_URL).",
         "Use the same Postgres env as the CI quality job, for example:",
         "  DATABASE_URL=postgresql://ci:ci@localhost:5432/ci",
         "Local dev: copy .env.example to .env and ensure Postgres is reachable.",

@@ -1,2 +1,0 @@
-deadlock_default: defer_non_critical_reviewers
-copy_block_on_deadlock: false

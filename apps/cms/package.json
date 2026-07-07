@@ -4,17 +4,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev -p 3000",
-    "build": "payload generate:importmap && payload migrate && next build",
-    "start": "payload migrate && next start -p 3000",
-    "migrate": "payload migrate",
+    "dev:legacy": "next dev -p 3000",
+    "build": "node ../../scripts/run-payload.mjs generate:importmap && node ../../scripts/run-payload.mjs migrate && next build",
+    "start": "node ../../scripts/run-payload.mjs migrate && next start -p 3000",
+    "migrate": "node ../../scripts/run-payload.mjs migrate",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "generate:types": "payload generate:types",
     "test": "vitest run",
-    "seed": "tsx --env-file=../../.env src/seed.ts"
+    "seed": "node ../../scripts/run-tsx.mjs src/seed.ts"
   },
   "dependencies": {
+    "@repo/payload-schema": "workspace:*",
     "@payloadcms/db-postgres": "catalog:",
     "@payloadcms/next": "catalog:",
     "@payloadcms/richtext-lexical": "catalog:",

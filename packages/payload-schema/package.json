@@ -1,0 +1,31 @@
+{
+  "name": "@repo/payload-schema",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./collections": "./src/collections/index.ts",
+    "./globals": "./src/globals/index.ts",
+    "./blocks": "./src/blocks/index.ts",
+    "./i18n/admin-labels": "./src/i18n/admin-labels.ts",
+    "./i18n/content-locales": "./src/i18n/content-locales.ts",
+    "./migrations": "./src/migrations/index.ts",
+    "./payload-types": "./src/payload-types.ts"
+  },
+  "scripts": {
+    "generate:types": "payload generate:types",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@payloadcms/db-postgres": "catalog:",
+    "payload": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -1,8 +1,0 @@
-{
-  "orchestration": {
-    "steps": {
-      "bootstrap": "complete",
-      "orch-account-session--signup-to-signed-in-dashboard": "not-started"
-    }
-  }
-}

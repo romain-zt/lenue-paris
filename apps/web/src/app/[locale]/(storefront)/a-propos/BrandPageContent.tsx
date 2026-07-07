@@ -8,20 +8,21 @@ export interface BrandPageContentProps {
   title: string;
   body: string;
   cover: PageCover | null;
+  brandName: string;
   /** Payload document ID — enables inline editing in admin edit mode */
   docId?: string;
   /** Locale of the content */
   locale?: string;
 }
 
-export function BrandPageContent({ title, body, cover, docId, locale }: BrandPageContentProps) {
+export function BrandPageContent({ title, body, cover, brandName, docId, locale }: BrandPageContentProps) {
   const paragraphs = body.split("\n\n").filter(Boolean);
   const canEdit = Boolean(docId);
 
   return (
     <main>
       {cover?.url ? (
-        <div className="relative aspect-video w-full overflow-hidden bg-stone-100 sm:aspect-[21/9]">
+        <div className="relative aspect-video w-full overflow-hidden bg-surface sm:aspect-[21/9]">
           <Image
             src={cover.url}
             alt={cover.alt ?? title}
@@ -32,9 +33,9 @@ export function BrandPageContent({ title, body, cover, docId, locale }: BrandPag
           />
         </div>
       ) : (
-        <header className="border-b border-stone-200 bg-stone-50 py-12 sm:py-16">
-          <p className="text-center font-serif text-2xl italic tracking-tight text-stone-900 sm:text-3xl">
-            Lénue Paris
+        <header className="border-b border-subtle bg-surface py-12 sm:py-16">
+          <p className="text-center font-serif text-2xl italic tracking-tight text-primary sm:text-3xl">
+            {brandName}
           </p>
         </header>
       )}
@@ -50,12 +51,12 @@ export function BrandPageContent({ title, body, cover, docId, locale }: BrandPag
               currentValue={title}
               locale={locale}
             >
-              <h1 className="mb-8 font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">
+              <h1 className="mb-8 font-serif text-3xl italic tracking-tight text-primary sm:text-4xl">
                 {title}
               </h1>
             </EditableField>
           ) : (
-            <h1 className="mb-8 font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">
+            <h1 className="mb-8 font-serif text-3xl italic tracking-tight text-primary sm:text-4xl">
               {title}
             </h1>
           )
@@ -75,7 +76,7 @@ export function BrandPageContent({ title, body, cover, docId, locale }: BrandPag
               {paragraphs.map((paragraph, i) => {
                 const lines = paragraph.split("\n");
                 return (
-                  <p key={i} className="text-base leading-relaxed text-stone-700 sm:text-lg">
+                  <p key={i} className="text-base leading-relaxed text-secondary sm:text-lg">
                     {lines.map((line, j) => (
                       <span key={j}>
                         {line}
@@ -92,7 +93,7 @@ export function BrandPageContent({ title, body, cover, docId, locale }: BrandPag
             {paragraphs.map((paragraph, i) => {
               const lines = paragraph.split("\n");
               return (
-                <p key={i} className="text-base leading-relaxed text-stone-700 sm:text-lg">
+                <p key={i} className="text-base leading-relaxed text-secondary sm:text-lg">
                   {lines.map((line, j) => (
                     <span key={j}>
                       {line}

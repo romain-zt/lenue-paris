@@ -25,7 +25,7 @@ jobs:
 
     services:
       postgres:
-        image: public.ecr.aws/docker/library/postgres:16-alpine
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: ci
           POSTGRES_PASSWORD: ci
@@ -61,14 +61,16 @@ jobs:
       - name: Install framework script deps
         run: npm install --prefix .github/scripts/core
 
+      - name: Prepare CI env
+        run: bash scripts/create-ci-env.sh
+
       - name: Migrate database
         run: |
-          pnpm --filter cms run migrate
+          node scripts/wait-for-postgres.mjs
           pnpm --filter web run migrate
 
       - name: Seed storefront content
-        working-directory: apps/web
-        run: pnpm exec tsx src/seed.ts
+        run: pnpm --filter web run seed
 
       - name: Static maison checks (assets + CMS purity)
         run: |

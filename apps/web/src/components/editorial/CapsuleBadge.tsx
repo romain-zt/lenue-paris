@@ -5,7 +5,7 @@ type CapsuleBadgeProps = {
 
 /** Editorial limited-series label — maison typography, not marketplace urgency. */
 export function CapsuleBadge({ children, className }: CapsuleBadgeProps) {
-  const classes = ["text-[10px] font-medium uppercase tracking-[0.35em] text-stone-500", className]
+  const classes = ["text-[10px] font-medium uppercase tracking-[0.35em] text-muted", className]
     .filter(Boolean)
     .join(" ");
 

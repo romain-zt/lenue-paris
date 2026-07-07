@@ -3,13 +3,25 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { z } from 'zod'
 import { type NextRequest } from 'next/server'
 import type { UIMessage } from 'ai'
-import { revalidatePath } from 'next/cache'
-import { cookies, draftMode } from 'next/headers'
-import { getPayload } from 'payload'
+import { cookies } from 'next/headers'
 import config from '@payload-config'
+import {
+  setPayloadConfig,
+  getCmsClient,
+  getDocument,
+  buildDocumentSnapshot,
+  searchContent,
+  getSiteSnapshot,
+  getCatalogSummary,
+  getSchemaManifest,
+  formatSchemaManifest,
+  patchDocument,
+  parseContentLocale,
+} from '@repo/cms-data'
+import { semanticSearch } from '@repo/cms-data/indexing'
 
-// CURSOR_API_KEY retired — api.cursor.sh does not resolve from Vercel.
-// Use OPENAI_API_KEY directly. Route by tab: Contenu → gpt-4o-mini, Développement → gpt-4o.
+setPayloadConfig(config)
+
 const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY ?? '',
 })
@@ -21,78 +33,62 @@ function resolveModel(tab: 'contenu' | 'developpement' | undefined) {
   return openai(process.env.AI_MODEL_CONTENU ?? 'gpt-4o-mini')
 }
 
-const SCHEMA_SUMMARY = `
-## Collections disponibles
-
-### pages
-- slug (text, required) — identifiant URL unique
-- title (text, localisé)
-- body (richtext, localisé)
-- seo (group)
-
-### collections (capsules/éditions)
-- title (text, localisé, required)
-- slug (text, required)
-- hero (upload → media)
-- products (relationship → products)
-- description (richtext, localisé)
-
-### products
-- title (text, localisé, required)
-- slug (text, required)
-- category (select)
-- price (number, required)
-- description (richtext, localisé)
-- images (upload → media, multiple)
-- sizes (array)
-- _status (draft/published)
-
-### orders
-- customer (group: name, email, phone)
-- items (array: product, quantity, size, price)
-- status (select: pending / confirmed / shipped / cancelled)
-- total (number)
-
-### media
-- alt (text, localisé)
-- filename (text)
-
-### users
-- email, name, role
-
-## Globals
-
-### site-settings
-- brandName (text, required) — nom affiché dans le header
-- instagramUrl (text) — URL complète Instagram
-- whatsappPhone (text) — format international sans + ni espaces, ex: 33612345678
-`
-
-const SYSTEM_PROMPT = `Tu es l'assistant IA intégré dans le panel d'administration de lenue.paris, une marque de mode parisienne.
+const SYSTEM_PROMPT = `Tu es l'assistant IA intégré dans le panel d'administration du site.
 
 Tu parles français par défaut et tu t'adaptes à la langue de l'utilisateur si nécessaire.
 
 Tu peux lire et modifier le contenu du site directement via les outils disponibles. Quand on te demande de modifier quelque chose, fais-le immédiatement sans demander de confirmation, sauf si c'est irréversible ou ambigu.
 
-${SCHEMA_SUMMARY}
-
-## Règles
-- Utilise get_document pour lire un document avant de le modifier si besoin
-- Utilise patch_field pour mettre à jour des champs
-- Pour les globaux (ex: site-settings), utilise isGlobal: true
-- Après chaque modification réussie, confirme en une phrase ce qui a changé
+## Règles de récupération (obligatoires)
+- Avant toute réponse factuelle sur le contenu (prix, stock, titres, couleurs de design tokens), appelle semantic_search (recherche sémantique) ou search_content (recherche exacte) ou get_site_snapshot — ne réponds jamais depuis ta mémoire d'entraînement
+- Préfère semantic_search pour les questions en langage naturel (« où parle-t-on de la livraison ? », « quels produits évoquent la soie ? »)
+- Utilise search_content pour les filtres structurés (catégorie, stock, statut) ou les correspondances exactes
+- Pour l'inventaire catalogue (stock, robes disponibles, « combien de produits publiés ») : appelle get_catalog en premier — ne devine jamais les chiffres
+- Pour connaître la structure des champs, appelle get_schema — jamais de supposition sur les noms de champs
+- Utilise get_document pour lire un document complet avant de le modifier si besoin
+- Utilise patch_field pour mettre à jour des champs (collections modifiables : pages, products, collections ; globaux : site-settings, design-tokens)
+- Pour les globaux, utilise isGlobal: true
 - Pour les champs localisés, précise toujours la locale (fr, en, ou ru)
-- Sois concis et direct`
+- Après chaque modification réussie, confirme en une phrase ce qui a changé
+- Si les outils ne retournent pas l'information, dis explicitement que tu ne la trouves pas dans la base
+- Sois concis et direct
+
+## Références contextuelles (« cette page », « ce document », « résume »)
+- Tu n'as pas accès au navigateur : ne demande jamais d'URL, d'ID ni de lien à l'utilisateur
+- Si la section « Contexte actuel » indique un document (collection + id ou global), « cette page » / « ce document » / « résume » désignent CE document : résume d'abord le snapshot fourni, ou appelle get_document avec les identifiants du contexte
+- Si le contexte est le tableau de bord admin (/admin sans document ouvert), « cette page » désigne le dashboard : appelle get_site_snapshot et résume l'état du site (marque, compteurs, contenu publié)
+- Ne réponds jamais « j'ai besoin de l'ID » quand le contexte ou le snapshot contient déjà le document
+
+## Recherche par nom (produit, page, collection)
+- Si l'utilisateur envoie un nom court ou flou (ex. « robe eloise », « camille », « livraison »), appelle d'abord semantic_search avec cette requête, puis search_content en complément si besoin
+- Tolère les fautes d'orthographe et les accents manquants (eloise → Héloïse) via semantic_search — ne dis jamais qu'un produit n'existe sans avoir appelé un outil de recherche
+- Une fois le document trouvé, utilise get_document avec collection et id retournés pour donner les détails (prix, stock, description)
+
+## Inventaire catalogue
+- get_catalog retourne les produits publiés en stock, les robes disponibles (inStockDresses) et les compteurs par catégorie
+- Ne dis jamais qu'il n'y a aucun produit en stock sans avoir appelé get_catalog ou search_content avec status=published et inStock=true`
+
+async function resolvePayloadUserId(request: NextRequest): Promise<number | undefined> {
+  try {
+    const payload = await getCmsClient()
+    const { user } = await payload.auth({ headers: request.headers })
+    if (!user?.id) return undefined
+    return typeof user.id === 'number' ? user.id : parseInt(String(user.id), 10)
+  } catch {
+    return undefined
+  }
+}
 
 export async function POST(request: NextRequest) {
   let body: {
     messages: UIMessage[]
     tab?: 'contenu' | 'developpement'
     context?: {
-      type: 'collection' | 'global' | 'dashboard'
+      type: 'collection' | 'collection-list' | 'global' | 'dashboard'
       collection?: string
       id?: string
       slug?: string
+      locale?: string
     }
   }
 
@@ -112,7 +108,6 @@ export async function POST(request: NextRequest) {
     console.error('[/api/ai/chat] OPENAI_API_KEY is not set — AI responses will fail')
   }
 
-  // Require either a Payload session cookie or a valid editor share token
   const cookieStore = await cookies()
   const payloadToken = cookieStore.get('payload-token')?.value
   const editorToken = cookieStore.get('editor_token')?.value
@@ -127,50 +122,50 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  // When a specific document is open, snapshot its top-level fields so the AI
-  // never guesses the wrong field path (fixes "no permissions to edit title" where
-  // the model was trying `hero.title` or `data.title` instead of the raw `title`).
+  const userId = await resolvePayloadUserId(request)
+  const snapshotLocale = parseContentLocale(context?.locale)
+
   let docSnapshot = ''
   if (context?.type === 'collection' && context.collection && context.id) {
-    try {
-      const payload = await getPayload({ config })
-      const doc = await payload.findByID({
-        collection: context.collection as Parameters<typeof payload.findByID>[0]['collection'],
-        id: parseInt(context.id, 10),
-        overrideAccess: true,
-        depth: 0,
-        locale: 'fr',
-      })
-      const fields = Object.keys(doc).filter(
-        (k) =>
-          !['id', 'createdAt', 'updatedAt', 'globalType'].includes(k),
+    const doc = await getDocument({
+      collection: context.collection,
+      id: context.id,
+      locale: snapshotLocale,
+      depth: 1,
+    })
+    if (!('error' in doc)) {
+      docSnapshot = buildDocumentSnapshot(
+        doc,
+        `collection="${context.collection}", id="${context.id}"`,
+        context.collection as 'pages' | 'products' | 'collections' | 'media',
       )
-      docSnapshot = `\n\nChamps disponibles sur ce document (utilisez exactement ces noms) :\n${fields.map((f) => `- ${f}: ${JSON.stringify((doc as unknown as Record<string, unknown>)[f])?.slice(0, 120)}`).join('\n')}\n\nRègle critique : pour modifier le titre, utilisez patch_field avec data={"title":"…"} — jamais "data.title" ni "hero.title".`
-    } catch (err) {
-      console.error('[/api/ai/chat] doc snapshot fetch failed:', err)
+      docSnapshot += `\n\nRègle critique : pour modifier le titre, utilisez patch_field avec data={"title":"…"} — jamais "data.title" ni un chemin imbriqué inventé.`
     }
   } else if (context?.type === 'global' && context.slug) {
-    try {
-      const payload = await getPayload({ config })
-      const doc = await payload.findGlobal({
-        slug: context.slug as Parameters<typeof payload.findGlobal>[0]['slug'],
-        overrideAccess: true,
-        locale: 'fr',
-      })
-      const fields = Object.keys(doc).filter(
-        (k) => !['id', 'createdAt', 'updatedAt', 'globalType'].includes(k),
+    const doc = await getDocument({
+      collection: context.slug,
+      isGlobal: true,
+      locale: snapshotLocale,
+      depth: 1,
+    })
+    if (!('error' in doc)) {
+      docSnapshot = buildDocumentSnapshot(
+        doc,
+        `global="${context.slug}"`,
+        context.slug as 'site-settings' | 'design-tokens',
       )
-      docSnapshot = `\n\nChamps disponibles sur ce global (utilisez exactement ces noms) :\n${fields.map((f) => `- ${f}: ${JSON.stringify((doc as unknown as Record<string, unknown>)[f])?.slice(0, 120)}`).join('\n')}`
-    } catch (err) {
-      console.error('[/api/ai/chat] global snapshot fetch failed:', err)
     }
   }
 
   const contextNote = context?.type === 'collection' && context.collection && context.id
-    ? `\n\n## Contexte actuel\nL'utilisateur édite le document : collection="${context.collection}", id="${context.id}". Utilise ce document par défaut.${docSnapshot}`
-    : context?.type === 'global' && context.slug
-      ? `\n\n## Contexte actuel\nL'utilisateur est sur le global : "${context.slug}". Utilise ce global par défaut (isGlobal: true).${docSnapshot}`
-      : ''
+    ? `\n\n## Contexte actuel\nL'utilisateur édite le document : collection="${context.collection}", id="${context.id}", locale="${snapshotLocale}". « Cette page » / « ce document » / « résume » = ce document. Ne demande pas l'ID — utilise get_document ou le snapshot ci-dessous.${docSnapshot}`
+    : context?.type === 'collection-list' && context.collection
+      ? `\n\n## Contexte actuel\nL'utilisateur parcourt la liste de la collection "${context.collection}" (aucun document ouvert). Pour toute recherche par nom (ex. un produit), appelle semantic_search puis get_document — ne dis jamais qu'il n'existe sans avoir cherché.`
+      : context?.type === 'global' && context.slug
+        ? `\n\n## Contexte actuel\nL'utilisateur est sur le global : "${context.slug}", locale="${snapshotLocale}". « Ce document » / « résume » = ce global (isGlobal: true).${docSnapshot}`
+        : context?.type === 'dashboard'
+          ? `\n\n## Contexte actuel\nL'utilisateur est sur le tableau de bord admin (pas un document CMS ouvert). Pour toute question sur le contenu du site, appelle semantic_search ou search_content. « Cette page » / « résume » = vue d'ensemble : get_site_snapshot.`
+          : ''
 
   const modelMessages = await convertToModelMessages(messages)
   const resolvedTab = tab ?? 'contenu'
@@ -184,145 +179,121 @@ export async function POST(request: NextRequest) {
       messages: modelMessages,
       stopWhen: stepCountIs(8),
       tools: {
-      get_document: tool({
-        description: 'Lire un document depuis Payload CMS',
-        inputSchema: zodSchema(z.object({
-          collection: z.string().describe('Slug de la collection (pages, products, collections, orders) ou du global (site-settings)'),
-          id: z.string().optional().describe('ID du document (non requis pour les globaux)'),
-          locale: z.string().optional().describe('Locale: fr, en ou ru'),
-          isGlobal: z.boolean().optional().describe("Vrai si c'est un global (ex: site-settings)"),
-        })),
-        execute: async ({ collection, id, locale, isGlobal }) => {
-          try {
-            const payload = await getPayload({ config })
-            if (isGlobal) {
-              const doc = await payload.findGlobal({
-                slug: collection as Parameters<typeof payload.findGlobal>[0]['slug'],
-                locale: (locale as 'fr' | 'en' | 'ru' | undefined) ?? 'fr',
-                overrideAccess: true,
-              })
-              return doc
-            }
-            if (!id) return { error: 'id requis pour les collections' }
-            const doc = await payload.findByID({
-              collection: collection as Parameters<typeof payload.findByID>[0]['collection'],
-              id: parseInt(id, 10),
-              locale: (locale as 'fr' | 'en' | 'ru' | undefined) ?? 'fr',
+        get_document: tool({
+          description: 'Lire un document depuis la base de contenu',
+          inputSchema: zodSchema(z.object({
+            collection: z.string().describe('Slug de la collection ou du global (site-settings, design-tokens)'),
+            id: z.string().optional().describe('ID du document (non requis pour les globaux)'),
+            locale: z.string().optional().describe('Locale: fr, en ou ru'),
+            isGlobal: z.boolean().optional().describe("Vrai si c'est un global"),
+          })),
+          execute: async ({ collection, id, locale, isGlobal }) =>
+            getDocument({
+              collection,
+              id,
+              locale: parseContentLocale(locale),
+              isGlobal,
               depth: 1,
-              overrideAccess: true,
-            })
-            return doc
-          } catch (err) {
-            return { error: err instanceof Error ? err.message : 'Erreur de lecture' }
-          }
-        },
-      }),
+            }),
+        }),
 
-      patch_field: tool({
-        description: 'Modifier des champs dans un document Payload CMS',
-        inputSchema: zodSchema(z.object({
-          collection: z.string().describe('Slug de la collection ou du global'),
-          id: z.string().optional().describe('ID du document (non requis pour les globaux)'),
-          data: z.record(z.string(), z.unknown()).describe('Objet avec les champs à mettre à jour, ex: { title: "Nouveau titre" }'),
-          locale: z.string().optional().describe('Locale pour les champs localisés (fr, en, ru)'),
-          isGlobal: z.boolean().optional().describe('Vrai pour modifier un global'),
-        })),
-        execute: async ({ collection, id, data, locale, isGlobal }) => {
-          try {
-            const payload = await getPayload({ config })
-            const payloadLocale = (locale as 'fr' | 'en' | 'ru' | undefined) ?? 'fr'
+        patch_field: tool({
+          description: 'Modifier des champs dans un document (pages, products, collections, site-settings, design-tokens uniquement)',
+          inputSchema: zodSchema(z.object({
+            collection: z.string().describe('Slug de la collection ou du global'),
+            id: z.string().optional().describe('ID du document (non requis pour les globaux)'),
+            data: z.record(z.string(), z.unknown()).describe('Objet avec les champs à mettre à jour'),
+            locale: z.string().optional().describe('Locale pour les champs localisés (fr, en, ru)'),
+            isGlobal: z.boolean().optional().describe('Vrai pour modifier un global'),
+          })),
+          execute: async ({ collection, id, data, locale, isGlobal }) =>
+            patchDocument({
+              collection,
+              id,
+              data,
+              locale: parseContentLocale(locale),
+              isGlobal,
+              userId,
+            }),
+        }),
 
-            if (isGlobal) {
-              const result = await payload.updateGlobal({
-                slug: collection as Parameters<typeof payload.updateGlobal>[0]['slug'],
-                data: data as Record<string, unknown>,
-                locale: payloadLocale,
-                overrideAccess: true,
-              })
-              // Ensure draft mode is active so the next page load picks up fresh data
-              const dm = await draftMode()
-              dm.enable()
-              revalidatePath('/', 'layout')
-              return { success: true, updatedFields: Object.keys(data), doc: result }
+        get_schema: tool({
+          description: 'Retourne la structure actuelle des collections et globaux (noms de champs, types, localisation)',
+          inputSchema: zodSchema(z.object({})),
+          execute: async () => {
+            const manifest = getSchemaManifest()
+            return {
+              manifest,
+              formatted: formatSchemaManifest(manifest),
             }
+          },
+        }),
 
-            if (!id) return { error: 'id requis pour les collections' }
-            const result = await payload.update({
-              collection: collection as Parameters<typeof payload.update>[0]['collection'],
-              id: parseInt(id, 10),
-              data: data as Record<string, unknown>,
-              locale: payloadLocale,
-              overrideAccess: true,
-            })
-            // Ensure draft mode is active so the next page load picks up fresh data
-            const dm = await draftMode()
-            dm.enable()
-            revalidatePath('/', 'layout')
-            return { success: true, updatedFields: Object.keys(data), doc: result }
-          } catch (err) {
-            return { error: err instanceof Error ? err.message : 'Erreur de modification' }
-          }
-        },
-      }),
+        search_content: tool({
+          description: 'Rechercher du contenu dans la base (produits, pages avec blocs, collections, médias). Utilise des filtres pour compter (ex: category=dresses, inStock=true, status=published).',
+          inputSchema: zodSchema(z.object({
+            query: z.string().optional().describe('Texte à rechercher dans titre, slug, description, blocs de page ou alt média'),
+            collections: z.array(z.enum(['products', 'pages', 'collections', 'media'])).optional(),
+            locale: z.string().optional().describe('Locale: fr, en ou ru'),
+            category: z.string().optional().describe('Filtre catégorie produit: dresses, bags, scarfs'),
+            inStock: z.boolean().optional().describe('Filtre stock produit'),
+            status: z.enum(['published', 'draft']).optional().describe('Filtre statut de publication'),
+            limit: z.number().optional().describe('Nombre max de résultats par collection (défaut 20)'),
+          })),
+          execute: async ({ query, collections, locale, category, inStock, status, limit }) =>
+            searchContent({
+              query,
+              collections,
+              locale: parseContentLocale(locale),
+              filters: { category, inStock, status },
+              limit,
+            }),
+        }),
 
-      list_schema: tool({
-        description: 'Lister toutes les collections et globaux disponibles avec leur structure de champs',
-        inputSchema: zodSchema(z.object({})),
-        execute: async () => ({ schema: SCHEMA_SUMMARY }),
-      }),
+        semantic_search: tool({
+          description: 'Recherche sémantique vectorielle dans tout le contenu du site (pages, blocs, produits, collections, médias, paramètres). Idéal pour les questions en langage naturel.',
+          inputSchema: zodSchema(z.object({
+            query: z.string().describe('Question ou phrase à rechercher par similarité sémantique'),
+            collections: z.array(z.enum(['products', 'pages', 'collections', 'media', 'site-settings', 'design-tokens'])).optional(),
+            locale: z.string().optional().describe('Locale: fr, en ou ru'),
+            limit: z.number().optional().describe('Nombre max de passages retournés (défaut 10)'),
+          })),
+          execute: async ({ query, collections, locale, limit }) =>
+            semanticSearch({
+              query,
+              collections,
+              locale: parseContentLocale(locale),
+              limit,
+            }),
+        }),
 
-      push_to_github: tool({
-        description: 'Créer ou mettre à jour un fichier dans le dépôt GitHub (pour les composants React ou les schémas Payload)',
-        inputSchema: zodSchema(z.object({
-          path: z.string().describe('Chemin du fichier dans le dépôt, ex: apps/web/src/components/MyComponent.tsx'),
-          content: z.string().describe('Contenu complet du fichier'),
-          message: z.string().describe('Message de commit'),
-        })),
-        execute: async ({ path, content, message }) => {
-          const token = process.env.GITHUB_TOKEN
-          if (!token) return { error: 'GITHUB_TOKEN non configuré — ajoutez-le dans apps/web/.env.local' }
+        get_site_snapshot: tool({
+          description: 'Instantané des paramètres du site (site-settings, design-tokens) et compteurs de contenu',
+          inputSchema: zodSchema(z.object({
+            locale: z.string().optional().describe('Locale: fr, en ou ru'),
+          })),
+          execute: async ({ locale }) =>
+            getSiteSnapshot(parseContentLocale(locale)),
+        }),
 
-          const repoOwner = process.env.GITHUB_REPO_OWNER ?? 'romainpiveteau'
-          const repoName = process.env.GITHUB_REPO_NAME ?? 'lenue-paris'
-          const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${path}`
-
-          let sha: string | undefined
-          const existing = await fetch(apiUrl, {
-            headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'lenue-ai-panel' },
-          })
-          if (existing.ok) {
-            const data = await existing.json()
-            sha = data.sha
-          }
-
-          const putBody: Record<string, unknown> = {
-            message,
-            content: Buffer.from(content).toString('base64'),
-          }
-          if (sha) putBody.sha = sha
-
-          const res = await fetch(apiUrl, {
-            method: 'PUT',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-              'User-Agent': 'lenue-ai-panel',
-            },
-            body: JSON.stringify(putBody),
-          })
-
-          if (!res.ok) return { error: `GitHub API ${res.status} — ${await res.text()}` }
-          return { success: true, path, message, action: sha ? 'updated' : 'created' }
-        },
-      }),
-    },
+        get_catalog: tool({
+          description: 'État du catalogue produits : compteurs (publiés, en stock) et listes détaillées. Utilise pour « combien en stock », « robes disponibles », « état du catalogue ».',
+          inputSchema: zodSchema(z.object({
+            locale: z.string().optional().describe('Locale: fr, en ou ru'),
+          })),
+          execute: async ({ locale }) =>
+            getCatalogSummary(parseContentLocale(locale)),
+        }),
+      },
     })
+
     console.log('[ai/chat]', {
       tab: resolvedTab,
       model: resolvedTab === 'developpement'
         ? (process.env.AI_MODEL_DEV ?? 'gpt-4o')
         : (process.env.AI_MODEL_CONTENU ?? 'gpt-4o-mini'),
       contextType: context?.type,
+      hasUser: !!userId,
       latencyMs: Date.now() - logStart,
     })
     return result.toUIMessageStreamResponse()

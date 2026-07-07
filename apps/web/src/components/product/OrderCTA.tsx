@@ -43,17 +43,17 @@ export function OrderCTA({ product }: OrderCTAProps) {
     const interestUrl = toWhatsAppUrl(t("whatsappInterest", { title: product.title }));
 
     return (
-      <div className="space-y-4 rounded-sm border border-stone-200 bg-stone-50 p-5">
-        <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-stone-500">
+      <div className="space-y-4 rounded-sm border border-subtle bg-surface p-5">
+        <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted">
           {tProduct("outOfStock")}
         </p>
-        <p className="text-sm leading-relaxed text-stone-600">{tProduct("outOfStockMessage")}</p>
+        <p className="text-sm leading-relaxed text-muted">{tProduct("outOfStockMessage")}</p>
         <a
           href={interestUrl}
           data-maison="cta-whatsapp"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex min-h-[44px] w-full items-center justify-center bg-stone-900 px-6 py-3 text-sm font-semibold tracking-wide text-white transition-colors hover:bg-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2"
+          className="flex min-h-[44px] w-full items-center justify-center bg-accent px-6 py-3 text-sm font-semibold tracking-wide text-accent-text transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
           {tProduct("outOfStockCta")}
         </a>
@@ -80,10 +80,10 @@ export function OrderCTA({ product }: OrderCTAProps) {
         onClick={handleAdd}
         disabled={!canAdd}
         aria-disabled={!canAdd}
-        className={`flex min-h-[44px] w-full items-center justify-center px-6 py-3 text-sm font-semibold tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
+        className={`flex min-h-[44px] w-full items-center justify-center px-6 py-3 text-sm font-semibold tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
           canAdd
-            ? "bg-stone-900 text-white hover:bg-stone-700"
-            : "bg-stone-200 text-stone-400"
+            ? "bg-accent text-accent-text hover:bg-accent-hover"
+            : "bg-skeleton text-subtle"
         }`}
       >
         {alreadyInSelection ? tSelection("added") : tSelection("add")}

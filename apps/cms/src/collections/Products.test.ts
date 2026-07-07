@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Products } from "./Products";
+import { Products } from "@repo/payload-schema/collections";
 
 describe("Products collection", () => {
   const field = (name: string) => Products.fields.find((f) => "name" in f && f.name === name);

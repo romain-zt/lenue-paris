@@ -1,17 +1,25 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import type { UIMessage } from 'ai'
+import { useLocale } from '@payloadcms/ui'
 import { ensureHighlightStyle, focusAdminField, scrollAndHighlight } from './live-preview/utils'
 
+import {
+  isContentLocale,
+  parseContentLocale,
+  type ContentLocale,
+} from "@repo/payload-schema/i18n/content-locales";
+
 type DocContext = {
-  type: 'collection' | 'global' | 'dashboard'
+  type: 'collection' | 'collection-list' | 'global' | 'dashboard'
   collection?: string
   id?: string
   slug?: string
+  locale?: ContentLocale
 }
 
 type LastEdit = {
@@ -24,8 +32,11 @@ function parseAdminPath(pathname: string): DocContext {
   const adminIdx = parts.indexOf('admin')
   if (adminIdx === -1) return { type: 'dashboard' }
   const after = parts.slice(adminIdx + 1)
-  if (after[0] === 'collections' && after[1] && after[2]) {
+  if (after[0] === 'collections' && after[1] && after[2] && after[2] !== 'create') {
     return { type: 'collection', collection: after[1], id: after[2] }
+  }
+  if (after[0] === 'collections' && after[1] && !after[2]) {
+    return { type: 'collection-list', collection: after[1] }
   }
   if (after[0] === 'globals' && after[1]) {
     return { type: 'global', slug: after[1] }
@@ -41,17 +52,35 @@ function timeAgo(date: Date): string {
   return `il y a ${Math.floor(diff / 86400)}j`
 }
 
-const QUICK_ACTIONS = {
-  contenu: [
-    { label: 'Modifier ce contenu', prompt: 'Montre-moi les champs de ce document et aide-moi à les modifier.' },
-    { label: 'Expliquer les champs', prompt: 'Explique-moi à quoi servent les différents champs de ce document.' },
-    { label: 'Traduire FR/EN/RU', prompt: 'Traduis le contenu de ce document en français, anglais et russe.' },
-  ],
-  dev: [
-    { label: 'Nouveau bloc', prompt: 'Aide-moi à créer un nouveau bloc Payload (schema + composant React).' },
-    { label: 'Nouveau composant', prompt: 'Génère un composant React et pousse-le sur GitHub.' },
-    { label: 'Structure du site', prompt: 'Montre-moi toutes les collections et globaux disponibles avec leurs champs.' },
-  ],
+const DOCUMENT_ACTIONS = [
+  { label: 'Résumer ce document', prompt: 'Résume le contenu du document que je suis en train d\'éditer.' },
+  { label: 'Modifier ce contenu', prompt: 'Montre-moi les champs de ce document et aide-moi à les modifier.' },
+  { label: 'Expliquer les champs', prompt: 'Explique-moi à quoi servent les différents champs de ce document.' },
+  { label: 'Traduire FR/EN/RU', prompt: 'Traduis le contenu de ce document en français, anglais et russe.' },
+] as const
+
+const BROWSE_ACTIONS = [
+  { label: 'État du catalogue', prompt: 'Combien de produits publiés sont en stock ? Liste les robes disponibles.' },
+  { label: 'Page livraison', prompt: 'Où parle-t-on de la livraison sur le site ?' },
+  { label: 'Vue du site', prompt: 'Donne-moi un aperçu de l\'état actuel du site (marque, compteurs, contenu publié).' },
+  { label: 'Couleurs du site', prompt: 'Quelle est la couleur accent et les principaux design tokens ?' },
+] as const
+
+const DEV_ACTIONS = [
+  { label: 'Nouveau bloc', prompt: 'Aide-moi à créer un nouveau bloc Payload (schema + composant React).' },
+  { label: 'Structure du site', prompt: 'Montre-moi toutes les collections et globaux disponibles avec leurs champs.' },
+  { label: 'État du catalogue', prompt: 'Combien de produits publiés sont en stock ? Liste les robes disponibles.' },
+] as const
+
+function getQuickActions(
+  docContext: DocContext,
+  tab: 'contenu' | 'dev',
+): readonly { label: string; prompt: string }[] {
+  if (tab === 'dev') return DEV_ACTIONS
+  if (docContext.type === 'collection' && docContext.collection && docContext.id) {
+    return DOCUMENT_ACTIONS
+  }
+  return BROWSE_ACTIONS
 }
 
 const TONE_CHIPS = [
@@ -162,8 +191,11 @@ function ToolCallCard({ toolName, state }: { toolName: string; state: string }) 
   const labels: Record<string, string> = {
     get_document: 'Lecture du document',
     patch_field: 'Modification du contenu',
-    list_schema: 'Récupération du schéma',
-    push_to_github: 'Push vers GitHub',
+    get_schema: 'Récupération du schéma',
+    search_content: 'Recherche dans la base',
+    semantic_search: 'Recherche sémantique',
+    get_site_snapshot: 'Instantané du site',
+    get_catalog: 'État du catalogue',
   }
   const isLoading = state === 'partial-call' || state === 'call'
   return (
@@ -235,10 +267,16 @@ function MessageBubble({ message }: { message: UIMessage }) {
 
 export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const router = useRouter()
+  const pathname = usePathname()
+  const locale = useLocale()
   const [open, setOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'contenu' | 'dev'>('contenu')
   const [docContext, setDocContext] = useState<DocContext>({ type: 'dashboard' })
-  const [input, setInput] = useState('')
+  const [inputs, setInputs] = useState<{ contenu: string; dev: string }>({ contenu: '', dev: '' })
+  const input = inputs[activeTab]
+  const setInput = useCallback((value: string) => {
+    setInputs(prev => ({ ...prev, [activeTab]: value }))
+  }, [activeTab])
   const [lastEdit, setLastEdit] = useState<LastEdit | null>(null)
   const [timeAgoDisplay, setTimeAgoDisplay] = useState('')
   const [mounted, setMounted] = useState(false)
@@ -303,16 +341,21 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
   }, [docContext])
 
   useEffect(() => {
-    const update = () => setDocContext(parseAdminPath(window.location.pathname))
-    update()
-    window.addEventListener('popstate', update)
-    const observer = new MutationObserver(update)
-    observer.observe(document, { subtree: true, childList: true })
-    return () => {
-      window.removeEventListener('popstate', update)
-      observer.disconnect()
-    }
-  }, [])
+    const adminLocale = isContentLocale(locale.code)
+      ? (locale.code as ContentLocale)
+      : parseContentLocale()
+    setDocContext({
+      ...parseAdminPath(pathname),
+      locale: adminLocale,
+    })
+  }, [pathname, locale.code])
+
+  useEffect(() => {
+    const textarea = inputRef.current
+    if (!textarea || input) return
+    textarea.style.height = 'auto'
+    textarea.style.overflow = 'hidden'
+  }, [input, open])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -338,7 +381,7 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
           : `Explique-moi le champ "${fieldName}" (${path}) et aide-moi à le remplir.`
         setOpen(true)
         setActiveTab('contenu')
-        setInput(prompt)
+        setInputs(prev => ({ ...prev, contenu: prompt }))
         setTimeout(() => inputRef.current?.focus(), 200)
       }
     }
@@ -353,9 +396,9 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
       setOpen(true)
       setActiveTab('contenu')
       if (detail.prompt) {
-        setInput(detail.prompt)
+        setInputs(prev => ({ ...prev, contenu: detail.prompt! }))
       } else if (detail.fieldPath) {
-        setInput(`Modifier le bloc : ${detail.fieldPath}`)
+        setInputs(prev => ({ ...prev, contenu: `Modifier le bloc : ${detail.fieldPath}` }))
       }
       setTimeout(() => inputRef.current?.focus(), 200)
     }
@@ -373,14 +416,16 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
 
   const storageKey = docContext.type === 'collection'
     ? `ai-chat-${docContext.collection}-${docContext.id}`
-    : docContext.type === 'global'
-      ? `ai-chat-global-${docContext.slug}`
-      : 'ai-chat-dashboard'
+    : docContext.type === 'collection-list'
+      ? `ai-chat-list-${docContext.collection}`
+      : docContext.type === 'global'
+        ? `ai-chat-global-${docContext.slug}`
+        : 'ai-chat-dashboard'
 
   const activeTabRef = useRef(activeTab)
   useEffect(() => { activeTabRef.current = activeTab }, [activeTab])
 
-  const transport = useMemo(() => new DefaultChatTransport({
+  const contenuTransport = useMemo(() => new DefaultChatTransport({
     api: '/api/ai/chat',
     credentials: 'include',
     prepareSendMessagesRequest: ({ body, messages: msgs, id: chatId }) => ({
@@ -388,30 +433,59 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
         messages: msgs,
         id: chatId,
         ...(body as Record<string, unknown>),
-        tab: activeTabRef.current === 'dev' ? 'developpement' : 'contenu',
+        tab: 'contenu',
         context: docContextRef.current,
       },
     }),
   }), [])
 
-  const { messages, sendMessage, status, setMessages, error } = useChat({
+  const devTransport = useMemo(() => new DefaultChatTransport({
+    api: '/api/ai/chat',
+    credentials: 'include',
+    prepareSendMessagesRequest: ({ body, messages: msgs, id: chatId }) => ({
+      body: {
+        messages: msgs,
+        id: chatId,
+        ...(body as Record<string, unknown>),
+        tab: 'developpement',
+        context: docContextRef.current,
+      },
+    }),
+  }), [])
+
+  const contenuChat = useChat({
     id: storageKey,
-    transport,
+    transport: contenuTransport,
     onFinish: () => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      if (activeTabRef.current === 'contenu') {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      }
     },
   })
 
+  const devChat = useChat({
+    id: `${storageKey}-dev`,
+    transport: devTransport,
+    onFinish: () => {
+      if (activeTabRef.current === 'dev') {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      }
+    },
+  })
+
+  const activeChat = activeTab === 'contenu' ? contenuChat : devChat
+  const { messages, sendMessage, status, setMessages, error } = activeChat
+
   // Track which message ids we've already processed to avoid double-firing.
-  // Scan ALL messages (not just the last one) because multi-step tool calling
-  // puts patch_field in an earlier step's message, not the final text reply.
   const processedPatchIds = useRef(new Set<string>())
 
-  useEffect(() => {
-    // Only process once the stream is fully settled
-    if (status !== 'ready') return
+  const processPatchMessages = useCallback((
+    chatMessages: UIMessage[],
+    chatStatus: typeof status,
+  ) => {
+    if (chatStatus !== 'ready') return
 
-    for (const message of messages) {
+    for (const message of chatMessages) {
       if (message.role !== 'assistant') continue
       if (processedPatchIds.current.has(message.id)) continue
 
@@ -425,7 +499,6 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
         return res?.success === true
       })
 
-      // Mark processed regardless of whether patches were found
       processedPatchIds.current.add(message.id)
 
       if (successfulPatches.length === 0) continue
@@ -438,10 +511,7 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
       setLastEdit({ fields: updatedFields, timestamp: new Date() })
       setPatchDone(true)
 
-      // Signal live-preview iframe to reload immediately (no full page reload needed)
       window.dispatchEvent(new CustomEvent('lp:ai-patch-done', { detail: { fields: updatedFields } }))
-
-      // Notify Payload admin form
       document.dispatchEvent(new CustomEvent('payload:document:refetch'))
       router.refresh()
 
@@ -450,18 +520,25 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
         setTimeout(() => focusAdminField(field), 400)
       }
     }
-  }, [messages, status, router])
+  }, [router])
+
+  useEffect(() => {
+    processPatchMessages(contenuChat.messages, contenuChat.status)
+  }, [contenuChat.messages, contenuChat.status, processPatchMessages])
+
+  useEffect(() => {
+    processPatchMessages(devChat.messages, devChat.status)
+  }, [devChat.messages, devChat.status, processPatchMessages])
 
   const isLoading = status === 'submitted' || status === 'streaming'
 
   useEffect(() => {
-    if (open) {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-        inputRef.current?.focus()
-      }, 100)
-    }
-  }, [open])
+    if (!open) return
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      inputRef.current?.focus()
+    }, 100)
+  }, [open, activeTab])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -470,9 +547,9 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
   const handleSend = useCallback(() => {
     if (!input.trim() || isLoading) return
     const text = input.trim()
-    setInput('')
+    setInputs(prev => ({ ...prev, [activeTab]: '' }))
     sendMessage({ text })
-  }, [input, isLoading, sendMessage])
+  }, [input, isLoading, sendMessage, activeTab])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -487,10 +564,14 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
   }, [sendMessage])
 
   const contextLabel = docContext.type === 'collection'
-    ? `${docContext.collection} · ${docContext.id?.slice(0, 8)}…`
-    : docContext.type === 'global'
-      ? `global · ${docContext.slug}`
-      : 'Tableau de bord'
+    ? `${docContext.collection} · ${docContext.id}`
+    : docContext.type === 'collection-list'
+      ? `Liste · ${docContext.collection}`
+      : docContext.type === 'global'
+        ? `global · ${docContext.slug}`
+        : 'Tableau de bord'
+
+  const quickActions = getQuickActions(docContext, activeTab)
 
   const panel = mounted ? (
     <>
@@ -510,7 +591,7 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
           background: 'var(--theme-text, #1a1a1a)',
           border: 'none',
           borderRadius: 40,
-          color: '#fff',
+          color: '#000',
           cursor: 'pointer',
           fontSize: 13,
           fontWeight: 500,
@@ -744,7 +825,7 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
           gap: 6,
           flexShrink: 0,
         }}>
-          {QUICK_ACTIONS[activeTab].map(action => (
+          {quickActions.map(action => (
             <button
               key={action.label}
               onClick={() => sendQuickAction(action.prompt)}
@@ -829,7 +910,9 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
                 Que puis-je faire pour vous ?
               </div>
               <div style={{ fontSize: 12, lineHeight: 1.6 }}>
-                Modifiez du contenu, posez des questions sur la structure du site, ou créez de nouveaux composants directement depuis l&apos;admin.
+                {activeTab === 'contenu'
+                  ? 'Résumez, modifiez ou traduisez le contenu du site. Posez des questions sur vos pages et produits.'
+                  : 'Créez des blocs, explorez la structure Payload ou partagez l\'accès éditeur.'}
               </div>
             </div>
           )}
@@ -911,6 +994,7 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
             letterSpacing: '0.02em',
           }}>
             {activeTab === 'contenu' ? 'Contenu · réponse rapide' : 'Développement · génération soignée'}
+            {' · Entrée envoie · Maj+Entrée nouvelle ligne'}
           </div>
           {isLoading && (
             <div style={{
@@ -925,58 +1009,79 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
               <span>{status === 'submitted' ? 'Envoi en cours…' : 'Génération…'}</span>
             </div>
           )}
-          <div style={{
+          <div
+            className="ai-panel-composer"
+            style={{
             display: 'flex',
-            gap: 8,
-            alignItems: 'flex-end',
-            background: 'var(--theme-elevation-100, #f5f5f5)',
-            borderRadius: 12,
-            border: `1px solid ${isLoading ? 'rgba(99,102,241,0.4)' : 'var(--theme-elevation-200, #e0e0e0)'}`,
-            padding: '8px 12px',
+            gap: 10,
+            alignItems: 'center',
+            background: 'var(--theme-elevation-50, #fafafa)',
+            borderRadius: 14,
+            border: `1px solid ${isLoading ? 'rgba(99,102,241,0.45)' : 'var(--theme-elevation-150, #e8e8e8)'}`,
+            padding: '6px 6px 6px 14px',
             transition: 'border-color 0.15s',
           }}>
             <textarea
               ref={inputRef}
               value={input}
-              onChange={e => setInput(e.target.value)}
+              onChange={e => setInputs(prev => ({ ...prev, [activeTab]: e.target.value }))}
               onKeyDown={handleKeyDown}
-              placeholder="Message… (Entrée pour envoyer, Maj+Entrée pour sauter une ligne)"
+              placeholder="Message…"
               rows={1}
               disabled={isLoading}
               style={{
                 flex: 1,
-                background: 'none',
+                minWidth: 0,
+                minHeight: 24,
+                background: 'transparent',
                 border: 'none',
                 outline: 'none',
                 resize: 'none',
                 fontSize: 13,
                 lineHeight: 1.5,
+                padding: '8px 0',
+                margin: 0,
                 color: 'var(--theme-text, #1a1a1a)',
                 maxHeight: 120,
-                overflow: 'auto',
+                overflow: 'hidden',
+                fontFamily: 'inherit',
+                boxSizing: 'border-box',
               }}
               onInput={e => {
                 const t = e.currentTarget
                 t.style.height = 'auto'
-                t.style.height = Math.min(t.scrollHeight, 120) + 'px'
+                const next = Math.min(t.scrollHeight, 120)
+                t.style.height = `${next}px`
+                t.style.overflow = t.scrollHeight > 120 ? 'auto' : 'hidden'
               }}
             />
             <button
               type="button"
               onClick={handleSend}
               disabled={isLoading || !input.trim()}
+              aria-label="Envoyer"
               style={{
-                padding: '6px 14px',
-                background: 'var(--theme-text, #1a1a1a)',
-                color: 'var(--theme-elevation-0, #fff)',
+                width: 36,
+                height: 36,
+                minWidth: 36,
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: input.trim() && !isLoading
+                  ? 'var(--theme-text, #1a1a1a)'
+                  : 'var(--theme-elevation-150, #e5e5e5)',
+                color: input.trim() && !isLoading
+                  ? 'var(--theme-elevation-0, #fff)'
+                  : 'var(--theme-elevation-400, #999)',
                 border: 'none',
-                borderRadius: 8,
+                borderRadius: 10,
                 cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer',
-                fontSize: 13,
-                fontWeight: 500,
-                opacity: isLoading || !input.trim() ? 0.5 : 1,
-                transition: 'opacity 0.15s',
+                fontSize: 16,
+                lineHeight: 1,
+                fontWeight: 600,
                 flexShrink: 0,
+                transition: 'background 0.15s, color 0.15s, transform 0.1s',
               }}
             >
               {isLoading ? '…' : '↑'}
@@ -989,6 +1094,17 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
         @keyframes ai-spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        .ai-panel-composer textarea {
+          overflow: hidden;
+          scrollbar-width: none;
+        }
+        .ai-panel-composer textarea::-webkit-scrollbar {
+          display: none;
+        }
+        .ai-panel-composer textarea::placeholder {
+          color: var(--theme-elevation-400, #999);
+          opacity: 1;
         }
       `}</style>
     </>
