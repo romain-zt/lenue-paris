@@ -6,6 +6,7 @@ import * as migration_20260617_120000_capsule_limited_series from './20260617_12
 import * as migration_20260618_200000_site_settings_global from './20260618_200000_site_settings_global';
 import * as migration_20260619_160000_pages_v_autosave from './20260619_160000_pages_v_autosave';
 import * as migration_20260707_061500_pages_blocks_locale from './20260707_061500_pages_blocks_locale';
+import * as migration_20260707_062000_hero_season_column from './20260707_062000_hero_season_column';
 
 export const migrations = [
   {
@@ -47,5 +48,10 @@ export const migrations = [
     up: migration_20260707_061500_pages_blocks_locale.up,
     down: migration_20260707_061500_pages_blocks_locale.down,
     name: '20260707_061500_pages_blocks_locale',
+  },
+  {
+    up: migration_20260707_062000_hero_season_column.up,
+    down: migration_20260707_062000_hero_season_column.down,
+    name: '20260707_062000_hero_season_column',
   },
 ];
