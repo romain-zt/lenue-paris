@@ -19,6 +19,7 @@
     "generate:types": "payload generate:types",
     "seed": "node ../../scripts/run-tsx.mjs src/seed.ts",
     "seed:placeholders": "node ../../scripts/run-tsx.mjs scripts/generate-seed-placeholders.ts",
+    "dedupe:images": "node ../../scripts/run-tsx.mjs scripts/dedupe-referenced-images.ts",
     "reindex-content": "node ../../scripts/run-tsx.mjs src/scripts/reindex-content.ts",
     "test:rag": "node ../../scripts/run-tsx.mjs src/scripts/test-rag.ts"
   },
