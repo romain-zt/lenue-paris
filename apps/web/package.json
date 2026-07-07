@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
-    "vercel-build": "payload migrate && next build",
+    "vercel-build": "echo 'y' | payload migrate && next build",
     "generate:importmap": "payload generate:importmap",
-    "start": "payload migrate && next start -p 3001",
+    "start": "echo 'y' | payload migrate && next start -p 3001",
     "migrate": "node ../../scripts/run-payload.mjs migrate",
     "lint": "next lint",
     "typecheck": "next typegen && tsc --noEmit",
