@@ -6,7 +6,7 @@ export async function getSiteSnapshot(
 ): Promise<SiteSnapshot> {
   const payload = await getCmsClient();
 
-  const [siteSettings, designTokens, productsPublished, productsInStock, pagesPublished, collectionsPublished, ordersPending] =
+  const [siteSettings, designTokens, productsPublished, productsInStock, pagesPublished, collectionsPublished, ordersTotal] =
     await Promise.all([
       payload.findGlobal({
         slug: "site-settings",
@@ -47,7 +47,6 @@ export async function getSiteSnapshot(
       }),
       payload.count({
         collection: "orders",
-        where: { status: { equals: "pending" } },
         overrideAccess: true,
       }),
     ]);
@@ -60,7 +59,7 @@ export async function getSiteSnapshot(
       productsInStock: productsInStock.totalDocs,
       pagesPublished: pagesPublished.totalDocs,
       collectionsPublished: collectionsPublished.totalDocs,
-      ordersPending: ordersPending.totalDocs,
+      ordersTotal: ordersTotal.totalDocs,
     },
   };
 }

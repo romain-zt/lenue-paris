@@ -9,4 +9,5 @@ export {
 } from "./extractSearchableText";
 export { searchContent } from "./searchContent";
 export { getSiteSnapshot } from "./getSiteSnapshot";
+export { getCatalogSummary } from "./getCatalogSummary";
 export { getSchemaManifest, formatSchemaManifest } from "./getSchemaManifest";

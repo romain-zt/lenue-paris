@@ -12,6 +12,7 @@ import {
   buildDocumentSnapshot,
   searchContent,
   getSiteSnapshot,
+  getCatalogSummary,
   getSchemaManifest,
   formatSchemaManifest,
   patchDocument,
@@ -42,6 +43,7 @@ Tu peux lire et modifier le contenu du site directement via les outils disponibl
 - Avant toute réponse factuelle sur le contenu (prix, stock, titres, couleurs de design tokens), appelle semantic_search (recherche sémantique) ou search_content (recherche exacte) ou get_site_snapshot — ne réponds jamais depuis ta mémoire d'entraînement
 - Préfère semantic_search pour les questions en langage naturel (« où parle-t-on de la livraison ? », « quels produits évoquent la soie ? »)
 - Utilise search_content pour les filtres structurés (catégorie, stock, statut) ou les correspondances exactes
+- Pour l'inventaire catalogue (stock, robes disponibles, « combien de produits publiés ») : appelle get_catalog en premier — ne devine jamais les chiffres
 - Pour connaître la structure des champs, appelle get_schema — jamais de supposition sur les noms de champs
 - Utilise get_document pour lire un document complet avant de le modifier si besoin
 - Utilise patch_field pour mettre à jour des champs (collections modifiables : pages, products, collections ; globaux : site-settings, design-tokens)
@@ -55,7 +57,16 @@ Tu peux lire et modifier le contenu du site directement via les outils disponibl
 - Tu n'as pas accès au navigateur : ne demande jamais d'URL, d'ID ni de lien à l'utilisateur
 - Si la section « Contexte actuel » indique un document (collection + id ou global), « cette page » / « ce document » / « résume » désignent CE document : résume d'abord le snapshot fourni, ou appelle get_document avec les identifiants du contexte
 - Si le contexte est le tableau de bord admin (/admin sans document ouvert), « cette page » désigne le dashboard : appelle get_site_snapshot et résume l'état du site (marque, compteurs, contenu publié)
-- Ne réponds jamais « j'ai besoin de l'ID » quand le contexte ou le snapshot contient déjà le document`
+- Ne réponds jamais « j'ai besoin de l'ID » quand le contexte ou le snapshot contient déjà le document
+
+## Recherche par nom (produit, page, collection)
+- Si l'utilisateur envoie un nom court ou flou (ex. « robe eloise », « camille », « livraison »), appelle d'abord semantic_search avec cette requête, puis search_content en complément si besoin
+- Tolère les fautes d'orthographe et les accents manquants (eloise → Héloïse) via semantic_search — ne dis jamais qu'un produit n'existe sans avoir appelé un outil de recherche
+- Une fois le document trouvé, utilise get_document avec collection et id retournés pour donner les détails (prix, stock, description)
+
+## Inventaire catalogue
+- get_catalog retourne les produits publiés en stock, les robes disponibles (inStockDresses) et les compteurs par catégorie
+- Ne dis jamais qu'il n'y a aucun produit en stock sans avoir appelé get_catalog ou search_content avec status=published et inStock=true`
 
 async function resolvePayloadUserId(request: NextRequest): Promise<number | undefined> {
   try {
@@ -73,7 +84,7 @@ export async function POST(request: NextRequest) {
     messages: UIMessage[]
     tab?: 'contenu' | 'developpement'
     context?: {
-      type: 'collection' | 'global' | 'dashboard'
+      type: 'collection' | 'collection-list' | 'global' | 'dashboard'
       collection?: string
       id?: string
       slug?: string
@@ -148,11 +159,13 @@ export async function POST(request: NextRequest) {
 
   const contextNote = context?.type === 'collection' && context.collection && context.id
     ? `\n\n## Contexte actuel\nL'utilisateur édite le document : collection="${context.collection}", id="${context.id}", locale="${snapshotLocale}". « Cette page » / « ce document » / « résume » = ce document. Ne demande pas l'ID — utilise get_document ou le snapshot ci-dessous.${docSnapshot}`
-    : context?.type === 'global' && context.slug
-      ? `\n\n## Contexte actuel\nL'utilisateur est sur le global : "${context.slug}", locale="${snapshotLocale}". « Ce document » / « résume » = ce global (isGlobal: true).${docSnapshot}`
-      : context?.type === 'dashboard'
-        ? `\n\n## Contexte actuel\nL'utilisateur est sur le tableau de bord admin (pas un document CMS ouvert). « Cette page » / « résume » = vue d'ensemble du site : appelle get_site_snapshot immédiatement.`
-        : ''
+    : context?.type === 'collection-list' && context.collection
+      ? `\n\n## Contexte actuel\nL'utilisateur parcourt la liste de la collection "${context.collection}" (aucun document ouvert). Pour toute recherche par nom (ex. un produit), appelle semantic_search puis get_document — ne dis jamais qu'il n'existe sans avoir cherché.`
+      : context?.type === 'global' && context.slug
+        ? `\n\n## Contexte actuel\nL'utilisateur est sur le global : "${context.slug}", locale="${snapshotLocale}". « Ce document » / « résume » = ce global (isGlobal: true).${docSnapshot}`
+        : context?.type === 'dashboard'
+          ? `\n\n## Contexte actuel\nL'utilisateur est sur le tableau de bord admin (pas un document CMS ouvert). Pour toute question sur le contenu du site, appelle semantic_search ou search_content. « Cette page » / « résume » = vue d'ensemble : get_site_snapshot.`
+          : ''
 
   const modelMessages = await convertToModelMessages(messages)
   const resolvedTab = tab ?? 'contenu'
@@ -261,6 +274,15 @@ export async function POST(request: NextRequest) {
           })),
           execute: async ({ locale }) =>
             getSiteSnapshot(parseContentLocale(locale)),
+        }),
+
+        get_catalog: tool({
+          description: 'État du catalogue produits : compteurs (publiés, en stock) et listes détaillées. Utilise pour « combien en stock », « robes disponibles », « état du catalogue ».',
+          inputSchema: zodSchema(z.object({
+            locale: z.string().optional().describe('Locale: fr, en ou ru'),
+          })),
+          execute: async ({ locale }) =>
+            getCatalogSummary(parseContentLocale(locale)),
         }),
       },
     })

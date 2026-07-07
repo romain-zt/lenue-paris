@@ -57,8 +57,28 @@ export interface SiteSnapshot {
     productsInStock: number;
     pagesPublished: number;
     collectionsPublished: number;
-    ordersPending: number;
+    ordersTotal: number;
   };
+}
+
+export interface CatalogProductSummary {
+  id: number;
+  title: string | null;
+  slug: string | null;
+  category: string | null;
+  price: number | null;
+  inStock: boolean | null;
+  status: string | null;
+}
+
+export interface CatalogSummary {
+  counts: {
+    published: number;
+    inStock: number;
+    publishedInStockByCategory: Record<string, number>;
+  };
+  inStockProducts: CatalogProductSummary[];
+  inStockDresses: CatalogProductSummary[];
 }
 
 export interface PatchDocumentParams {
