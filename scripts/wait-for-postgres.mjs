@@ -3,7 +3,7 @@
  */
 import net from "node:net";
 
-function parseHostPort(connectionString: string): { host: string; port: number } | null {
+function parseHostPort(connectionString) {
   const match = connectionString.match(/(?:@|\/\/)([^:/]+):(\d+)(?:\/|$)/);
   if (!match?.[1] || !match[2]) return null;
   return {
@@ -12,7 +12,7 @@ function parseHostPort(connectionString: string): { host: string; port: number }
   };
 }
 
-function probe(host: string, port: number): Promise<void> {
+function probe(host, port) {
   return new Promise((resolve, reject) => {
     const socket = net.connect({ host, port }, () => {
       socket.end();

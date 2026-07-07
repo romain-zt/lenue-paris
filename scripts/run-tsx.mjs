@@ -3,8 +3,9 @@
  * In CI, env vars are injected directly — missing .env is fine.
  */
 import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -23,7 +24,8 @@ if (existsSync(envPath)) {
 }
 
 const appDir = process.cwd();
-const tsxBin = resolve(appDir, "node_modules/tsx/dist/cli.mjs");
+const requireFromApp = createRequire(join(appDir, "package.json"));
+const tsxBin = requireFromApp.resolve("tsx/dist/cli.mjs");
 const args = process.argv.slice(2);
 
 const result = spawnSync(process.execPath, [tsxBin, ...args], {
