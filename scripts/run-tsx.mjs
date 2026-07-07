@@ -25,7 +25,7 @@ if (existsSync(envPath)) {
 
 const appDir = process.cwd();
 const requireFromApp = createRequire(join(appDir, "package.json"));
-const tsxBin = requireFromApp.resolve("tsx/dist/cli.mjs");
+const tsxBin = requireFromApp.resolve("tsx/cli");
 const args = process.argv.slice(2);
 
 const result = spawnSync(process.execPath, [tsxBin, ...args], {
