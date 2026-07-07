@@ -40,11 +40,25 @@ function runMigrateWithAutoYes() {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [payloadBin, ...args], {
       ...spawnOptions,
-      stdio: [createYesInput(), "inherit", "inherit"],
+      stdio: ["pipe", "inherit", "inherit"],
     });
 
-    child.on("close", (code) => resolve(code ?? 1));
-    child.on("error", reject);
+    const yesInput = createYesInput();
+    yesInput.pipe(child.stdin);
+
+    yesInput.on("error", reject);
+    child.stdin.on("error", () => {
+      yesInput.destroy();
+    });
+
+    child.on("close", (code) => {
+      yesInput.destroy();
+      resolve(code ?? 1);
+    });
+    child.on("error", (error) => {
+      yesInput.destroy();
+      reject(error);
+    });
   });
 }
 
