@@ -100,6 +100,16 @@ export const FIELD_LABELS = {
   availableSizes: { en: "Available sizes", fr: "Tailles disponibles", ru: "Доступные размеры" },
   availableLengths: { en: "Available lengths", fr: "Longueurs disponibles", ru: "Доступные длины" },
   pairings: { en: "Pairings (internal)", fr: "Associations (interne)", ru: "Сочетания (внутр.)" },
+  philosophyQuote: {
+    en: "Philosophy quote (homepage)",
+    fr: "Citation philosophie (accueil)",
+    ru: "Цитата философии (главная)",
+  },
+  exploreLabel: {
+    en: "Explore section label (homepage)",
+    fr: "Libellé section explorer (accueil)",
+    ru: "Подпись раздела « Исследовать » (главная)",
+  },
 } satisfies Record<string, AdminLabel>;
 
 export const FIELD_DESCRIPTIONS = {
@@ -167,6 +177,21 @@ export const FIELD_DESCRIPTIONS = {
     en: "Optional muted loop (max 8 s). Poster uses the hero image. Respects reduced-motion.",
     fr: "Boucle muette optionnelle (max 8 s). L'image hero sert d'affiche. Respecte prefers-reduced-motion.",
     ru: "Необязательный беззвучный цикл (до 8 с). Постер — hero-изображение. Учитывает prefers-reduced-motion.",
+  },
+  philosophyQuote: {
+    en: "Quote below the hero on the homepage. Falls back to translations if empty.",
+    fr: "Citation sous le hero sur l'accueil. Utilise les traductions si vide.",
+    ru: "Цитата под hero на главной. Использует переводы, если пусто.",
+  },
+  exploreLabel: {
+    en: "Label above category links on the homepage. Falls back to translations if empty.",
+    fr: "Libellé au-dessus des liens catégories sur l'accueil. Utilise les traductions si vide.",
+    ru: "Подпись над ссылками категорий на главной. Использует переводы, если пусто.",
+  },
+  featuredSeason: {
+    en: "Optional season line above the block title. Falls back to translations if empty.",
+    fr: "Ligne saison optionnelle au-dessus du titre. Utilise les traductions si vide.",
+    ru: "Необязательная сезонная строка над заголовком. Использует переводы, если пусто.",
   },
 } satisfies Record<string, AdminLabel>;
 

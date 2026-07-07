@@ -96,7 +96,7 @@ export interface Config {
   };
   fallbackLocale: ('false' | 'none' | 'null') | false | null | ('en' | 'fr' | 'ru') | ('en' | 'fr' | 'ru')[];
   globals: {
-    'site-settings': SiteSettings;
+    'site-settings': SiteSetting;
   };
   globalsSelect: {
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
@@ -277,6 +277,10 @@ export interface Page {
           }
         | {
             sourceType?: ('manual' | 'collection') | null;
+            /**
+             * Optional season line above the block title. Falls back to translations if empty.
+             */
+            season?: string | null;
             title: string;
             viewCollectionLabel?: string | null;
             collection?: (number | null) | Collection;
@@ -309,6 +313,14 @@ export interface Page {
     | null;
   body?: string | null;
   cover?: (number | null) | Media;
+  /**
+   * Quote below the hero on the homepage. Falls back to translations if empty.
+   */
+  philosophyQuote?: string | null;
+  /**
+   * Label above category links on the homepage. Falls back to translations if empty.
+   */
+  exploreLabel?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -515,6 +527,7 @@ export interface PagesSelect<T extends boolean = true> {
           | T
           | {
               sourceType?: T;
+              season?: T;
               title?: T;
               viewCollectionLabel?: T;
               collection?: T;
@@ -547,6 +560,8 @@ export interface PagesSelect<T extends boolean = true> {
       };
   body?: T;
   cover?: T;
+  philosophyQuote?: T;
+  exploreLabel?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -634,6 +649,41 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   createdAt?: T;
 }
 /**
+ * Global brand settings — social links, contact details, brand identity.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings".
+ */
+export interface SiteSetting {
+  id: number;
+  /**
+   * Displayed in the header wordmark and page titles.
+   */
+  brandName: string;
+  /**
+   * Full URL — e.g. https://www.instagram.com/yourhandle
+   */
+  instagramUrl?: string | null;
+  /**
+   * International format without + or spaces — e.g. 33612345678
+   */
+  whatsappPhone?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  brandName?: T;
+  instagramUrl?: T;
+  whatsappPhone?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "collections_widget".
  */
@@ -651,26 +701,6 @@ export interface Auth {
   [k: string]: unknown;
 }
 
-
-/**
- * Site-wide brand settings global.
- */
-export interface SiteSettings {
-  id: number;
-  brandName: string;
-  instagramUrl?: string | null;
-  whatsappPhone?: string | null;
-  updatedAt?: string | null;
-  createdAt?: string | null;
-}
-
-export interface SiteSettingsSelect<T extends boolean = true> {
-  brandName?: T;
-  instagramUrl?: T;
-  whatsappPhone?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
 
 declare module 'payload' {
   export interface GeneratedTypes extends Config {}

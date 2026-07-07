@@ -6,23 +6,29 @@ import { getProductMainImageUrl } from "@/lib/productImages";
 import { FeaturedProductItem, FeaturedProductsScroll } from "@/components/home/FeaturedProductsScroll";
 import { EditableField } from "@/components/cms/EditableField";
 import type { FeaturedProductsBlockProps } from "@/lib/cms/types";
+import type { ContentLocale } from "@/lib/cms/types";
+import type { EditableCollection } from "@/lib/cms/editable";
 
 interface FeaturedProductsBlockComponentProps extends FeaturedProductsBlockProps {
   /** Payload blocks array index — used to generate data-payload-path attributes for live preview. */
   blockIndex?: number;
   /** Payload document ID — required for inline editing via EditableField. */
   docId?: string;
-  docCollection?: 'pages' | 'products';
+  docCollection?: EditableCollection;
 }
 
 function FeaturedProductCard({
   product,
   formattedPrice,
   outOfStockBadge,
+  locale,
+  canEditProducts,
 }: {
   product: Product;
   formattedPrice: string;
   outOfStockBadge: string;
+  locale?: ContentLocale;
+  canEditProducts?: boolean;
 }) {
   const imageUrl = getProductMainImageUrl(product.slug, product.mainImage?.url);
   const isOutOfStock = product.inStock === false;
@@ -54,7 +60,22 @@ function FeaturedProductCard({
         )}
       </div>
       <div className="mt-5 px-0.5">
-        <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-stone-700">{product.title}</p>
+        <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-stone-700">
+          {canEditProducts ? (
+            <EditableField
+              collection="products"
+              id={product.id}
+              field="title"
+              fieldLabel="Titre produit"
+              currentValue={product.title}
+              locale={locale}
+            >
+              {product.title}
+            </EditableField>
+          ) : (
+            product.title
+          )}
+        </p>
         <p className="mt-1.5 text-[11px] tracking-wide text-stone-400">{formattedPrice}</p>
       </div>
     </Link>
@@ -89,7 +110,22 @@ export function FeaturedProductsBlock({
         <div className="mb-14 flex items-end justify-between border-b border-stone-100 pb-6 sm:mb-16">
           <div>
             {season ? (
-              <p className="mb-1.5 text-[9px] font-medium uppercase tracking-[0.35em] text-stone-400">{season}</p>
+              <p className="mb-1.5 text-[9px] font-medium uppercase tracking-[0.35em] text-stone-400">
+                {canEdit ? (
+                  <EditableField
+                    collection={docCollection}
+                    id={docId!}
+                    field={`${p}.season`}
+                    fieldLabel="Saison (produits vedettes)"
+                    currentValue={season}
+                    locale={locale}
+                  >
+                    {season}
+                  </EditableField>
+                ) : (
+                  season
+                )}
+              </p>
             ) : null}
             <h2
               id="featured-heading"
@@ -140,6 +176,8 @@ export function FeaturedProductsBlock({
               product={product}
               formattedPrice={priceFormatter(product.price)}
               outOfStockBadge={outOfStockBadge}
+              locale={locale}
+              canEditProducts={canEdit}
             />
           </FeaturedProductItem>
         ))}

@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getBrandPageData } from "@/lib/getBrandPageData";
 import { BrandPageContent } from "./BrandPageContent";
+import type { ContentLocale } from "@/lib/cms/types";
 
 interface BrandPageProps {
   params: Promise<{ locale: string }>;
@@ -22,5 +23,5 @@ export default async function BrandPage({ params }: BrandPageProps) {
 
   const data = await getBrandPageData(locale);
 
-  return <BrandPageContent {...data} locale={locale} />;
+  return <BrandPageContent {...data} locale={locale as ContentLocale} />;
 }

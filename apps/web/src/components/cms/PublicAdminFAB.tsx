@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
@@ -19,7 +19,7 @@ type LastPatch = {
   label: string
   timestamp: number
   previousValue?: string
-  collection?: 'pages' | 'products'
+  collection?: 'pages' | 'products' | 'collections'
   id?: string
   field?: string
   locale?: string
@@ -287,7 +287,7 @@ function AIChatPanel({
     [],
   )
 
-  const { messages, sendMessage, status, error } = useChat({
+  const { messages, sendMessage, status, error, setMessages } = useChat({
     id: chatId,
     transport,
     // `messages` is the AI SDK v6 way to provide initial messages (initialMessages doesn't exist)
@@ -296,6 +296,12 @@ function AIChatPanel({
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     },
   })
+
+  // Hydrate chat history from localStorage once on mount
+  useEffect(() => {
+    if (initialMessages.length === 0) return
+    setMessages(initialMessages)
+  }, [initialMessages, setMessages])
 
   // Persist messages to localStorage whenever they change
   useEffect(() => {
@@ -685,8 +691,9 @@ export function PublicAdminFAB() {
         ? `↗ ${adminPageTitle} dans l'admin`
         : `↗ Ouvrir dans l'admin`
 
-  // Restore edit mode state after page reloads (e.g. after draftMode toggle)
-  useEffect(() => {
+  // Restore edit mode state after page reloads (e.g. after draftMode toggle).
+  // useLayoutEffect so the class is on <html> before paint and before field hooks read it.
+  useLayoutEffect(() => {
     if (sessionStorage.getItem('lp-edit-mode') === '1') {
       setEditMode(true)
       document.documentElement.classList.add('admin-edit-mode')
@@ -769,7 +776,7 @@ export function PublicAdminFAB() {
         label: (detail.label as string) || (detail.field as string) || 'Contenu',
         timestamp: Date.now(),
         previousValue: detail.previousValue as string | undefined,
-        collection: detail.collection as 'pages' | 'products' | undefined,
+        collection: detail.collection as 'pages' | 'products' | 'collections' | undefined,
         id: detail.id as string | undefined,
         field: detail.field as string | undefined,
         locale: detail.locale as string | undefined,

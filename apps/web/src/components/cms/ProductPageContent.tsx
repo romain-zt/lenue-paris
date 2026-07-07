@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { OrderCTA } from "@/components/product/OrderCTA";
 import { CapsuleBadge } from "@/components/editorial/CapsuleBadge";
+import { EditableField } from "@/components/cms/EditableField";
 import { mapPayloadProductDetail } from "@/lib/cms/blocks";
 import { getPreviewSiteUrl } from "@/lib/cms/generatePreviewPath";
 import { useLivePreviewFieldBridge } from "@/hooks/useLivePreviewFieldBridge";
@@ -34,6 +35,7 @@ export function ProductPageContent({ initialProduct, locale }: ProductPageConten
   const product = mapPayloadProductDetail(liveDoc, locale);
   if (!product) return null;
 
+  const docId = String(liveDoc.id);
   const formattedPrice = new Intl.NumberFormat("fr-FR", {
     style: "currency",
     currency: "EUR",
@@ -69,20 +71,53 @@ export function ProductPageContent({ initialProduct, locale }: ProductPageConten
               className="text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl"
               data-payload-path="title"
             >
-              {product.title}
+              <EditableField
+                collection="products"
+                id={docId}
+                field="title"
+                fieldLabel="Titre produit"
+                currentValue={product.title}
+                locale={locale}
+              >
+                {product.title}
+              </EditableField>
             </h1>
             <p className="mt-2 text-xl text-stone-700" data-payload-path="price">
               {formattedPrice}
             </p>
           </div>
 
-          {product.description && (
-            <p
+          {product.description ? (
+            <div
               className="text-sm leading-relaxed text-stone-600"
               data-payload-path="description"
             >
-              {product.description}
-            </p>
+              <EditableField
+                collection="products"
+                id={docId}
+                field="description"
+                fieldLabel="Description produit"
+                currentValue={product.description}
+                locale={locale}
+                multiline
+              >
+                {product.description}
+              </EditableField>
+            </div>
+          ) : (
+            <div className="text-sm leading-relaxed text-stone-600" data-payload-path="description">
+              <EditableField
+                collection="products"
+                id={docId}
+                field="description"
+                fieldLabel="Description produit"
+                currentValue=""
+                locale={locale}
+                multiline
+              >
+                <span className="italic text-stone-400">Ajouter une description…</span>
+              </EditableField>
+            </div>
           )}
 
           <OrderCTA product={product} />

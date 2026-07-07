@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
+import { useAdminEditMode } from '@/hooks/useAdminEditMode'
 import { reorderBlock, removeBlock, addBlock } from '@/app/actions/liveEdit'
 
 const BLOCK_TYPE_LABELS: Record<string, string> = {
@@ -49,7 +50,17 @@ function injectEditModeStyle() {
     html.admin-edit-mode [data-edit-block] {
       outline: 2px solid rgba(99,102,241,0.4);
       outline-offset: 0px;
-      cursor: pointer;
+      cursor: default;
+    }
+    html.admin-edit-mode [data-lp-field] {
+      position: relative;
+      z-index: 40;
+      cursor: text;
+    }
+    html.admin-edit-mode [data-lp-field] [role="button"] {
+      outline: 1.5px dashed rgba(99,102,241,0.55);
+      outline-offset: 3px;
+      border-radius: 3px;
     }
     @keyframes block-pulse {
       0%   { box-shadow: 0 0 0 0 rgba(234,179,8,0.7); }
@@ -69,7 +80,7 @@ interface BlockOverlayProps {
   children: React.ReactNode
   /** Document ID — required to build the "Ouvrir dans l'admin" deep-link */
   docId?: string
-  docCollection?: 'pages' | 'products'
+  docCollection?: 'pages' | 'products' | 'collections'
 }
 
 /**
@@ -83,7 +94,7 @@ interface BlockOverlayProps {
  */
 export function BlockOverlay({ blockType, blockIndex, children, docId, docCollection }: BlockOverlayProps) {
   const [isInIframe, setIsInIframe] = useState(false)
-  const [isEditMode, setIsEditMode] = useState(false)
+  const isEditMode = useAdminEditMode()
   const [isHovered, setIsHovered] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -94,14 +105,7 @@ export function BlockOverlay({ blockType, blockIndex, children, docId, docCollec
 
   useEffect(() => {
     setIsInIframe(window.parent !== window)
-    setIsEditMode(document.documentElement.classList.contains('admin-edit-mode'))
     injectEditModeStyle()
-
-    const handleEditMode = (e: Event) => {
-      setIsEditMode((e as CustomEvent<{ enabled: boolean }>).detail.enabled)
-    }
-    document.addEventListener('admin-edit-mode', handleEditMode)
-    return () => document.removeEventListener('admin-edit-mode', handleEditMode)
   }, [])
 
   const isActive = isInIframe || isEditMode
