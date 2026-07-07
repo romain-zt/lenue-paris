@@ -7,7 +7,9 @@ describe("getPostgresPoolConfig", () => {
   });
 
   it("keeps local connections without SSL", () => {
+    vi.stubEnv("POSTGRES_URL", "");
     vi.stubEnv("DATABASE_URL", "postgres://app:app@localhost:5432/app");
+    vi.stubEnv("USE_NATIVE_POSTGRES", "true");
 
     expect(getPostgresPoolConfig()).toEqual({
       connectionString: "postgres://app:app@localhost:5432/app",
