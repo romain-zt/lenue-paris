@@ -25,17 +25,18 @@ function pickDatabaseUrlFromEnv(): string {
  * Resolves the Postgres URL from env vars.
  * Redirects legacy/wrong local ports (5432, 5434, …) to Docker host port 5433.
  * Set USE_NATIVE_POSTGRES=true to disable the redirect.
+ * In CI (CI=true), the URL is used as-is — GitHub Actions Postgres listens on 5432.
  */
 export function resolveDatabaseUrl(): string {
   const fromEnv = pickDatabaseUrlFromEnv();
   if (!fromEnv) return "";
 
+  if (process.env.CI === "true" || process.env.USE_NATIVE_POSTGRES === "true") {
+    return fromEnv;
+  }
+
   const port = parseLocalPort(fromEnv);
-  if (
-    port !== null &&
-    port !== DOCKER_HOST_PORT &&
-    process.env.USE_NATIVE_POSTGRES !== "true"
-  ) {
+  if (port !== null && port !== DOCKER_HOST_PORT) {
     console.warn(
       `[db] DATABASE_URL points to localhost:${port} but Docker Postgres uses port ${DOCKER_HOST_PORT} — redirecting. ` +
         `Update .env or set USE_NATIVE_POSTGRES=true to keep ${port}.`,

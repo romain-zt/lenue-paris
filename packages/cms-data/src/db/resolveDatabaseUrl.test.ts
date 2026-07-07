@@ -27,6 +27,15 @@ describe("resolveDatabaseUrl", () => {
     expect(resolveDatabaseUrl()).toBe(process.env.DATABASE_URL);
   });
 
+  it("keeps CI DATABASE_URL on localhost:5432 without redirect", () => {
+    const url = "postgresql://ci:ci@localhost:5432/ci";
+    process.env.DATABASE_URL = url;
+    process.env.CI = "true";
+    delete process.env.USE_NATIVE_POSTGRES;
+
+    expect(resolveDatabaseUrl()).toBe(url);
+  });
+
   it("does not alter port 5433", () => {
     const url = "postgres://lenueparis:lenueparis@localhost:5433/lenueparis";
     process.env.DATABASE_URL = url;
