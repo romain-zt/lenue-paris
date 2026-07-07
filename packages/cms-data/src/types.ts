@@ -3,6 +3,7 @@ export type { ContentLocale } from "@repo/payload-schema/i18n/content-locales";
 import type { ContentLocale } from "@repo/payload-schema/i18n/content-locales";
 
 export type SearchCollection = "pages" | "products" | "collections" | "media";
+export type SearchableCollection = "pages" | "products" | "collections";
 
 export interface FieldManifest {
   name: string;
@@ -21,7 +22,7 @@ export interface GetDocumentParams {
 
 export interface SearchContentParams {
   query: string;
-  collections?: SearchCollection[];
+  collections?: SearchableCollection[];
   locale?: ContentLocale;
   filters?: {
     category?: string;
@@ -39,22 +40,32 @@ export interface SearchResult {
   snippet?: string;
 }
 
+export interface SearchResultItem {
+  id: number;
+  collection: SearchableCollection;
+  slug: string | null;
+  title: string | null;
+  status: string | null;
+  category?: string | null;
+  price?: number | null;
+  inStock?: boolean | null;
+}
+
 export interface SearchContentResult {
-  results: SearchResult[];
+  results: SearchResultItem[];
   totalDocs: number;
-  byCollection: Record<string, number>;
+  byCollection: Partial<Record<SearchableCollection, number>>;
 }
 
 export interface SiteSnapshot {
-  brandName: string;
-  instagramUrl?: string | null;
-  whatsappPhone?: string | null;
+  siteSettings: Record<string, unknown>;
   designTokens: Record<string, unknown>;
   counts: {
-    pages: number;
-    products: number;
-    collections: number;
-    productsByCategory: Record<string, number>;
+    productsPublished: number;
+    productsInStock: number;
+    pagesPublished: number;
+    collectionsPublished: number;
+    ordersPending: number;
   };
 }
 
