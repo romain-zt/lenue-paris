@@ -9,7 +9,7 @@
     "vercel-build": "payload migrate && next build",
     "generate:importmap": "payload generate:importmap",
     "start": "payload migrate && next start -p 3001",
-    "migrate": "node --env-file=../../.env ./node_modules/payload/bin.js migrate",
+    "migrate": "node ../../scripts/run-payload.mjs migrate",
     "lint": "next lint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",

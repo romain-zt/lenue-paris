@@ -10,6 +10,9 @@ import * as migration_20260703_180000_design_tokens from './20260703_180000_desi
 import * as migration_20260703_190000_site_wordmarks from './20260703_190000_site_wordmarks';
 import * as migration_20260706_120000_content_chunks from './20260706_120000_content_chunks';
 import * as migration_20260706_140000_blocks_field_level_i18n_schema_fix from './20260706_140000_blocks_field_level_i18n_schema_fix';
+import * as migration_20260707_061500_pages_blocks_locale from './20260707_061500_pages_blocks_locale';
+import * as migration_20260707_062000_hero_season_column from './20260707_062000_hero_season_column';
+import * as migration_20260707_063000_hero_text_columns from './20260707_063000_hero_text_columns';
 
 export const migrations = [
   {
@@ -71,5 +74,20 @@ export const migrations = [
     up: migration_20260706_140000_blocks_field_level_i18n_schema_fix.up,
     down: migration_20260706_140000_blocks_field_level_i18n_schema_fix.down,
     name: '20260706_140000_blocks_field_level_i18n_schema_fix',
+  },
+  {
+    up: migration_20260707_061500_pages_blocks_locale.up,
+    down: migration_20260707_061500_pages_blocks_locale.down,
+    name: '20260707_061500_pages_blocks_locale',
+  },
+  {
+    up: migration_20260707_062000_hero_season_column.up,
+    down: migration_20260707_062000_hero_season_column.down,
+    name: '20260707_062000_hero_season_column',
+  },
+  {
+    up: migration_20260707_063000_hero_text_columns.up,
+    down: migration_20260707_063000_hero_text_columns.down,
+    name: '20260707_063000_hero_text_columns',
   },
 ];
