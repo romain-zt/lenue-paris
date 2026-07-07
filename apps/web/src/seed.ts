@@ -16,7 +16,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import fs from "fs";
 import { getPayload } from "payload";
-import config from "./payload.config";
+import config from "./payload.config.js";
 import { PRODUCT_IMAGES } from "./lib/productImages";
 import { PUBLIC_DRESS_SLUGS, isPublicStorefrontSlug } from "./lib/catalogue/storefrontCatalogue";
 

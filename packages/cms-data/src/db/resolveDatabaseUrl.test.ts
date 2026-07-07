@@ -15,6 +15,7 @@ describe("resolveDatabaseUrl", () => {
     process.env.DATABASE_URL =
       "postgres://lenueparis:lenueparis@localhost:5434/lenueparis";
     delete process.env.USE_NATIVE_POSTGRES;
+    delete process.env.CI;
 
     expect(resolveDatabaseUrl()).toBe(LOCAL_DOCKER_DATABASE_URL);
   });
@@ -39,6 +40,7 @@ describe("resolveDatabaseUrl", () => {
   it("does not alter port 5433", () => {
     const url = "postgres://lenueparis:lenueparis@localhost:5433/lenueparis";
     process.env.DATABASE_URL = url;
+    delete process.env.CI;
 
     expect(resolveDatabaseUrl()).toBe(url);
   });
