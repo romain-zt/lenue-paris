@@ -6,13 +6,10 @@ import { describe, expect, it } from "vitest";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 loadEnv({ path: path.resolve(__dirname, "../../../../.env") });
-import { getPayload } from "payload";
-import config from "@payload-config";
-import { PUBLIC_DRESS_SLUGS } from "../lib/catalogue/storefrontCatalogue";
-import { seed } from "../seed";
 
-const FEATURED_COUNT = PUBLIC_DRESS_SLUGS.length;
-const HOME_SLUG = "home";
+if (!process.env.PAYLOAD_SECRET) {
+  process.env.PAYLOAD_SECRET = "test-secret-for-seed-idempotency";
+}
 
 const hasDb = Boolean(process.env.TEST_DATABASE_URL || process.env.DATABASE_URL);
 
@@ -37,6 +34,14 @@ describe("seed idempotency", () => {
   it.skipIf(!hasDb)(
     "running seed twice keeps a single published home page with stable featured relations",
     async () => {
+      const { getPayload } = await import("payload");
+      const { default: config } = await import("@payload-config");
+      const { PUBLIC_DRESS_SLUGS } = await import("../lib/catalogue/storefrontCatalogue");
+      const { seed } = await import("../seed");
+
+      const featuredCount = PUBLIC_DRESS_SLUGS.length;
+      const homeSlug = "home";
+
       if (process.env.TEST_DATABASE_URL && !process.env.DATABASE_URL) {
         process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
       }
@@ -51,7 +56,7 @@ describe("seed idempotency", () => {
 
       const afterFirst = await payload.find({
         collection: "pages",
-        where: { slug: { equals: HOME_SLUG } },
+        where: { slug: { equals: homeSlug } },
         limit: 10,
         depth: 1,
         locale: "fr",
@@ -62,14 +67,14 @@ describe("seed idempotency", () => {
       expect(homeId).toBeDefined();
 
       const featuredCountFirst = countFeaturedProductsInPage(afterFirst.docs[0]);
-      expect(featuredCountFirst).toBe(FEATURED_COUNT);
+      expect(featuredCountFirst).toBe(featuredCount);
 
       process.env.SEED_SKIP_HOME_IF_PUBLISHED = "true";
       await seed();
 
       const afterSecond = await payload.find({
         collection: "pages",
-        where: { slug: { equals: HOME_SLUG } },
+        where: { slug: { equals: homeSlug } },
         limit: 10,
         depth: 1,
         locale: "fr",
