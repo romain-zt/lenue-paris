@@ -24,9 +24,19 @@ if (existsSync(envPath)) {
 }
 
 const appDir = process.cwd();
+const appPackageJsonPath = join(appDir, "package.json");
 const payloadBin = resolve(appDir, "node_modules/payload/bin.js");
 const args = process.argv.slice(2);
 const spawnOptions = { env: process.env, cwd: appDir };
+
+function getAppName() {
+  try {
+    const pkg = JSON.parse(readFileSync(appPackageJsonPath, "utf8"));
+    return typeof pkg.name === "string" ? pkg.name : "";
+  } catch {
+    return "";
+  }
+}
 
 function getDatabaseUrl() {
   return (
@@ -37,15 +47,31 @@ function getDatabaseUrl() {
   );
 }
 
-async function loadPgClient() {
-  const requireFromApp = createRequire(join(appDir, "package.json"));
-  const pgModule = requireFromApp("pg");
-  return pgModule.default ?? pgModule;
+function loadPgClient() {
+  const requireRoots = [
+    appPackageJsonPath,
+    join(repoRoot, "apps/web/package.json"),
+    join(repoRoot, "packages/cms-data/package.json"),
+  ];
+
+  for (const requireRoot of requireRoots) {
+    try {
+      const requireFromRoot = createRequire(requireRoot);
+      const pgModule = requireFromRoot("pg");
+      return pgModule.default ?? pgModule;
+    } catch {
+      // Try the next workspace package that may declare pg.
+    }
+  }
+
+  return null;
 }
 
 async function clearDevMigrationMarker(connectionString) {
+  const pg = loadPgClient();
+  if (!pg) return;
+
   try {
-    const pg = await loadPgClient();
     const client = new pg.Client({ connectionString });
     await client.connect();
     await client.query("DELETE FROM payload_migrations WHERE batch = -1");
@@ -56,7 +82,9 @@ async function clearDevMigrationMarker(connectionString) {
 }
 
 async function assertUsersTableExists(connectionString) {
-  const pg = await loadPgClient();
+  const pg = loadPgClient();
+  if (!pg) return;
+
   const client = new pg.Client({ connectionString });
   await client.connect();
   const result = await client.query(`
@@ -78,6 +106,8 @@ async function assertUsersTableExists(connectionString) {
 
 async function runMigrate() {
   const connectionString = getDatabaseUrl();
+  const shouldVerifyUsersTable = getAppName() === "web";
+
   if (connectionString) {
     await clearDevMigrationMarker(connectionString);
   }
@@ -92,7 +122,7 @@ async function runMigrate() {
     process.exit(exitCode);
   }
 
-  if (connectionString) {
+  if (connectionString && shouldVerifyUsersTable) {
     await assertUsersTableExists(connectionString);
   }
 
