@@ -23,8 +23,6 @@
     "test:rag": "node ../../scripts/run-tsx.mjs src/scripts/test-rag.ts"
   },
   "dependencies": {
-    "@repo/cms-data": "workspace:*",
-    "@repo/payload-schema": "workspace:*",
     "@ai-sdk/openai": "^3.0.73",
     "@ai-sdk/react": "^3.0.210",
     "@payloadcms/db-postgres": "catalog:",
@@ -34,6 +32,8 @@
     "@payloadcms/storage-s3": "catalog:",
     "@payloadcms/translations": "catalog:",
     "@payloadcms/ui": "catalog:",
+    "@repo/cms-data": "workspace:*",
+    "@repo/payload-schema": "workspace:*",
     "ai": "^6.0.208",
     "next": "catalog:",
     "next-intl": "^3.26.3",
@@ -58,6 +58,7 @@
     "eslint-config-next": "catalog:",
     "jsdom": "catalog:",
     "pg": "^8.20.0",
+    "sharp": "^0.35.3",
     "tailwindcss": "catalog:",
     "tsx": "^4.22.4",
     "typescript": "catalog:",
