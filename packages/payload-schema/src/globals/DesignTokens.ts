@@ -148,5 +148,26 @@ export const DesignTokens: GlobalConfig = {
         },
       ],
     },
+    {
+      type: "collapsible",
+      label: { en: "Typography", fr: "Typographie", ru: "Типографика" },
+      admin: { initCollapsed: true },
+      fields: [
+        {
+          name: "fontSerif",
+          type: "text",
+          defaultValue: "Cormorant Garamond, Georgia, serif",
+          label: { en: "Serif font stack", fr: "Police serif", ru: "Засечный шрифт" },
+          admin: { description: { en: "Headings serif font stack.", fr: "Police à empattement pour les titres.", ru: "Шрифт с засечками для заголовков." } },
+        },
+        {
+          name: "fontSans",
+          type: "text",
+          defaultValue: "Jost, Helvetica Neue, Arial, sans-serif",
+          label: { en: "Sans-serif font stack", fr: "Police sans-serif", ru: "Шрифт без засечек" },
+          admin: { description: { en: "Body sans-serif font stack.", fr: "Police sans empattement pour le corps du texte.", ru: "Шрифт без засечек для основного текста." } },
+        },
+      ],
+    },
   ],
 };

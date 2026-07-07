@@ -21,7 +21,7 @@ export interface GetDocumentParams {
 }
 
 export interface SearchContentParams {
-  query: string;
+  query?: string;
   collections?: SearchableCollection[];
   locale?: ContentLocale;
   filters?: {

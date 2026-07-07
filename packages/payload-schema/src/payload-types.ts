@@ -726,6 +726,14 @@ export interface DesignToken {
    * Header borders, card edges, dividers. → border-subtle, divide-subtle
    */
   colorBorder?: string | null;
+  /**
+   * Headings serif font stack.
+   */
+  fontSerif?: string | null;
+  /**
+   * Body sans-serif font stack.
+   */
+  fontSans?: string | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -761,6 +769,8 @@ export interface DesignTokensSelect<T extends boolean = true> {
   colorAccentHover?: T;
   colorAccentText?: T;
   colorBorder?: T;
+  fontSerif?: T;
+  fontSans?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
