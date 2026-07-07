@@ -2,9 +2,10 @@
  * Run Payload CLI with optional monorepo-root .env loading.
  * In CI, env vars are injected directly — missing .env is fine.
  */
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { Readable } from "node:stream";
 import { fileURLToPath } from "url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -25,11 +26,36 @@ if (existsSync(envPath)) {
 const appDir = process.cwd();
 const payloadBin = resolve(appDir, "node_modules/payload/bin.js");
 const args = process.argv.slice(2);
+const spawnOptions = { env: process.env, cwd: appDir };
+
+function createYesInput() {
+  return new Readable({
+    read() {
+      this.push("y\n");
+    },
+  });
+}
+
+function runMigrateWithAutoYes() {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [payloadBin, ...args], {
+      ...spawnOptions,
+      stdio: [createYesInput(), "inherit", "inherit"],
+    });
+
+    child.on("close", (code) => resolve(code ?? 1));
+    child.on("error", reject);
+  });
+}
+
+if (args[0] === "migrate") {
+  const code = await runMigrateWithAutoYes();
+  process.exit(code);
+}
 
 const result = spawnSync(process.execPath, [payloadBin, ...args], {
+  ...spawnOptions,
   stdio: "inherit",
-  env: process.env,
-  cwd: appDir,
 });
 
 process.exit(result.status ?? 1);
