@@ -5,7 +5,7 @@ export default async function BrandPageNotFound() {
   const t = await getTranslations("error");
 
   return (
-    <main className="mx-auto flex min-h-[50vh] max-w-2xl flex-col items-center justify-center px-4 py-20 text-center sm:px-6">
+    <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-4 py-20 text-center sm:px-6">
       <p className="text-base text-muted sm:text-lg">{t("pageNotFound")}</p>
       <Link
         href="/"

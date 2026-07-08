@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { EditableField } from "@/components/cms/EditableField";
+import { CtaLinkHint } from "@/components/editorial/CtaLinkHint";
 import type { EditorialStripBlockProps } from "@/lib/cms/types";
 
 interface EditorialStripBlockComponentProps extends EditorialStripBlockProps {
@@ -123,6 +124,14 @@ export function EditorialStripBlock({
             </span>
             <span aria-hidden="true">→</span>
           </Link>
+          <CtaLinkHint
+            ctaLink={ctaLink}
+            payloadPath={p ? `${p}.ctaLink` : undefined}
+            canEdit={canEdit}
+            docId={docId}
+            docCollection={docCollection}
+            locale={locale}
+          />
         </div>
       </div>
       <div
