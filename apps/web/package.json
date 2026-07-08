@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
-    "vercel-build": "node ../../scripts/run-payload.mjs migrate && next build",
+    "vercel-build": "node ../../scripts/run-payload.mjs migrate && node ../../scripts/run-tsx.mjs src/seed.ts && next build",
     "generate:importmap": "payload generate:importmap",
     "start": "node ../../scripts/run-payload.mjs migrate && next start -p 3001",
     "migrate": "node ../../scripts/run-payload.mjs migrate",
