@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { CapsuleBadge } from "@/components/editorial/CapsuleBadge";
+import { CtaLinkHint } from "@/components/editorial/CtaLinkHint";
 import { EditableField } from "@/components/cms/EditableField";
 import { useSiteBrand } from "@/lib/site/SiteBrandProvider";
 import type { HeroBlockProps } from "@/lib/cms/types";
@@ -156,6 +157,15 @@ export function HeroBlock({
             </span>
             <span aria-hidden="true">→</span>
           </Link>
+          <CtaLinkHint
+            ctaLink={ctaLink}
+            className="mt-3 text-[9px] font-medium uppercase tracking-[0.28em] text-white/35"
+            payloadPath={p ? `${p}.ctaLink` : undefined}
+            canEdit={canEdit}
+            docId={docId}
+            docCollection={docCollection}
+            locale={locale}
+          />
         </div>
       </div>
     </section>

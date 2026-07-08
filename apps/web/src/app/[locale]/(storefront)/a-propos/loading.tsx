@@ -8,7 +8,7 @@ export default async function BrandPageLoading() {
       role="status"
       aria-label={t("loading")}
       data-testid="loading-skeleton"
-      className="animate-pulse"
+      className="min-h-screen animate-pulse"
     >
       <div className="aspect-video w-full bg-skeleton sm:aspect-[21/9]" />
 

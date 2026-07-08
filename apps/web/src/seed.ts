@@ -26,10 +26,10 @@ function envFlag(name: string, defaultValue: boolean): boolean {
   return raw === "1" || raw.toLowerCase() === "true";
 }
 
-/** When true (default), skip overwriting a published home Page unless SEED_FORCE_HOME=1. */
+/** When true, skip overwriting a published home Page unless SEED_FORCE_HOME=1. */
 export function shouldSkipHomeSeed(): boolean {
   if (envFlag("SEED_FORCE_HOME", false)) return false;
-  return envFlag("SEED_SKIP_HOME_IF_PUBLISHED", true);
+  return envFlag("SEED_SKIP_HOME_IF_PUBLISHED", false);
 }
 
 const IMAGES_DIR = path.resolve(__dirname, "../public/images");
@@ -266,49 +266,49 @@ const HOME_PAGE_COPY: Record<
 > = {
   fr: {
     title: "Accueil",
-    season: "Printemps · Été 2026",
+    season: "PRINTEMPS – ÉTÉ 2026",
     heroTagline: "Pour les moments que vous voulez garder.",
-    heroCta: "Découvrir la collection",
+    heroCta: "DÉCOUVRIR LA COLLECTION",
     featuredTitle: "Notre sélection",
-    viewCollection: "Voir la collection →",
-    editorialLabel: "L'esprit Lénue",
+    viewCollection: "VOIR LA COLLECTION →",
+    editorialLabel: "L'ESPRIT LÉNUE",
     editorialHeadline: "Lénue, ce n'est pas s'habiller.",
     editorialSubline: "C'est se sentir soi-même.",
     editorialBody:
       "Chaque pièce est sélectionnée pour sa matière, sa coupe, et ce qu'elle dit de vous. Commandez en toute simplicité, via WhatsApp.",
-    editorialCta: "Voir la collection",
+    editorialCta: "VOIR LA COLLECTION",
     heroImageAlt: "Lénue Paris — collection Printemps Été 2026",
     editorialImageAlt: "Femme en robe Lénue Paris au Café de Flore",
   },
   en: {
     title: "Home",
-    season: "Spring · Summer 2026",
+    season: "SPRING – SUMMER 2026",
     heroTagline: "For the moments you want to keep.",
-    heroCta: "Explore the collection",
+    heroCta: "DISCOVER THE COLLECTION",
     featuredTitle: "Our selection",
-    viewCollection: "View collection →",
-    editorialLabel: "The Lénue spirit",
+    viewCollection: "VIEW THE COLLECTION →",
+    editorialLabel: "THE LÉNUE SPIRIT",
     editorialHeadline: "Lénue isn't about dressing.",
     editorialSubline: "It's about feeling like yourself.",
     editorialBody:
       "Every piece is chosen for its fabric, its cut, and what it says about you. Order simply, via WhatsApp.",
-    editorialCta: "See the collection",
+    editorialCta: "VIEW THE COLLECTION",
     heroImageAlt: "Lénue Paris — Spring Summer 2026 collection",
     editorialImageAlt: "Woman in a Lénue Paris dress at Café de Flore",
   },
   ru: {
     title: "Главная",
-    season: "Весна · Лето 2026",
+    season: "ВЕСНА – ЛЕТО 2026",
     heroTagline: "Для моментов, которые хочется сохранить.",
-    heroCta: "Смотреть коллекцию",
+    heroCta: "СМОТРЕТЬ КОЛЛЕКЦИЮ",
     featuredTitle: "Наша подборка",
-    viewCollection: "Смотреть коллекцию →",
-    editorialLabel: "Дух Lénue",
+    viewCollection: "СМОТРЕТЬ КОЛЛЕКЦИЮ →",
+    editorialLabel: "ДУХ LÉNUE",
     editorialHeadline: "Lénue — это не просто одежда.",
     editorialSubline: "Это ощущение себя.",
     editorialBody:
       "Каждая вещь выбрана за материал, крой и то, что она говорит о вас. Заказывайте просто — через WhatsApp.",
-    editorialCta: "Смотреть коллекцию",
+    editorialCta: "СМОТРЕТЬ КОЛЛЕКЦИЮ",
     heroImageAlt: "Lénue Paris — коллекция Весна Лето 2026",
     editorialImageAlt: "Женщина в платье Lénue Paris в Café de Flore",
   },
@@ -363,9 +363,10 @@ function buildHomeBlocks(
   heroImageId: number | string,
   editorialImageId: number | string,
   featuredProductIds: (number | string)[],
+  blockIds?: readonly (string | number | undefined)[],
 ) {
   const copy = HOME_PAGE_COPY[locale];
-  return [
+  const blocks = [
     {
       blockType: "hero" as const,
       heroImage: heroImageId,
@@ -393,6 +394,35 @@ function buildHomeBlocks(
       image: editorialImageId,
     },
   ];
+
+  if (!blockIds?.length) return blocks;
+
+  return blocks.map((block, index) => {
+    const blockId = blockIds[index];
+    return blockId == null ? block : { ...block, id: blockId };
+  });
+}
+
+async function readPageBlockIds(
+  payload: Awaited<ReturnType<typeof getPayload>>,
+  pageId: number | string,
+): Promise<string[] | undefined> {
+  const page = await payload.findByID({
+    collection: "pages",
+    id: pageId,
+    locale: "en",
+    depth: 0,
+    draft: false,
+  });
+
+  const blocks = page.blocks;
+  if (!Array.isArray(blocks) || blocks.length === 0) return undefined;
+
+  const ids: string[] = [];
+  for (const block of blocks) {
+    if (block.id != null) ids.push(String(block.id));
+  }
+  return ids.length > 0 ? ids : undefined;
 }
 
 async function seedHomePage(
@@ -439,9 +469,11 @@ async function seedHomePage(
   }
 
   let pageId: number | string;
+  let blockIds: string[] | undefined;
 
   if (existing.docs[0]) {
     pageId = existing.docs[0].id;
+    blockIds = await readPageBlockIds(payload, pageId);
     console.log(`  ♻️  Reusing home page → id ${pageId}`);
   } else {
     const doc = await payload.create({
@@ -456,6 +488,7 @@ async function seedHomePage(
       draft: false,
     });
     pageId = doc.id;
+    blockIds = await readPageBlockIds(payload, pageId);
     console.log(`  ✅ Created home page → id ${pageId}`);
   }
 
@@ -465,13 +498,20 @@ async function seedHomePage(
       id: pageId,
       data: {
         title: HOME_PAGE_COPY[locale].title,
-        blocks: buildHomeBlocks(locale, heroImageId, editorialImageId, featuredProductIds),
+        blocks: buildHomeBlocks(
+          locale,
+          heroImageId,
+          editorialImageId,
+          featuredProductIds,
+          blockIds,
+        ),
         _status: "published",
       } as any,
       locale,
       draft: false,
     });
     console.log(`  ✅ Published home page (${locale})`);
+    blockIds ??= await readPageBlockIds(payload, pageId);
   }
 
   return pageId;
@@ -538,14 +578,11 @@ async function seedCollections(
   return collectionIdBySlug;
 }
 
-async function seedCataloguePage(payload: Awaited<ReturnType<typeof getPayload>>): Promise<void> {
-  const existing = await payload.find({
-    collection: "pages",
-    where: { slug: { equals: CATALOGUE_PAGE_SLUG } },
-    limit: 1,
-  });
-
-  const buildBlocks = (locale: (typeof PRODUCT_LOCALES)[number]) => [
+function buildCatalogueBlocks(
+  locale: ContentLocale,
+  blockIds?: readonly (string | number | undefined)[],
+) {
+  const blocks = [
     {
       blockType: "productGrid" as const,
       title: CATALOGUE_PAGE_COPY[locale].gridTitle,
@@ -553,10 +590,29 @@ async function seedCataloguePage(payload: Awaited<ReturnType<typeof getPayload>>
     },
   ];
 
+  if (!blockIds?.length) return blocks;
+
+  return blocks.map((block, index) => {
+    const blockId = blockIds[index];
+    return blockId == null ? block : { ...block, id: blockId };
+  });
+}
+
+async function seedCataloguePage(payload: Awaited<ReturnType<typeof getPayload>>): Promise<void> {
+  console.log("\n📄 Syncing catalogue page");
+
+  const existing = await payload.find({
+    collection: "pages",
+    where: { slug: { equals: CATALOGUE_PAGE_SLUG } },
+    limit: 1,
+  });
+
   let pageId: number | string;
+  let blockIds: string[] | undefined;
 
   if (existing.docs[0]) {
     pageId = existing.docs[0].id;
+    blockIds = await readPageBlockIds(payload, pageId);
     console.log(`  ♻️  Reusing catalogue page → id ${pageId}`);
   } else {
     const doc = await payload.create({
@@ -564,13 +620,14 @@ async function seedCataloguePage(payload: Awaited<ReturnType<typeof getPayload>>
       data: {
         title: CATALOGUE_PAGE_COPY.en.title,
         slug: CATALOGUE_PAGE_SLUG,
-        blocks: buildBlocks("en"),
+        blocks: buildCatalogueBlocks("en"),
         _status: "published",
       } as any,
       locale: "en",
       draft: false,
     });
     pageId = doc.id;
+    blockIds = await readPageBlockIds(payload, pageId);
     console.log(`  ✅ Created catalogue page → id ${pageId}`);
   }
 
@@ -580,15 +637,15 @@ async function seedCataloguePage(payload: Awaited<ReturnType<typeof getPayload>>
       id: pageId,
       data: {
         title: CATALOGUE_PAGE_COPY[locale].title,
-        blocks: buildBlocks(locale),
+        blocks: buildCatalogueBlocks(locale, blockIds),
         _status: "published",
       } as any,
       locale,
       draft: false,
     });
+    console.log(`  ✅ Published catalogue page (${locale})`);
+    blockIds ??= await readPageBlockIds(payload, pageId);
   }
-
-  console.log(`  ✅ Published catalogue page (${PRODUCT_LOCALES.join(", ")})`);
 }
 
 const A_PROPOS_SLUG = "a-propos";
