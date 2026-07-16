@@ -13,6 +13,7 @@ import * as migration_20260706_140000_blocks_field_level_i18n_schema_fix from '.
 import * as migration_20260707_061500_pages_blocks_locale from './20260707_061500_pages_blocks_locale';
 import * as migration_20260707_062000_hero_season_column from './20260707_062000_hero_season_column';
 import * as migration_20260707_063000_hero_text_columns from './20260707_063000_hero_text_columns';
+import * as migration_20260716_090000_code_chunks from './20260716_090000_code_chunks';
 
 export const migrations = [
   {
@@ -89,5 +90,10 @@ export const migrations = [
     up: migration_20260707_063000_hero_text_columns.up,
     down: migration_20260707_063000_hero_text_columns.down,
     name: '20260707_063000_hero_text_columns',
+  },
+  {
+    up: migration_20260716_090000_code_chunks.up,
+    down: migration_20260716_090000_code_chunks.down,
+    name: '20260716_090000_code_chunks',
   },
 ];

@@ -8,6 +8,7 @@ import { NextResponse, type NextRequest } from 'next/server'
  * cookie via /api/editor-token, enabling the PublicAdminFAB for that browser session.
  *
  * Response: { url: "https://lenue.paris/?editor_token=TOKEN", token: "TOKEN" }
+ * (storefront — not /admin; editor_token does not log into Payload admin)
  */
 export async function GET(request: NextRequest) {
   const payloadToken = request.cookies.get('payload-token')?.value
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
 
   const origin = new URL(request.url).origin
   return NextResponse.json({
-    url: `${origin}/?editor_token=${encodeURIComponent(secret)}`,
+    url: `${origin}/?editor_token=${encodeURIComponent(secret)}&lp_assistant=1`,
     token: secret,
   })
 }

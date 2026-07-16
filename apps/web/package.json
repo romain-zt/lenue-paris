@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
-    "vercel-build": "node ../../scripts/run-payload.mjs migrate && node ../../scripts/run-tsx.mjs src/seed.ts && next build",
+    "vercel-build": "node ../../scripts/run-payload.mjs migrate && node ../../scripts/run-tsx.mjs src/seed.ts && node ../../scripts/run-tsx.mjs src/scripts/reindex-all.ts && next build",
     "generate:importmap": "payload generate:importmap",
     "start": "node ../../scripts/run-payload.mjs migrate && next start -p 3001",
     "migrate": "node ../../scripts/run-payload.mjs migrate",
@@ -21,7 +21,10 @@
     "seed:placeholders": "node ../../scripts/run-tsx.mjs scripts/generate-seed-placeholders.ts",
     "dedupe:images": "node ../../scripts/run-tsx.mjs scripts/dedupe-referenced-images.ts",
     "reindex-content": "node ../../scripts/run-tsx.mjs src/scripts/reindex-content.ts",
-    "test:rag": "node ../../scripts/run-tsx.mjs src/scripts/test-rag.ts"
+    "reindex-code": "node ../../scripts/run-tsx.mjs src/scripts/reindex-code.ts",
+    "reindex-all": "node ../../scripts/run-tsx.mjs src/scripts/reindex-all.ts",
+    "test:rag": "node ../../scripts/run-tsx.mjs src/scripts/test-rag.ts",
+    "test:rag-code": "node ../../scripts/run-tsx.mjs src/scripts/test-rag-code.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.73",

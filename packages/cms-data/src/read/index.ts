@@ -8,6 +8,7 @@ export {
   type SearchableSource,
 } from "./extractSearchableText";
 export { searchContent } from "./searchContent";
+export { findHomePage, isHomePageQuery, type HomePageResult } from "./findHomePage";
 export { getSiteSnapshot } from "./getSiteSnapshot";
 export { getCatalogSummary } from "./getCatalogSummary";
 export { getSchemaManifest, formatSchemaManifest } from "./getSchemaManifest";

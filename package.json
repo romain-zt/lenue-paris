@@ -10,12 +10,17 @@
   },
   "scripts": {
     "migrate": "pnpm -F web migrate",
+    "migrate:reindex": "pnpm migrate && pnpm reindex-all",
     "seed": "pnpm --filter web seed",
+    "reindex-content": "pnpm --filter web reindex-content",
+    "reindex-code": "pnpm --filter web reindex-code",
+    "reindex-all": "pnpm --filter web reindex-all",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "test:rag": "pnpm --filter web test:rag",
+    "test:rag-code": "pnpm --filter web test:rag-code",
     "typecheck": "turbo run typecheck",
     "test:e2e": "pnpm --filter web test:e2e"
   },

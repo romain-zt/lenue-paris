@@ -126,3 +126,20 @@ export interface SemanticSearchResult {
   text: string;
   similarity: number;
 }
+
+export interface CodeSearchParams {
+  query: string;
+  /** Restrict results to files whose path starts with this prefix (e.g. "apps/web/src"). */
+  pathPrefix?: string;
+  limit?: number;
+}
+
+export interface CodeSearchResult {
+  filePath: string;
+  language: string;
+  symbol: string | null;
+  startLine: number;
+  endLine: number;
+  text: string;
+  similarity: number;
+}
