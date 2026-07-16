@@ -19,6 +19,16 @@ export {
 } from "./indexContent";
 export { semanticSearch } from "./semanticSearch";
 export {
+  chunkCode,
+  languageFromPath,
+  type CodeChunk,
+} from "./chunkCode";
+export {
+  reindexAllCode,
+  searchCode,
+  type ReindexCodeResult,
+} from "./indexCode";
+export {
   createCollectionIndexHook,
   createCollectionDeleteHook,
   createGlobalIndexHook,

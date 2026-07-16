@@ -1,18 +1,25 @@
 'use client'
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
-import { useChat } from '@ai-sdk/react'
-import { DefaultChatTransport } from 'ai'
-import type { UIMessage } from 'ai'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { useLocale } from '@payloadcms/ui'
 import { ensureHighlightStyle, focusAdminField, scrollAndHighlight } from './live-preview/utils'
+import { AiPanelTabSession } from './AiPanelTabSession'
+import {
+  createDefaultTab,
+  loadOrInitTabsState,
+  nextDefaultTabTitle,
+  removeTabData,
+  saveTabsState,
+  type AiPanelTab,
+  type AiPanelTabsState,
+} from '@/lib/aiPanelTabs'
 
 import {
   isContentLocale,
   parseContentLocale,
   type ContentLocale,
-} from "@repo/payload-schema/i18n/content-locales";
+} from '@repo/payload-schema/i18n/content-locales'
 
 type DocContext = {
   type: 'collection' | 'collection-list' | 'global' | 'dashboard'
@@ -20,11 +27,6 @@ type DocContext = {
   id?: string
   slug?: string
   locale?: ContentLocale
-}
-
-type LastEdit = {
-  fields: string[]
-  timestamp: Date
 }
 
 function parseAdminPath(pathname: string): DocContext {
@@ -44,297 +46,24 @@ function parseAdminPath(pathname: string): DocContext {
   return { type: 'dashboard' }
 }
 
-function timeAgo(date: Date): string {
-  const diff = Math.floor((Date.now() - date.getTime()) / 1000)
-  if (diff < 60) return 'à l\'instant'
-  if (diff < 3600) return `il y a ${Math.floor(diff / 60)} min`
-  if (diff < 86400) return `il y a ${Math.floor(diff / 3600)}h`
-  return `il y a ${Math.floor(diff / 86400)}j`
-}
-
-const DOCUMENT_ACTIONS = [
-  { label: 'Résumer ce document', prompt: 'Résume le contenu du document que je suis en train d\'éditer.' },
-  { label: 'Modifier ce contenu', prompt: 'Montre-moi les champs de ce document et aide-moi à les modifier.' },
-  { label: 'Expliquer les champs', prompt: 'Explique-moi à quoi servent les différents champs de ce document.' },
-  { label: 'Traduire FR/EN/RU', prompt: 'Traduis le contenu de ce document en français, anglais et russe.' },
-] as const
-
-const BROWSE_ACTIONS = [
-  { label: 'État du catalogue', prompt: 'Combien de produits publiés sont en stock ? Liste les robes disponibles.' },
-  { label: 'Page livraison', prompt: 'Où parle-t-on de la livraison sur le site ?' },
-  { label: 'Vue du site', prompt: 'Donne-moi un aperçu de l\'état actuel du site (marque, compteurs, contenu publié).' },
-  { label: 'Couleurs du site', prompt: 'Quelle est la couleur accent et les principaux design tokens ?' },
-] as const
-
-const DEV_ACTIONS = [
-  { label: 'Nouveau bloc', prompt: 'Aide-moi à créer un nouveau bloc Payload (schema + composant React).' },
-  { label: 'Structure du site', prompt: 'Montre-moi toutes les collections et globaux disponibles avec leurs champs.' },
-  { label: 'État du catalogue', prompt: 'Combien de produits publiés sont en stock ? Liste les robes disponibles.' },
-] as const
-
-function getQuickActions(
-  docContext: DocContext,
-  tab: 'contenu' | 'dev',
-): readonly { label: string; prompt: string }[] {
-  if (tab === 'dev') return DEV_ACTIONS
-  if (docContext.type === 'collection' && docContext.collection && docContext.id) {
-    return DOCUMENT_ACTIONS
-  }
-  return BROWSE_ACTIONS
-}
-
-const TONE_CHIPS = [
-  { label: 'Plus court', modifier: 'Raccourcis ce texte en gardant l\'essentiel : ' },
-  { label: 'Plus luxe', modifier: 'Réécris ce texte avec un ton plus élégant et premium : ' },
-  { label: 'Plus direct', modifier: 'Réécris ce texte de façon plus directe et concise : ' },
-]
-
-type ToolPart = {
-  type: 'tool-invocation'
-  toolInvocation: {
-    toolName: string
-    state: string
-    args?: Record<string, unknown>
-    result?: unknown
-  }
-}
-
-type MessagePart = { type: 'text'; text: string } | ToolPart | { type: string }
-
-// ─── Share link section (dev tab) ─────────────────────────────────────────────
-
-function ShareLinkSection() {
-  const [copied, setCopied] = useState(false)
-  const [shareUrl, setShareUrl] = useState<string | null>(null)
-  const [fetching, setFetching] = useState(false)
-  const [err, setErr] = useState<string | null>(null)
-
-  const fetchAndCopy = useCallback(async () => {
-    setFetching(true)
-    setErr(null)
-    try {
-      const r = await fetch('/api/editor-token/share-url', { credentials: 'include' })
-      if (!r.ok) {
-        const d = await r.json().catch(() => ({}))
-        setErr((d as { error?: string }).error ?? 'Erreur')
-        return
-      }
-      const d = await r.json() as { url: string }
-      setShareUrl(d.url)
-      await navigator.clipboard.writeText(d.url)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2500)
-    } catch {
-      setErr('Impossible de copier')
-    } finally {
-      setFetching(false)
-    }
-  }, [])
-
-  return (
-    <div style={{
-      margin: '8px 16px 0',
-      padding: '10px 12px',
-      background: 'var(--theme-elevation-50, #f9f9f9)',
-      border: '1px solid var(--theme-elevation-200, #e0e0e0)',
-      borderRadius: 8,
-      flexShrink: 0,
-    }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--theme-elevation-800, #333)', marginBottom: 6 }}>
-        {`Partager l'accès éditeur`}
-      </div>
-      <div style={{ fontSize: 11, color: 'var(--theme-elevation-500, #888)', lineHeight: 1.4, marginBottom: 8 }}>
-        {`Partagez ce lien pour permettre à quelqu'un d'éditer le site sans compte admin.`}
-      </div>
-      {shareUrl && (
-        <div style={{
-          padding: '5px 8px',
-          background: 'var(--theme-elevation-100, #f0f0f0)',
-          borderRadius: 5,
-          fontSize: 10,
-          color: 'var(--theme-elevation-600, #555)',
-          fontFamily: 'monospace',
-          wordBreak: 'break-all',
-          marginBottom: 6,
-          userSelect: 'all',
-        }}>
-          {shareUrl}
-        </div>
-      )}
-      {err && (
-        <div style={{ fontSize: 11, color: '#b91c1c', marginBottom: 6 }}>{err}</div>
-      )}
-      <button
-        type="button"
-        onClick={fetchAndCopy}
-        disabled={fetching}
-        style={{
-          padding: '5px 12px',
-          fontSize: 11,
-          fontWeight: 600,
-          background: copied ? 'rgba(34,197,94,0.15)' : 'var(--theme-text, #1a1a1a)',
-          color: copied ? 'rgb(21,128,61)' : 'var(--theme-elevation-0, #fff)',
-          border: copied ? '1px solid rgba(34,197,94,0.4)' : 'none',
-          borderRadius: 6,
-          cursor: fetching ? 'wait' : 'pointer',
-          opacity: fetching ? 0.6 : 1,
-          transition: 'background 0.2s, color 0.2s',
-        }}
-      >
-        {fetching ? '…' : copied ? '✓ Lien copié' : '↗ Copier le lien de partage'}
-      </button>
-    </div>
-  )
-}
-
-function ToolCallCard({ toolName, state }: { toolName: string; state: string }) {
-  const labels: Record<string, string> = {
-    get_document: 'Lecture du document',
-    patch_field: 'Modification du contenu',
-    get_schema: 'Récupération du schéma',
-    search_content: 'Recherche dans la base',
-    semantic_search: 'Recherche sémantique',
-    get_site_snapshot: 'Instantané du site',
-    get_catalog: 'État du catalogue',
-  }
-  const isLoading = state === 'partial-call' || state === 'call'
-  return (
-    <div style={{
-      padding: '8px 12px',
-      borderRadius: 6,
-      background: 'var(--theme-elevation-100, #f5f5f5)',
-      border: '1px solid var(--theme-elevation-200, #e0e0e0)',
-      fontSize: 12,
-      color: 'var(--theme-elevation-800, #444)',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 8,
-    }}>
-      <span style={isLoading ? { display: 'inline-block', animation: 'ai-spin 1s linear infinite' } : {}}>
-        {isLoading ? '⏳' : '✅'}
-      </span>
-      {labels[toolName] ?? toolName}
-    </div>
-  )
-}
-
-function MessageBubble({ message }: { message: UIMessage }) {
-  const isUser = message.role === 'user'
-  const parts = (message as { parts?: MessagePart[] }).parts
-
-  return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: isUser ? 'flex-end' : 'flex-start',
-      gap: 4,
-      marginBottom: 12,
-    }}>
-      {parts && parts.length > 0 ? parts.map((part, i) => {
-        if (part.type === 'text') {
-          const textPart = part as { type: 'text'; text: string }
-          return (
-            <div key={i} style={{
-              maxWidth: '85%',
-              padding: '10px 14px',
-              borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-              background: isUser ? 'var(--theme-text, #1a1a1a)' : 'var(--theme-elevation-100, #f5f5f5)',
-              color: isUser ? 'var(--theme-elevation-0, #fff)' : 'var(--theme-text, #1a1a1a)',
-              fontSize: 13,
-              lineHeight: 1.5,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-            }}>
-              {textPart.text}
-            </div>
-          )
-        }
-        if (part.type === 'tool-invocation') {
-          const toolPart = part as ToolPart
-          return (
-            <ToolCallCard
-              key={i}
-              toolName={toolPart.toolInvocation.toolName}
-              state={toolPart.toolInvocation.state}
-            />
-          )
-        }
-        return null
-      }) : null}
-    </div>
-  )
-}
-
 export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
-  const router = useRouter()
   const pathname = usePathname()
   const locale = useLocale()
   const [open, setOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<'contenu' | 'dev'>('contenu')
   const [docContext, setDocContext] = useState<DocContext>({ type: 'dashboard' })
-  const [inputs, setInputs] = useState<{ contenu: string; dev: string }>({ contenu: '', dev: '' })
-  const input = inputs[activeTab]
-  const setInput = useCallback((value: string) => {
-    setInputs(prev => ({ ...prev, [activeTab]: value }))
-  }, [activeTab])
-  const [lastEdit, setLastEdit] = useState<LastEdit | null>(null)
-  const [timeAgoDisplay, setTimeAgoDisplay] = useState('')
   const [mounted, setMounted] = useState(false)
-  const [patchDone, setPatchDone] = useState(false)
-  const [autoReloadCountdown, setAutoReloadCountdown] = useState(0)
-  const autoReloadRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  const cancelAutoReload = useCallback(() => {
-    if (autoReloadRef.current) clearInterval(autoReloadRef.current)
-    autoReloadRef.current = null
-    setAutoReloadCountdown(0)
-  }, [])
-
-  // Start a 3-second auto-reload countdown after every AI patch
-  useEffect(() => {
-    if (!patchDone) return
-    setAutoReloadCountdown(3)
-    autoReloadRef.current = setInterval(() => {
-      setAutoReloadCountdown((c) => {
-        if (c <= 1) {
-          if (autoReloadRef.current) clearInterval(autoReloadRef.current)
-          autoReloadRef.current = null
-          window.location.reload()
-          return 0
-        }
-        return c - 1
-      })
-    }, 1000)
-    return () => {
-      if (autoReloadRef.current) clearInterval(autoReloadRef.current)
-    }
-  }, [patchDone])
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const [tabsState, setTabsState] = useState<AiPanelTabsState | null>(null)
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null)
   const docContextRef = useRef(docContext)
 
   useEffect(() => { setMounted(true) }, [])
 
-  useEffect(() => { ensureHighlightStyle() }, [])
-
-  // When the admin page is opened via a deep-link like ?field=body, focus and
-  // highlight the matching form field after the form has had time to render.
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    const field = new URLSearchParams(window.location.search).get('field')
-    if (!field) return
-    const timer = setTimeout(() => {
-      focusAdminField(field)
-      // Also try scrollAndHighlight on the exact element if focusAdminField
-      // found it (focusAdminField calls scrollAndHighlight internally, so this
-      // is a no-op when the element is already focused by it).
-      const el = document.querySelector<HTMLElement>(
-        `[data-field-path="${field}"], input[name="${field}"], textarea[name="${field}"]`,
-      )
-      if (el) scrollAndHighlight(el)
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [])
+    if (!mounted) return
+    setTabsState(loadOrInitTabsState())
+  }, [mounted])
+
+  useEffect(() => { ensureHighlightStyle() }, [])
 
   useEffect(() => {
     docContextRef.current = docContext
@@ -351,11 +80,18 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
   }, [pathname, locale.code])
 
   useEffect(() => {
-    const textarea = inputRef.current
-    if (!textarea || input) return
-    textarea.style.height = 'auto'
-    textarea.style.overflow = 'hidden'
-  }, [input, open])
+    if (typeof window === 'undefined') return
+    const field = new URLSearchParams(window.location.search).get('field')
+    if (!field) return
+    const timer = setTimeout(() => {
+      focusAdminField(field)
+      const el = document.querySelector<HTMLElement>(
+        `[data-field-path="${field}"], input[name="${field}"], textarea[name="${field}"]`,
+      )
+      if (el) scrollAndHighlight(el)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -369,7 +105,6 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
-  // Receive AI-help requests from the preview iframe (InlineEditor / BlockOverlay)
   useEffect(() => {
     const handleIframeMessage = (e: MessageEvent) => {
       if (!e.data || typeof e.data !== 'object') return
@@ -380,188 +115,70 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
           ? `Aide-moi avec le champ "${fieldName}" (${path}).\n\nValeur actuelle :\n"${value}"`
           : `Explique-moi le champ "${fieldName}" (${path}) et aide-moi à le remplir.`
         setOpen(true)
-        setActiveTab('contenu')
-        setInputs(prev => ({ ...prev, contenu: prompt }))
-        setTimeout(() => inputRef.current?.focus(), 200)
+        setPendingPrompt(prompt)
       }
     }
     window.addEventListener('message', handleIframeMessage)
     return () => window.removeEventListener('message', handleIframeMessage)
   }, [])
 
-  // Listen for aipanel:open from CustomLivePreview or BlockOverlay (same window)
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<{ fieldPath?: string; prompt?: string }>).detail ?? {}
       setOpen(true)
-      setActiveTab('contenu')
       if (detail.prompt) {
-        setInputs(prev => ({ ...prev, contenu: detail.prompt! }))
+        setPendingPrompt(detail.prompt)
       } else if (detail.fieldPath) {
-        setInputs(prev => ({ ...prev, contenu: `Modifier le bloc : ${detail.fieldPath}` }))
+        setPendingPrompt(`Modifier le bloc : ${detail.fieldPath}`)
       }
-      setTimeout(() => inputRef.current?.focus(), 200)
     }
     window.addEventListener('aipanel:open', handler)
     return () => window.removeEventListener('aipanel:open', handler)
   }, [])
 
-  useEffect(() => {
-    if (!lastEdit) return
-    const tick = () => setTimeAgoDisplay(timeAgo(lastEdit.timestamp))
-    tick()
-    const interval = setInterval(tick, 30000)
-    return () => clearInterval(interval)
-  }, [lastEdit])
+  const updateTabsState = useCallback((updater: (prev: AiPanelTabsState) => AiPanelTabsState) => {
+    setTabsState(prev => {
+      if (!prev) return prev
+      const next = updater(prev)
+      saveTabsState(next)
+      return next
+    })
+  }, [])
 
-  const storageKey = docContext.type === 'collection'
-    ? `ai-chat-${docContext.collection}-${docContext.id}`
-    : docContext.type === 'collection-list'
-      ? `ai-chat-list-${docContext.collection}`
-      : docContext.type === 'global'
-        ? `ai-chat-global-${docContext.slug}`
-        : 'ai-chat-dashboard'
+  const addTab = useCallback(() => {
+    updateTabsState(prev => {
+      const tab = createDefaultTab(nextDefaultTabTitle(prev.tabs))
+      return { tabs: [...prev.tabs, tab], activeTabId: tab.id }
+    })
+  }, [updateTabsState])
 
-  const activeTabRef = useRef(activeTab)
-  useEffect(() => { activeTabRef.current = activeTab }, [activeTab])
+  const closeTab = useCallback((tabId: string) => {
+    updateTabsState(prev => {
+      if (prev.tabs.length <= 1) return prev
+      const nextTabs = prev.tabs.filter(tab => tab.id !== tabId)
+      if (nextTabs.length === 0) return prev
+      removeTabData(tabId)
+      const nextActive = prev.activeTabId === tabId
+        ? (nextTabs[nextTabs.length - 1]?.id ?? nextTabs[0]?.id ?? prev.activeTabId)
+        : prev.activeTabId
+      return { tabs: nextTabs, activeTabId: nextActive }
+    })
+  }, [updateTabsState])
 
-  const contenuTransport = useMemo(() => new DefaultChatTransport({
-    api: '/api/ai/chat',
-    credentials: 'include',
-    prepareSendMessagesRequest: ({ body, messages: msgs, id: chatId }) => ({
-      body: {
-        messages: msgs,
-        id: chatId,
-        ...(body as Record<string, unknown>),
-        tab: 'contenu',
-        context: docContextRef.current,
-      },
-    }),
-  }), [])
+  const setActiveTab = useCallback((tabId: string) => {
+    updateTabsState(prev => ({ ...prev, activeTabId: tabId }))
+  }, [updateTabsState])
 
-  const devTransport = useMemo(() => new DefaultChatTransport({
-    api: '/api/ai/chat',
-    credentials: 'include',
-    prepareSendMessagesRequest: ({ body, messages: msgs, id: chatId }) => ({
-      body: {
-        messages: msgs,
-        id: chatId,
-        ...(body as Record<string, unknown>),
-        tab: 'developpement',
-        context: docContextRef.current,
-      },
-    }),
-  }), [])
+  const renameTab = useCallback((tabId: string, title: string) => {
+    updateTabsState(prev => ({
+      ...prev,
+      tabs: prev.tabs.map(tab => (tab.id === tabId ? { ...tab, title } : tab)),
+    }))
+  }, [updateTabsState])
 
-  const contenuChat = useChat({
-    id: storageKey,
-    transport: contenuTransport,
-    onFinish: () => {
-      if (activeTabRef.current === 'contenu') {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-      }
-    },
-  })
-
-  const devChat = useChat({
-    id: `${storageKey}-dev`,
-    transport: devTransport,
-    onFinish: () => {
-      if (activeTabRef.current === 'dev') {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-      }
-    },
-  })
-
-  const activeChat = activeTab === 'contenu' ? contenuChat : devChat
-  const { messages, sendMessage, status, setMessages, error } = activeChat
-
-  // Track which message ids we've already processed to avoid double-firing.
-  const processedPatchIds = useRef(new Set<string>())
-
-  const processPatchMessages = useCallback((
-    chatMessages: UIMessage[],
-    chatStatus: typeof status,
-  ) => {
-    if (chatStatus !== 'ready') return
-
-    for (const message of chatMessages) {
-      if (message.role !== 'assistant') continue
-      if (processedPatchIds.current.has(message.id)) continue
-
-      const parts = (message as { parts?: MessagePart[] }).parts ?? []
-      const successfulPatches = parts.filter((p): p is ToolPart => {
-        if (p.type !== 'tool-invocation') return false
-        const tp = p as ToolPart
-        if (tp.toolInvocation.toolName !== 'patch_field') return false
-        if (tp.toolInvocation.state !== 'result') return false
-        const res = tp.toolInvocation.result as { success?: boolean } | undefined
-        return res?.success === true
-      })
-
-      processedPatchIds.current.add(message.id)
-
-      if (successfulPatches.length === 0) continue
-
-      const updatedFields = successfulPatches.flatMap((p) => {
-        const res = p.toolInvocation.result as { updatedFields?: string[] } | undefined
-        return res?.updatedFields ?? []
-      })
-
-      setLastEdit({ fields: updatedFields, timestamp: new Date() })
-      setPatchDone(true)
-
-      window.dispatchEvent(new CustomEvent('lp:ai-patch-done', { detail: { fields: updatedFields } }))
-      document.dispatchEvent(new CustomEvent('payload:document:refetch'))
-      router.refresh()
-
-      if (updatedFields.length > 0 && updatedFields[0]) {
-        const field = updatedFields[0]
-        setTimeout(() => focusAdminField(field), 400)
-      }
-    }
-  }, [router])
-
-  useEffect(() => {
-    processPatchMessages(contenuChat.messages, contenuChat.status)
-  }, [contenuChat.messages, contenuChat.status, processPatchMessages])
-
-  useEffect(() => {
-    processPatchMessages(devChat.messages, devChat.status)
-  }, [devChat.messages, devChat.status, processPatchMessages])
-
-  const isLoading = status === 'submitted' || status === 'streaming'
-
-  useEffect(() => {
-    if (!open) return
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-      inputRef.current?.focus()
-    }, 100)
-  }, [open, activeTab])
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
-
-  const handleSend = useCallback(() => {
-    if (!input.trim() || isLoading) return
-    const text = input.trim()
-    setInputs(prev => ({ ...prev, [activeTab]: '' }))
-    sendMessage({ text })
-  }, [input, isLoading, sendMessage, activeTab])
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
-    }
-  }
-
-  const sendQuickAction = useCallback((prompt: string) => {
-    setOpen(true)
-    sendMessage({ text: prompt })
-  }, [sendMessage])
+  const clearActiveTab = useCallback(() => {
+    window.dispatchEvent(new Event('ai-panel:clear-active-tab'))
+  }, [])
 
   const contextLabel = docContext.type === 'collection'
     ? `${docContext.collection} · ${docContext.id}`
@@ -571,11 +188,10 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
         ? `global · ${docContext.slug}`
         : 'Tableau de bord'
 
-  const quickActions = getQuickActions(docContext, activeTab)
+  const activeTab = tabsState?.tabs.find(tab => tab.id === tabsState.activeTabId) ?? null
 
-  const panel = mounted ? (
+  const panel = mounted && tabsState ? (
     <>
-      {/* Floating trigger button — always visible */}
       <button
         onClick={() => setOpen(o => !o)}
         title="Assistant IA (⌘K)"
@@ -618,7 +234,6 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
         }}>⌘K</span>
       </button>
 
-      {/* Backdrop */}
       {open && (
         <div
           onClick={() => setOpen(false)}
@@ -632,7 +247,6 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
         />
       )}
 
-      {/* Drawer */}
       <div style={{
         position: 'fixed',
         top: 0,
@@ -649,7 +263,6 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
         transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
         boxShadow: '-8px 0 32px rgba(0,0,0,0.12)',
       }}>
-        {/* Header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -674,8 +287,8 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
             </div>
           </div>
           <button
-            onClick={() => setMessages([])}
-            title="Effacer la conversation"
+            onClick={clearActiveTab}
+            title="Effacer la conversation active"
             style={{
               background: 'none',
               border: 'none',
@@ -704,389 +317,112 @@ export const AIPanel: React.FC<{ children?: React.ReactNode }> = ({ children }) 
           </button>
         </div>
 
-        {/* Tabs */}
         <div style={{
           display: 'flex',
+          alignItems: 'stretch',
           borderBottom: '1px solid var(--theme-elevation-200, #e0e0e0)',
           flexShrink: 0,
+          minHeight: 40,
         }}>
-          {(['contenu', 'dev'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                flex: 1,
-                padding: '10px 16px',
-                fontSize: 13,
-                fontWeight: activeTab === tab ? 600 : 400,
-                color: activeTab === tab ? 'var(--theme-text, #1a1a1a)' : 'var(--theme-elevation-500, #888)',
-                background: 'none',
-                border: 'none',
-                borderBottom: activeTab === tab ? '2px solid var(--theme-text, #1a1a1a)' : '2px solid transparent',
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
-            >
-              {tab === 'contenu' ? 'Contenu' : 'Développement'}
-            </button>
-          ))}
-        </div>
-
-        {/* Dernière modification strip */}
-        {activeTab === 'contenu' && lastEdit && (
           <div style={{
             display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '8px 16px',
-            borderBottom: '1px solid var(--theme-elevation-200, #e0e0e0)',
-            background: 'var(--theme-elevation-50, #fafafa)',
-            flexShrink: 0,
-            fontSize: 12,
-            color: 'var(--theme-elevation-600, #666)',
+            flex: 1,
+            overflowX: 'auto',
+            scrollbarWidth: 'thin',
           }}>
-            <span style={{ flex: 1 }}>
-              Dernière modification{lastEdit.fields.length > 0 ? ` · ${lastEdit.fields.slice(0, 3).join(', ')}` : ''} · {timeAgoDisplay}
-            </span>
-            <span style={{ color: 'var(--theme-elevation-400, #aaa)', fontSize: 11, fontStyle: 'italic' }}>
-              Modification IA · pas d&apos;annulation rapide
-            </span>
-            <button
-              onClick={() => setLastEdit(null)}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--theme-elevation-400, #aaa)',
-                fontSize: 14,
-                lineHeight: 1,
-                padding: '0 2px',
-              }}
-            >
-              ×
-            </button>
-          </div>
-        )}
-
-        {/* Patch done banner */}
-        {patchDone && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '8px 16px',
-            borderBottom: '1px solid var(--theme-elevation-200, #e0e0e0)',
-            background: 'rgba(34,197,94,0.08)',
-            flexShrink: 0,
-            fontSize: 12,
-            color: '#166534',
-          }}>
-            <span>✅ Enregistré · le formulaire se recharge {autoReloadCountdown > 0 ? `dans ${autoReloadCountdown}s` : '…'}</span>
-            <button
-              onClick={() => { cancelAutoReload(); setPatchDone(false) }}
-              style={{
-                background: 'transparent',
-                border: '1px solid #166534',
-                borderRadius: 4,
-                padding: '2px 8px',
-                fontSize: 11,
-                cursor: 'pointer',
-                color: '#166534',
-                flexShrink: 0,
-                marginLeft: 'auto',
-              }}
-            >
-              Annuler
-            </button>
-            <button
-              onClick={() => window.location.reload()}
-              style={{
-                background: '#166534',
-                border: 'none',
-                borderRadius: 4,
-                padding: '2px 10px',
-                fontSize: 11,
-                cursor: 'pointer',
-                color: '#fff',
-                fontWeight: 600,
-                flexShrink: 0,
-              }}
-            >
-              Recharger maintenant
-            </button>
-          </div>
-        )}
-
-        {/* Quick actions */}
-        <div style={{
-          padding: '12px 16px 0',
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 6,
-          flexShrink: 0,
-        }}>
-          {quickActions.map(action => (
-            <button
-              key={action.label}
-              onClick={() => sendQuickAction(action.prompt)}
-              disabled={isLoading}
-              style={{
-                padding: '5px 10px',
-                fontSize: 12,
-                background: 'var(--theme-elevation-100, #f5f5f5)',
-                border: '1px solid var(--theme-elevation-200, #e0e0e0)',
-                borderRadius: 20,
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                color: 'var(--theme-text, #1a1a1a)',
-                transition: 'background 0.15s',
-                opacity: isLoading ? 0.5 : 1,
-              }}
-            >
-              {action.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Tone chips — contenu tab only */}
-        {activeTab === 'contenu' && (
-          <div style={{
-            padding: '8px 16px 0',
-            display: 'flex',
-            gap: 6,
-            flexShrink: 0,
-          }}>
-            {TONE_CHIPS.map(chip => (
-              <button
-                key={chip.label}
-                onClick={() => {
-                  const text = input.trim() ? chip.modifier + input : chip.modifier
-                  setInput(text)
-                  inputRef.current?.focus()
-                }}
-                disabled={isLoading}
-                style={{
-                  padding: '4px 10px',
-                  fontSize: 11,
-                  background: 'none',
-                  border: '1px solid var(--theme-elevation-300, #ccc)',
-                  borderRadius: 20,
-                  cursor: isLoading ? 'not-allowed' : 'pointer',
-                  color: 'var(--theme-elevation-600, #666)',
-                  opacity: isLoading ? 0.5 : 1,
-                }}
-              >
-                {chip.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Share link — dev tab only */}
-        {activeTab === 'dev' && (
-          <ShareLinkSection />
-        )}
-
-        {/* Messages */}
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '16px',
-          display: 'flex',
-          flexDirection: 'column',
-        }}>
-          {messages.length === 0 && (
-            <div style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textAlign: 'center',
-              padding: '32px 24px',
-              color: 'var(--theme-elevation-500, #888)',
-            }}>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>✦</div>
-              <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>
-                Que puis-je faire pour vous ?
-              </div>
-              <div style={{ fontSize: 12, lineHeight: 1.6 }}>
-                {activeTab === 'contenu'
-                  ? 'Résumez, modifiez ou traduisez le contenu du site. Posez des questions sur vos pages et produits.'
-                  : 'Créez des blocs, explorez la structure Payload ou partagez l\'accès éditeur.'}
-              </div>
-            </div>
-          )}
-          {messages.map(msg => (
-            <MessageBubble key={msg.id} message={msg} />
-          ))}
-          {isLoading && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              color: 'var(--theme-elevation-500, #888)',
-              fontSize: 13,
-              marginBottom: 12,
-            }}>
-              <span style={{ letterSpacing: 2 }}>···</span>
-            </div>
-          )}
-          {status === 'error' && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 8,
-              padding: '10px 12px',
-              marginBottom: 8,
-              background: 'rgba(239,68,68,0.08)',
-              border: '1px solid rgba(239,68,68,0.25)',
-              borderRadius: 8,
-              fontSize: 12,
-              color: '#b91c1c',
-              lineHeight: 1.5,
-            }}>
-              <span style={{ flexShrink: 0 }}>⚠</span>
-              <div style={{ flex: 1 }}>
-                <div>
-                  {error?.message?.includes('server_error') || error?.message?.includes('An error occurred')
-                    ? 'Erreur serveur temporaire (OpenAI). Réessayez dans quelques secondes.'
-                    : error?.message
-                      ? error.message
-                      : 'Erreur de connexion à l\'IA. Vérifiez que OPENAI_API_KEY est configuré.'
-                  }
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (input.trim()) handleSend()
-                  }}
+            {tabsState.tabs.map((tab: AiPanelTab) => {
+              const isActive = tab.id === tabsState.activeTabId
+              return (
+                <div
+                  key={tab.id}
                   style={{
-                    marginTop: 6,
-                    padding: '3px 10px',
-                    fontSize: 11,
-                    background: 'rgba(239,68,68,0.12)',
-                    border: '1px solid rgba(239,68,68,0.3)',
-                    borderRadius: 5,
-                    color: '#b91c1c',
-                    cursor: 'pointer',
-                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexShrink: 0,
+                    borderRight: '1px solid var(--theme-elevation-200, #e0e0e0)',
+                    background: isActive ? 'var(--theme-elevation-0, #fff)' : 'var(--theme-elevation-50, #fafafa)',
                   }}
                 >
-                  ↺ Réessayer
-                </button>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    title={tab.title}
+                    style={{
+                      padding: '8px 10px 8px 14px',
+                      fontSize: 12,
+                      fontWeight: isActive ? 600 : 400,
+                      color: isActive ? 'var(--theme-text, #1a1a1a)' : 'var(--theme-elevation-500, #888)',
+                      background: 'none',
+                      border: 'none',
+                      borderBottom: isActive ? '2px solid var(--theme-text, #1a1a1a)' : '2px solid transparent',
+                      cursor: 'pointer',
+                      maxWidth: 140,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {tab.title}
+                  </button>
+                  {tabsState.tabs.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        closeTab(tab.id)
+                      }}
+                      title="Fermer l'onglet"
+                      style={{
+                        padding: '4px 8px 4px 2px',
+                        fontSize: 14,
+                        lineHeight: 1,
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--theme-elevation-400, #aaa)',
+                      }}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={addTab}
+            title="Nouvelle conversation"
+            style={{
+              width: 40,
+              flexShrink: 0,
+              fontSize: 18,
+              lineHeight: 1,
+              background: 'var(--theme-elevation-50, #fafafa)',
+              border: 'none',
+              borderLeft: '1px solid var(--theme-elevation-200, #e0e0e0)',
+              cursor: 'pointer',
+              color: 'var(--theme-elevation-600, #666)',
+            }}
+          >
+            +
+          </button>
         </div>
 
-        {/* Input */}
-        <div style={{
-          padding: '12px 16px',
-          borderTop: '1px solid var(--theme-elevation-200, #e0e0e0)',
-          flexShrink: 0,
-        }}>
-          {/* Model subtitle — muted, never shown to non-technical users but gives power users context */}
-          <div style={{
-            fontSize: 10,
-            color: 'var(--theme-elevation-400, #bbb)',
-            marginBottom: 6,
-            letterSpacing: '0.02em',
-          }}>
-            {activeTab === 'contenu' ? 'Contenu · réponse rapide' : 'Développement · génération soignée'}
-            {' · Entrée envoie · Maj+Entrée nouvelle ligne'}
-          </div>
-          {isLoading && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              marginBottom: 6,
-              fontSize: 11,
-              color: 'var(--theme-elevation-500, #888)',
-            }}>
-              <span style={{ display: 'inline-block', animation: 'ai-spin 1s linear infinite', fontSize: 13 }}>⏳</span>
-              <span>{status === 'submitted' ? 'Envoi en cours…' : 'Génération…'}</span>
-            </div>
-          )}
-          <div
-            className="ai-panel-composer"
-            style={{
-            display: 'flex',
-            gap: 10,
-            alignItems: 'center',
-            background: 'var(--theme-elevation-50, #fafafa)',
-            borderRadius: 14,
-            border: `1px solid ${isLoading ? 'rgba(99,102,241,0.45)' : 'var(--theme-elevation-150, #e8e8e8)'}`,
-            padding: '6px 6px 6px 14px',
-            transition: 'border-color 0.15s',
-          }}>
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={e => setInputs(prev => ({ ...prev, [activeTab]: e.target.value }))}
-              onKeyDown={handleKeyDown}
-              placeholder="Message…"
-              rows={1}
-              disabled={isLoading}
-              style={{
-                flex: 1,
-                minWidth: 0,
-                minHeight: 24,
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                resize: 'none',
-                fontSize: 13,
-                lineHeight: 1.5,
-                padding: '8px 0',
-                margin: 0,
-                color: 'var(--theme-text, #1a1a1a)',
-                maxHeight: 120,
-                overflow: 'hidden',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box',
-              }}
-              onInput={e => {
-                const t = e.currentTarget
-                t.style.height = 'auto'
-                const next = Math.min(t.scrollHeight, 120)
-                t.style.height = `${next}px`
-                t.style.overflow = t.scrollHeight > 120 ? 'auto' : 'hidden'
-              }}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          {activeTab && (
+            <AiPanelTabSession
+              key={activeTab.id}
+              tabId={activeTab.id}
+              docContext={docContext}
+              docContextRef={docContextRef}
+              open={open}
+              pendingPrompt={pendingPrompt}
+              onPendingPromptConsumed={() => setPendingPrompt(null)}
+              onAutoRenameTab={title => renameTab(activeTab.id, title)}
+              defaultTabTitle={activeTab.title}
             />
-            <button
-              type="button"
-              onClick={handleSend}
-              disabled={isLoading || !input.trim()}
-              aria-label="Envoyer"
-              style={{
-                width: 36,
-                height: 36,
-                minWidth: 36,
-                padding: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: input.trim() && !isLoading
-                  ? 'var(--theme-text, #1a1a1a)'
-                  : 'var(--theme-elevation-150, #e5e5e5)',
-                color: input.trim() && !isLoading
-                  ? 'var(--theme-elevation-0, #fff)'
-                  : 'var(--theme-elevation-400, #999)',
-                border: 'none',
-                borderRadius: 10,
-                cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer',
-                fontSize: 16,
-                lineHeight: 1,
-                fontWeight: 600,
-                flexShrink: 0,
-                transition: 'background 0.15s, color 0.15s, transform 0.1s',
-              }}
-            >
-              {isLoading ? '…' : '↑'}
-            </button>
-          </div>
+          )}
         </div>
       </div>
 

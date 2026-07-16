@@ -13,6 +13,7 @@ import {
   extractPageText,
   textMatchesQuery,
 } from "./extractSearchableText";
+import { findHomePage, isHomePageQuery } from "./findHomePage";
 import { buildWhereClause } from "./getDocument";
 
 const COLLECTION_TEXT_FIELDS: Record<SearchCollection, string[]> = {
@@ -121,6 +122,25 @@ async function searchPagesWithBlocks(
 ): Promise<{ results: SearchResult[]; totalDocs: number }> {
   const payload = await getCmsClient();
   const trimmedQuery = query?.trim();
+
+  if (isHomePageQuery(trimmedQuery)) {
+    const home = await findHomePage(locale, { includeDraft: draft });
+    if (home.found) {
+      return {
+        results: [{
+          collection: "pages",
+          id: home.id,
+          slug: home.slug,
+          title: home.title,
+          status: home.status,
+          snippet: trimmedQuery
+            ? buildTextSnippet(home.searchableText, trimmedQuery)
+            : null,
+        }],
+        totalDocs: 1,
+      };
+    }
+  }
 
   const sqlWhere = buildWhereClause(
     trimmedQuery,

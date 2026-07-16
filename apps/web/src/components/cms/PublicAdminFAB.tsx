@@ -3,9 +3,27 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useChat } from '@ai-sdk/react'
-import { DefaultChatTransport } from 'ai'
 import type { UIMessage } from 'ai'
 import { updateLiveField, publishDocument } from '@/app/actions/liveEdit'
+import { TriageBadge } from '@/components/admin/TriageBadge'
+import { splitTriageFromMessage, type TriageInfo } from '@/lib/aiTriage'
+import { createAiChatTransport } from '@/lib/aiChatTransport'
+import {
+  chatStorageKeyForTab,
+  createDefaultTab,
+  loadChatMessages,
+  loadOrInitPublicTabsState,
+  loadTabDraft,
+  nextDefaultTabTitle,
+  PUBLIC_AI_PANEL_TABS_STORAGE_KEY,
+  removeTabData,
+  saveChatMessages,
+  saveTabDraft,
+  saveTabsState,
+  truncateTabTitle,
+  type AiPanelTab,
+  type AiPanelTabsState,
+} from '@/lib/aiPanelTabs'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -207,110 +225,77 @@ function contextFromAdminUrl(
 
 // ─── AI Chat panel embedded in the FAB ───────────────────────────────────────
 
-function AIChatPanel({
-  onClose,
-  pendingPrompt,
-  adminResolution,
+type PublicDocContext =
+  | { type: 'collection'; collection: string; id?: string; slug?: string }
+  | { type: 'global'; slug: string }
+  | { type: 'dashboard' }
+
+function PublicAiPanelTabSession({
+  tabId,
+  contextRef,
   hidden,
+  pendingPrompt,
+  onPendingPromptConsumed,
+  onAutoRenameTab,
+  defaultTabTitle,
 }: {
-  onClose: () => void
+  tabId: string
+  contextRef: React.MutableRefObject<PublicDocContext>
+  hidden: boolean
   pendingPrompt?: string
-  adminResolution: AdminResolution | null
-  hidden?: boolean
+  onPendingPromptConsumed: () => void
+  onAutoRenameTab: (title: string) => void
+  defaultTabTitle: string
 }) {
-  const [input, setInput] = useState(pendingPrompt ?? '')
+  const chatId = chatStorageKeyForTab(tabId)
+  const [input, setInput] = useState(() => loadTabDraft(tabId))
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  // Derive document context: prefer the resolved admin URL, then fall back to
-  // path-based parsing (which itself falls back to adminResolution for routes
-  // like /livraison that aren't handled by path matching alone).
-  const contextRef = useRef(parsePublicContext(adminResolution))
+  const processedPatchIds = useRef(new Set<string>())
+  const renamedRef = useRef(false)
+  const [serverTriage, setServerTriage] = useState<TriageInfo | null>(null)
+  const [initialMessages] = useState<UIMessage[]>(() => loadChatMessages(tabId))
 
-  // Stable chat ID keyed by the current public URL path so history is per-page.
-  // Uses pathname (immediately available) rather than the async adminResolution
-  // so the key is stable from first render — no re-initialization on resolution.
-  const pathname = typeof window !== 'undefined'
-    ? window.location.pathname
-    : 'unknown'
-  const chatId = `public-chat-${pathname.replace(/\//g, '-').replace(/^-/, '')}`
-
-  // Keep context in sync when the admin URL resolves after mount
-  useEffect(() => {
-    if (adminResolution) {
-      contextRef.current = contextFromAdminUrl(adminResolution.url)
-    }
-  }, [adminResolution])
-
-  // Focus the textarea whenever the panel becomes visible
   useEffect(() => {
     if (!hidden) {
       setTimeout(() => inputRef.current?.focus(), 150)
     }
   }, [hidden])
 
-  // Sync input when a new prompt comes in from BlockOverlay ✦ click
   useEffect(() => {
-    if (pendingPrompt) {
-      setInput(pendingPrompt)
-      setTimeout(() => inputRef.current?.focus(), 100)
-    }
-  }, [pendingPrompt])
+    saveTabDraft(tabId, input)
+  }, [tabId, input])
 
-  // Load persisted messages from localStorage on first render.
-  // chatId is derived from window.location.pathname (stable on mount) so this
-  // always loads from the correct per-page key.
-  const [initialMessages] = useState<UIMessage[]>(() => {
-    if (typeof window === 'undefined') return []
-    try {
-      const raw = window.localStorage.getItem(chatId)
-      if (!raw) return []
-      return JSON.parse(raw) as UIMessage[]
-    } catch {
-      return []
-    }
-  })
+  useEffect(() => {
+    if (!pendingPrompt) return
+    setInput(pendingPrompt)
+    onPendingPromptConsumed()
+    setTimeout(() => inputRef.current?.focus(), 100)
+  }, [pendingPrompt, onPendingPromptConsumed])
 
   const transport = useMemo(
     () =>
-      new DefaultChatTransport({
-        api: '/api/ai/chat',
-        credentials: 'include',
-        prepareSendMessagesRequest: ({ body, messages: msgs, id: id_ }) => ({
-          body: {
-            messages: msgs,
-            id: id_,
-            ...(body as Record<string, unknown>),
-            context: contextRef.current,
-          },
-        }),
+      createAiChatTransport({
+        surface: 'storefront',
+        getContext: () => contextRef.current,
+        onServerTriage: setServerTriage,
       }),
-    [],
+    [contextRef],
   )
 
-  const { messages, sendMessage, status, error } = useChat({
+  const { messages, sendMessage, status, error, setMessages } = useChat({
     id: chatId,
     transport,
-    // `messages` is the AI SDK v6 way to provide initial messages (initialMessages doesn't exist)
     messages: initialMessages,
     onFinish: () => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     },
   })
 
-  // Persist messages to localStorage whenever they change
   useEffect(() => {
-    if (typeof window === 'undefined' || messages.length === 0) return
-    try {
-      window.localStorage.setItem(chatId, JSON.stringify(messages))
-    } catch {
-      // quota exceeded — ignore
-    }
-  }, [messages, chatId])
+    saveChatMessages(tabId, messages)
+  }, [tabId, messages])
 
-  // Scan ALL messages once the stream settles — identical to the fix in AIPanel.tsx
-  // (Bug 1: onFinish only fires for the last step; patch_field lives in an earlier step
-  // in multi-step chains, so onFinish always missed it.)
-  const processedPatchIds = useRef(new Set<string>())
   useEffect(() => {
     if (status !== 'ready') return
     for (const message of messages) {
@@ -358,66 +343,39 @@ function AIChatPanel({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  const maybeRenameTab = useCallback((text: string) => {
+    if (renamedRef.current || !text.trim()) return
+    renamedRef.current = true
+    onAutoRenameTab(truncateTabTitle(text))
+  }, [onAutoRenameTab])
+
   const handleSend = useCallback(() => {
     if (!input.trim() || isLoading) return
     const text = input.trim()
+    if (messages.length === 0 && defaultTabTitle.startsWith('Conversation ')) {
+      maybeRenameTab(text)
+    }
+    setServerTriage(null)
     setInput('')
+    saveTabDraft(tabId, '')
     sendMessage({ text })
-  }, [input, isLoading, sendMessage])
+  }, [input, isLoading, sendMessage, messages.length, defaultTabTitle, maybeRenameTab, tabId])
+
+  const handleClear = useCallback(() => {
+    setMessages([])
+    saveChatMessages(tabId, [])
+  }, [setMessages, tabId])
+
+  useEffect(() => {
+    const handler = () => handleClear()
+    window.addEventListener('ai-panel:clear-active-tab', handler)
+    return () => window.removeEventListener('ai-panel:clear-active-tab', handler)
+  }, [handleClear])
+
+  const lastAssistantMessageId = [...messages].reverse().find(msg => msg.role === 'assistant')?.id
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: 80,
-        right: 20,
-        width: 380,
-        maxWidth: 'calc(100vw - 32px)',
-        maxHeight: '60vh',
-        background: 'rgba(10,10,10,0.96)',
-        backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: 14,
-        boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
-        display: hidden ? 'none' : 'flex',
-        flexDirection: 'column',
-        zIndex: 9998,
-        overflow: 'hidden',
-        fontFamily: 'system-ui, sans-serif',
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '12px 16px',
-          borderBottom: '1px solid rgba(255,255,255,0.07)',
-          flexShrink: 0,
-        }}
-      >
-        <span style={{ fontSize: 15, color: '#a5b4fc' }}>✦</span>
-        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#fff' }}>
-          Assistant IA
-        </span>
-        <button
-          onClick={onClose}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'rgba(255,255,255,0.4)',
-            cursor: 'pointer',
-            fontSize: 16,
-            lineHeight: 1,
-            padding: 4,
-          }}
-        >
-          ×
-        </button>
-      </div>
-
-      {/* Messages */}
+    <>
       <div
         style={{
           flex: 1,
@@ -426,6 +384,7 @@ function AIChatPanel({
           display: 'flex',
           flexDirection: 'column',
           gap: 8,
+          minHeight: 0,
         }}
       >
         {messages.length === 0 && (
@@ -444,6 +403,10 @@ function AIChatPanel({
         {messages.map((msg: UIMessage) => {
           const isUser = msg.role === 'user'
           const parts = (msg as { parts?: MessagePart[] }).parts
+          const fallbackTriage =
+            msg.id === lastAssistantMessageId && msg.role === 'assistant'
+              ? serverTriage
+              : null
           return (
             <div
               key={msg.id}
@@ -457,23 +420,32 @@ function AIChatPanel({
               {parts && parts.length > 0
                 ? parts.map((part, i) => {
                     if (part.type === 'text') {
+                      const text = (part as { type: 'text'; text: string }).text
+                      const { triage, body } = !isUser
+                        ? splitTriageFromMessage(text)
+                        : { triage: null, body: text }
+                      const displayTriage = triage ?? fallbackTriage
                       return (
-                        <div
-                          key={i}
-                          style={{
-                            maxWidth: '88%',
-                            padding: '8px 12px',
-                            borderRadius: isUser ? '12px 12px 3px 12px' : '12px 12px 12px 3px',
-                            background: isUser ? '#6366f1' : 'rgba(255,255,255,0.08)',
-                            color: '#fff',
-                            fontSize: 12,
-                            lineHeight: 1.55,
-                            whiteSpace: 'pre-wrap',
-                            wordBreak: 'break-word',
-                          }}
-                        >
-                          {(part as { type: 'text'; text: string }).text}
-                        </div>
+                        <React.Fragment key={i}>
+                          {displayTriage && (
+                            <TriageBadge triage={displayTriage} variant="storefront" />
+                          )}
+                          <div
+                            style={{
+                              maxWidth: '88%',
+                              padding: '8px 12px',
+                              borderRadius: isUser ? '12px 12px 3px 12px' : '12px 12px 12px 3px',
+                              background: isUser ? '#6366f1' : 'rgba(255,255,255,0.08)',
+                              color: '#fff',
+                              fontSize: 12,
+                              lineHeight: 1.55,
+                              whiteSpace: 'pre-wrap',
+                              wordBreak: 'break-word',
+                            }}
+                          >
+                            {body}
+                          </div>
+                        </React.Fragment>
                       )
                     }
                     if (part.type === 'tool-invocation') {
@@ -542,7 +514,6 @@ function AIChatPanel({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
       <div
         style={{
           padding: '10px 12px',
@@ -564,62 +535,332 @@ function AIChatPanel({
           </div>
         )}
         <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-        <textarea
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault()
-              handleSend()
-            }
-          }}
-          placeholder="Message… (Entrée pour envoyer)"
-          rows={1}
-          disabled={isLoading}
-          style={{
-            flex: 1,
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 8,
-            color: '#fff',
-            fontSize: 12,
-            lineHeight: 1.5,
-            outline: 'none',
-            padding: '7px 10px',
-            resize: 'none',
-            maxHeight: 80,
-            overflow: 'auto',
-          }}
-          onInput={(e) => {
-            const t = e.currentTarget
-            t.style.height = 'auto'
-            t.style.height = Math.min(t.scrollHeight, 80) + 'px'
-          }}
-        />
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={isLoading || !input.trim()}
-          style={{
-            background: '#6366f1',
-            border: 'none',
-            borderRadius: 8,
-            color: '#fff',
-            cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer',
-            fontSize: 14,
-            fontWeight: 600,
-            height: 34,
-            opacity: isLoading || !input.trim() ? 0.4 : 1,
-            padding: '0 12px',
-            flexShrink: 0,
-            transition: 'opacity 0.15s',
-          }}
-        >
-          {isLoading ? '…' : '↑'}
-        </button>
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSend()
+              }
+            }}
+            placeholder="Message… (Entrée pour envoyer)"
+            rows={1}
+            disabled={isLoading}
+            style={{
+              flex: 1,
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 8,
+              color: '#fff',
+              fontSize: 12,
+              lineHeight: 1.5,
+              outline: 'none',
+              padding: '7px 10px',
+              resize: 'none',
+              maxHeight: 80,
+              overflow: 'auto',
+            }}
+            onInput={(e) => {
+              const t = e.currentTarget
+              t.style.height = 'auto'
+              t.style.height = Math.min(t.scrollHeight, 80) + 'px'
+            }}
+          />
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={isLoading || !input.trim()}
+            style={{
+              background: '#6366f1',
+              border: 'none',
+              borderRadius: 8,
+              color: '#fff',
+              cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer',
+              fontSize: 14,
+              fontWeight: 600,
+              height: 34,
+              opacity: isLoading || !input.trim() ? 0.4 : 1,
+              padding: '0 12px',
+              flexShrink: 0,
+              transition: 'opacity 0.15s',
+            }}
+          >
+            {isLoading ? '…' : '↑'}
+          </button>
         </div>
       </div>
+    </>
+  )
+}
+
+function AIChatPanel({
+  onClose,
+  pendingPrompt,
+  adminResolution,
+  hidden,
+  onPendingPromptConsumed,
+}: {
+  onClose: () => void
+  pendingPrompt?: string
+  adminResolution: AdminResolution | null
+  hidden?: boolean
+  onPendingPromptConsumed: () => void
+}) {
+  const [mounted, setMounted] = useState(false)
+  const [tabsState, setTabsState] = useState<AiPanelTabsState | null>(null)
+  const contextRef = useRef<PublicDocContext>(parsePublicContext(adminResolution))
+
+  useEffect(() => { setMounted(true) }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+    setTabsState(loadOrInitPublicTabsState())
+  }, [mounted])
+
+  useEffect(() => {
+    contextRef.current = adminResolution
+      ? contextFromAdminUrl(adminResolution.url)
+      : parsePublicContext(adminResolution)
+  }, [adminResolution])
+
+  const updateTabsState = useCallback((updater: (prev: AiPanelTabsState) => AiPanelTabsState) => {
+    setTabsState(prev => {
+      if (!prev) return prev
+      const next = updater(prev)
+      saveTabsState(next, PUBLIC_AI_PANEL_TABS_STORAGE_KEY)
+      return next
+    })
+  }, [])
+
+  const addTab = useCallback(() => {
+    updateTabsState(prev => {
+      const tab = createDefaultTab(nextDefaultTabTitle(prev.tabs))
+      return { tabs: [...prev.tabs, tab], activeTabId: tab.id }
+    })
+  }, [updateTabsState])
+
+  const closeTab = useCallback((tabId: string) => {
+    updateTabsState(prev => {
+      if (prev.tabs.length <= 1) return prev
+      const nextTabs = prev.tabs.filter(tab => tab.id !== tabId)
+      if (nextTabs.length === 0) return prev
+      removeTabData(tabId)
+      const nextActive = prev.activeTabId === tabId
+        ? (nextTabs[nextTabs.length - 1]?.id ?? nextTabs[0]?.id ?? prev.activeTabId)
+        : prev.activeTabId
+      return { tabs: nextTabs, activeTabId: nextActive }
+    })
+  }, [updateTabsState])
+
+  const setActiveTab = useCallback((tabId: string) => {
+    updateTabsState(prev => ({ ...prev, activeTabId: tabId }))
+  }, [updateTabsState])
+
+  const renameTab = useCallback((tabId: string, title: string) => {
+    updateTabsState(prev => ({
+      ...prev,
+      tabs: prev.tabs.map(tab => (tab.id === tabId ? { ...tab, title } : tab)),
+    }))
+  }, [updateTabsState])
+
+  const clearActiveTab = useCallback(() => {
+    window.dispatchEvent(new Event('ai-panel:clear-active-tab'))
+  }, [])
+
+  const contextLabel = adminResolution?.title
+    ? adminResolution.subtitle ?? adminResolution.title
+    : 'Site public'
+
+  const activeTab = tabsState?.tabs.find(tab => tab.id === tabsState.activeTabId) ?? null
+
+  if (!mounted || !tabsState) return null
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        bottom: 80,
+        right: 20,
+        width: 380,
+        maxWidth: 'calc(100vw - 32px)',
+        maxHeight: '60vh',
+        background: 'rgba(10,10,10,0.96)',
+        backdropFilter: 'blur(16px)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 14,
+        boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
+        display: hidden ? 'none' : 'flex',
+        flexDirection: 'column',
+        zIndex: 9998,
+        overflow: 'hidden',
+        fontFamily: 'system-ui, sans-serif',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '12px 16px',
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
+          flexShrink: 0,
+        }}
+      >
+        <span style={{ fontSize: 15, color: '#a5b4fc' }}>✦</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
+            Assistant IA
+          </div>
+          <div style={{
+            fontSize: 10,
+            color: 'rgba(255,255,255,0.35)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
+            {contextLabel}
+          </div>
+        </div>
+        <button
+          onClick={clearActiveTab}
+          title="Effacer la conversation active"
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: 11,
+            color: 'rgba(255,255,255,0.35)',
+            padding: '4px 6px',
+            borderRadius: 4,
+          }}
+        >
+          Effacer
+        </button>
+        <button
+          onClick={onClose}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'rgba(255,255,255,0.4)',
+            cursor: 'pointer',
+            fontSize: 16,
+            lineHeight: 1,
+            padding: 4,
+          }}
+        >
+          ×
+        </button>
+      </div>
+
+      <div style={{
+        display: 'flex',
+        alignItems: 'stretch',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        flexShrink: 0,
+        minHeight: 36,
+      }}>
+        <div style={{
+          display: 'flex',
+          flex: 1,
+          overflowX: 'auto',
+          scrollbarWidth: 'thin',
+        }}>
+          {tabsState.tabs.map((tab: AiPanelTab) => {
+            const isActive = tab.id === tabsState.activeTabId
+            return (
+              <div
+                key={tab.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexShrink: 0,
+                  borderRight: '1px solid rgba(255,255,255,0.07)',
+                  background: isActive ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  title={tab.title}
+                  style={{
+                    padding: '7px 8px 7px 12px',
+                    fontSize: 11,
+                    fontWeight: isActive ? 600 : 400,
+                    color: isActive ? '#fff' : 'rgba(255,255,255,0.45)',
+                    background: 'none',
+                    border: 'none',
+                    borderBottom: isActive ? '2px solid #6366f1' : '2px solid transparent',
+                    cursor: 'pointer',
+                    maxWidth: 120,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {tab.title}
+                </button>
+                {tabsState.tabs.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      closeTab(tab.id)
+                    }}
+                    title="Fermer l'onglet"
+                    style={{
+                      padding: '4px 8px 4px 2px',
+                      fontSize: 13,
+                      lineHeight: 1,
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'rgba(255,255,255,0.3)',
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        <button
+          type="button"
+          onClick={addTab}
+          title="Nouvelle conversation"
+          style={{
+            width: 36,
+            flexShrink: 0,
+            fontSize: 16,
+            lineHeight: 1,
+            background: 'rgba(255,255,255,0.03)',
+            border: 'none',
+            borderLeft: '1px solid rgba(255,255,255,0.07)',
+            cursor: 'pointer',
+            color: 'rgba(255,255,255,0.5)',
+          }}
+        >
+          +
+        </button>
+      </div>
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        {activeTab && (
+          <PublicAiPanelTabSession
+            key={activeTab.id}
+            tabId={activeTab.id}
+            contextRef={contextRef}
+            hidden={!!hidden}
+            pendingPrompt={pendingPrompt}
+            onPendingPromptConsumed={onPendingPromptConsumed}
+            onAutoRenameTab={title => renameTab(activeTab.id, title)}
+            defaultTabTitle={activeTab.title}
+          />
+        )}
+      </div>
+
       <style>{`
         @keyframes fab-spin {
           from { transform: rotate(0deg); }
@@ -703,6 +944,9 @@ export function PublicAdminFAB() {
 
     const clean = new URL(window.location.href)
     clean.searchParams.delete('editor_token')
+    if (!clean.searchParams.has('lp_assistant')) {
+      clean.searchParams.set('lp_assistant', '1')
+    }
 
     fetch(`/api/editor-token?token=${encodeURIComponent(tokenParam)}&redirect=${encodeURIComponent(clean.pathname + clean.search)}`, {
       redirect: 'manual',
@@ -714,6 +958,24 @@ export function PublicAdminFAB() {
         window.location.replace(clean.toString())
       })
   }, [])
+
+  // Share links: open the AI assistant once the session is authorized
+  useEffect(() => {
+    if (checking) return
+    if (!user && !isEditorToken) return
+    if (typeof window === 'undefined') return
+
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('lp_assistant') !== '1') return
+
+    setAiOpen(true)
+    setMenuOpen(false)
+
+    params.delete('lp_assistant')
+    const qs = params.toString()
+    const next = `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`
+    window.history.replaceState(null, '', next)
+  }, [checking, user, isEditorToken])
 
   // Check for editor_token cookie via server-side validate endpoint.
   // document.cookie cannot read HttpOnly cookies, so we delegate to the API.
@@ -859,13 +1121,12 @@ export function PublicAdminFAB() {
 
   return (
     <>
-      {/* AI Chat panel — key on pathname so it remounts (and reloads localStorage) on page navigation */}
       <AIChatPanel
-        key={pathname}
         onClose={() => setAiOpen(false)}
         pendingPrompt={pendingPrompt}
         adminResolution={adminResolution}
         hidden={!aiOpen}
+        onPendingPromptConsumed={() => setPendingPrompt(undefined)}
       />
 
       {/* FAB menu */}

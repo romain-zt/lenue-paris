@@ -17,8 +17,19 @@ import {
   formatSchemaManifest,
   patchDocument,
   parseContentLocale,
+  findHomePage,
 } from '@repo/cms-data'
-import { semanticSearch } from '@repo/cms-data/indexing'
+import { semanticSearch, searchCode } from '@repo/cms-data/indexing'
+import {
+  AI_TRIAGE_HEADER,
+  buildServerTriageNote,
+  classifyRequestIntent,
+  classifyTriage,
+  looksLikeContentModification,
+  serializeTriageHeader,
+  type RequestIntent,
+  type TriageContext,
+} from '@/lib/aiTriage'
 
 setPayloadConfig(config)
 
@@ -26,9 +37,12 @@ const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY ?? '',
 })
 
-function resolveModel(tab: 'contenu' | 'developpement' | undefined) {
-  if (tab === 'developpement') {
+function resolveModel(intent: RequestIntent, contentPatch: boolean) {
+  if (intent === 'developpement') {
     return openai(process.env.AI_MODEL_DEV ?? 'gpt-4o')
+  }
+  if (contentPatch) {
+    return openai(process.env.AI_MODEL_PATCH ?? process.env.AI_MODEL_DEV ?? 'gpt-4o')
   }
   return openai(process.env.AI_MODEL_CONTENU ?? 'gpt-4o-mini')
 }
@@ -37,7 +51,30 @@ const SYSTEM_PROMPT = `Tu es l'assistant IA intégré dans le panel d'administra
 
 Tu parles français par défaut et tu t'adaptes à la langue de l'utilisateur si nécessaire.
 
-Tu peux lire et modifier le contenu du site directement via les outils disponibles. Quand on te demande de modifier quelque chose, fais-le immédiatement sans demander de confirmation, sauf si c'est irréversible ou ambigu.
+Tu peux lire et modifier le CONTENU du site directement via les outils disponibles. Quand on te demande de modifier du contenu, fais-le immédiatement sans demander de confirmation, sauf si c'est irréversible ou ambigu.
+
+Tu NE peux PAS modifier le code source : pour toute demande de développement, tu proposes un plan précis (« quoi faire »), sans jamais prétendre l'avoir exécuté.
+
+L'utilisateur utilise un seul fil de conversation : tu classifies chaque demande toi-même (Contenu / Développement), sans mode manuel à choisir.
+
+## Triage (obligatoire dès qu'une demande implique une action ou une modification)
+Le bloc triage est un **préambule court** en tête de réponse — ce n'est PAS la réponse complète. Pour une modif Contenu, tu dois **enchaîner immédiatement** avec des appels d'outils dans le même échange.
+
+**Catégorie** : Contenu | Développement | Ambigu
+**À faire** : une phrase décrivant l'action
+**Ce que ça demande** : les champs à modifier (Contenu) ou les fichiers/éléments à toucher (Développement)
+
+Règles de classification :
+- **Contenu** = textes, prix, stock, titres, traductions, pages, produits, collections, médias, réglages du site, design tokens (couleurs). → EXÉCUTABLE par toi via patch_field. Après le triage : cherche le document si besoin, appelle patch_field, confirme seulement si success:true. **Interdit** de dire « je vais modifier » sans avoir appelé patch_field.
+- **Développement** = créer/modifier un bloc Payload, un composant React, une route API, un champ de schéma, une migration, du CSS/JS, une logique métier, la structure du site. → NON exécutable par toi. Après le triage, utilise search_code pour t'ancrer dans le vrai code, puis rends un plan : fichiers concernés (chemin + lignes), nature des changements, étapes, points d'attention. Ne modifie jamais de contenu « à la place » d'une tâche de dev.
+- **Ambigu** = demande les précisions manquantes en une phrase, propose l'interprétation la plus probable.
+- Pour une simple question factuelle ou une salutation, réponds normalement SANS le bloc de triage.
+
+## Règles de développement (demandes de code)
+- Avant toute affirmation sur le code, appelle search_code — ne réponds jamais sur l'architecture ou l'emplacement d'un fichier depuis ta mémoire
+- Cite toujours les passages sous la forme chemin/fichier.ts (lignes X-Y)
+- Reste factuel : si search_code ne retourne rien de pertinent, dis-le et propose où chercher (pathPrefix apps/web/src, packages/…)
+- Le plan doit être actionnable par un développeur dans son IDE (tu n'as pas accès aux fichiers en écriture)
 
 ## Règles de récupération (obligatoires)
 - Avant toute réponse factuelle sur le contenu (prix, stock, titres, couleurs de design tokens), appelle semantic_search (recherche sémantique) ou search_content (recherche exacte) ou get_site_snapshot — ne réponds jamais depuis ta mémoire d'entraînement
@@ -45,7 +82,7 @@ Tu peux lire et modifier le contenu du site directement via les outils disponibl
 - Utilise search_content pour les filtres structurés (catégorie, stock, statut) ou les correspondances exactes
 - Pour l'inventaire catalogue (stock, robes disponibles, « combien de produits publiés ») : appelle get_catalog en premier — ne devine jamais les chiffres
 - Pour connaître la structure des champs, appelle get_schema — jamais de supposition sur les noms de champs
-- Utilise get_document pour lire un document complet avant de le modifier si besoin
+- Utilise get_home_page pour toute question ou modification sur la page d'accueil (avant search_content)
 - Utilise patch_field pour mettre à jour des champs (collections modifiables : pages, products, collections ; globaux : site-settings, design-tokens)
 - Pour les globaux, utilise isGlobal: true
 - Pour les champs localisés, précise toujours la locale (fr, en, ou ru)
@@ -59,6 +96,23 @@ Tu peux lire et modifier le contenu du site directement via les outils disponibl
 - Si le contexte est le tableau de bord admin (/admin sans document ouvert), « cette page » désigne le dashboard : appelle get_site_snapshot et résume l'état du site (marque, compteurs, contenu publié)
 - Ne réponds jamais « j'ai besoin de l'ID » quand le contexte ou le snapshot contient déjà le document
 
+## Page d'accueil — champs visibles vs admin (CRITIQUE)
+Sur le storefront (/), le visiteur ne voit PAS le champ Payload \`pages.title\` :
+- **Grand titre hero** = global \`site-settings\` : **deux lignes** si \`brandWordmarkSecondary\` est non vide
+  - Ligne 1 (grande) = \`brandWordmarkPrimary\` (ex. LÉNUE)
+  - Ligne 2 (petite) = \`brandWordmarkSecondary\` (ex. PARIS) — **reste affichée** si tu ne la vides pas
+- **Sous-titre hero** = bloc hero \`blocks[N].tagline\` sur la page home (patch_field collection pages + id)
+- **Saison hero** = \`blocks[N].season\`
+- **\`pages.title\`** = libellé admin dans le CMS uniquement — ne change pas le hero ni l'onglet navigateur (l'onglet utilise brandName)
+
+Quand l'utilisateur dit « titre de la page d'accueil » / « changer le titre » sans précision :
+1. **Un seul mot/titre** (ex. « Test », « Bienvenue ») → \`patch_field\` site-settings isGlobal:true data={brandWordmarkPrimary:"Test", brandWordmarkSecondary:""} — **les deux champs** pour ne pas laisser PARIS en dessous
+2. **Deux lignes explicites** (ex. « LÉNUE PARIS », « Foo / Bar ») → répartir sur primary + secondary
+3. S'il veut le **sous-titre** (phrase sous le wordmark) → \`blocks[N].tagline\` du hero (utilise get_home_page pour N)
+4. Ne modifie \`pages.title\` que s'il parle explicitement du **nom du document dans l'admin**
+
+Après patch wordmark, lis \`visibleOnStorefront.heroWordmark.renderedAs\` via get_home_page pour confirmer le rendu final.
+
 ## Recherche par nom (produit, page, collection)
 - Si l'utilisateur envoie un nom court ou flou (ex. « robe eloise », « camille », « livraison »), appelle d'abord semantic_search avec cette requête, puis search_content en complément si besoin
 - Tolère les fautes d'orthographe et les accents manquants (eloise → Héloïse) via semantic_search — ne dis jamais qu'un produit n'existe sans avoir appelé un outil de recherche
@@ -67,6 +121,45 @@ Tu peux lire et modifier le contenu du site directement via les outils disponibl
 ## Inventaire catalogue
 - get_catalog retourne les produits publiés en stock, les robes disponibles (inStockDresses) et les compteurs par catégorie
 - Ne dis jamais qu'il n'y a aucun produit en stock sans avoir appelé get_catalog ou search_content avec status=published et inStock=true`
+
+const CONTENT_EXECUTION_NOTE = `
+
+## Exécution contenu (modification demandée — OBLIGATOIRE)
+Workflow dans cet échange, sans t'arrêter après le triage :
+1. Document inconnu → semantic_search ou search_content pour obtenir collection + id
+2. **Page d'accueil** → get_home_page d'abord. Lis \`visibleOnStorefront\` : ne patch PAS seulement pages.title si l'utilisateur veut un changement visible.
+   - Gros titre visible → patch_field site-settings isGlobal:true
+   - **Titre sur une seule ligne** → data={brandWordmarkPrimary:"…", brandWordmarkSecondary:""} (obligatoire pour effacer PARIS)
+   - **Deux lignes** → primary + secondary
+   - Sous-titre → patch_field pages id + data blocks avec le hero (index dans heroBlockIndex)
+3. patch_field + locale "fr" pour les champs localisés
+4. Confirmation **uniquement** si success:true — dis quel texte visible change (wordmark, tagline, etc.)
+
+Note : le libellé « Série limitée » sur le hero d'accueil vient souvent de apps/web/messages/fr.json (clé capsuleBadge), pas d'un champ page — c'est une tâche **Développement** (fichier i18n), pas patch_field sur un bloc.
+
+Interdit de terminer avec « je vais procéder » / « je modifie maintenant » sans patch_field exécuté. Interdit de dire « page introuvable » sans avoir appelé get_home_page ou search_content.`
+
+const DEV_RULES_NOTE = `
+
+## Mode développement (demande classée Développement)
+Règles strictes — une violation = réponse invalide :
+1. AVANT de répondre sur le code : appelle search_code (obligatoire). Pour les collections/champs Payload : appelle aussi get_schema.
+2. Cite UNIQUEMENT des chemins retournés par search_code, format \`chemin/fichier.ts (lignes X-Y)\`. Jamais de chemin inventé.
+3. Source de vérité du monorepo :
+   - Schémas Payload : \`packages/payload-schema/src/collections/\`, \`packages/payload-schema/src/globals/\`, \`packages/payload-schema/src/blocks/\`
+   - App Next.js + config Payload : \`apps/web/src/\`
+   - Couche IA/RAG : \`packages/cms-data/src/\`
+   - \`apps/cms/\` est LEGACY et non déployé — ne le cite JAMAIS.
+4. Si search_code ne retourne rien : dis-le explicitement (« index vide ou requête trop vague ») et propose \`pnpm reindex-code\`. Interdit de donner des conseils génériques du type « cherchez dans le dossier models ».
+5. Stockage médias : config S3 dans \`apps/web/src/payload.config.ts\` (plugin s3Storage), collection Media dans \`packages/payload-schema/src/collections/Media.ts\` ou \`apps/web/src/payload/media.ts\`.`
+
+const STOREFRONT_NOTE = `
+
+## Surface storefront (site public / lien collaborateur)
+- Le triage Contenu / Développement s'applique à chaque demande actionnable.
+- **Contenu** : tu peux exécuter (patch_field, édition live) — c'est le cas d'usage principal ici.
+- **Développement** : appelle search_code, donne le plan (fichiers + lignes + étapes). Précise : « modification de code à faire dans l'IDE — non exécutable depuis cette interface ».
+- Ne refuse pas les questions dev : réponds avec search_code même depuis le storefront.`
 
 async function resolvePayloadUserId(request: NextRequest): Promise<number | undefined> {
   try {
@@ -82,7 +175,9 @@ async function resolvePayloadUserId(request: NextRequest): Promise<number | unde
 export async function POST(request: NextRequest) {
   let body: {
     messages: UIMessage[]
+    /** @deprecated Ignored — intent is inferred from the conversation. */
     tab?: 'contenu' | 'developpement'
+    surface?: 'admin' | 'storefront'
     context?: {
       type: 'collection' | 'collection-list' | 'global' | 'dashboard'
       collection?: string
@@ -102,7 +197,7 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  const { messages, tab, context } = body
+  const { messages, surface, context } = body
 
   if (!process.env.OPENAI_API_KEY) {
     console.error('[/api/ai/chat] OPENAI_API_KEY is not set — AI responses will fail')
@@ -168,14 +263,30 @@ export async function POST(request: NextRequest) {
           : ''
 
   const modelMessages = await convertToModelMessages(messages)
-  const resolvedTab = tab ?? 'contenu'
-  const model = resolveModel(resolvedTab)
+  const triageContext: TriageContext | undefined = context
+    ? {
+        type: context.type,
+        collection: context.collection,
+        id: context.id,
+        slug: context.slug,
+      }
+    : undefined
+  const serverTriage = classifyTriage(messages, triageContext)
+  const resolvedIntent = classifyRequestIntent(messages, triageContext)
+  const contentPatch = resolvedIntent === 'contenu' && looksLikeContentModification(messages)
+  const resolvedSurface = surface ?? 'admin'
+  const model = resolveModel(resolvedIntent, contentPatch)
   const logStart = Date.now()
+
+  const surfaceNote = resolvedSurface === 'storefront' ? STOREFRONT_NOTE : ''
+  const devNote = resolvedIntent === 'developpement' ? DEV_RULES_NOTE : ''
+  const contentNote = contentPatch ? CONTENT_EXECUTION_NOTE : ''
+  const triageNote = buildServerTriageNote(serverTriage)
 
   try {
     const result = streamText({
       model,
-      system: SYSTEM_PROMPT + contextNote,
+      system: SYSTEM_PROMPT + triageNote + devNote + contentNote + surfaceNote + contextNote,
       messages: modelMessages,
       stopWhen: stepCountIs(8),
       tools: {
@@ -284,22 +395,51 @@ export async function POST(request: NextRequest) {
           execute: async ({ locale }) =>
             getCatalogSummary(parseContentLocale(locale)),
         }),
+
+        get_home_page: tool({
+          description: 'Résout la page d\'accueil (slug "home"). Retourne visibleOnStorefront avec heroWordmark.primary/secondary/renderedAs (deux lignes si secondary non vide). Pour un titre sur une ligne, patcher primary ET secondary="". PAS pages.title.',
+          inputSchema: zodSchema(z.object({
+            locale: z.string().optional().describe('Locale: fr, en ou ru'),
+          })),
+          execute: async ({ locale }) =>
+            findHomePage(parseContentLocale(locale)),
+        }),
+
+        search_code: tool({
+          description: 'Recherche sémantique dans le CODE SOURCE indexé (obligatoire pour toute question dev). Retourne filePath, startLine, endLine, extrait. Préfixes utiles : packages/payload-schema/src, apps/web/src, packages/cms-data/src. Ne jamais citer apps/cms.',
+          inputSchema: zodSchema(z.object({
+            query: z.string().describe('Requête précise (ex. « collection users Payload », « s3Storage media upload », « route chat IA »)'),
+            pathPrefix: z.string().optional().describe('Filtre par préfixe (ex. packages/payload-schema/src, apps/web/src)'),
+            limit: z.number().optional().describe('Nombre max de passages retournés (défaut 10)'),
+          })),
+          execute: async ({ query, pathPrefix, limit }) =>
+            searchCode({ query, pathPrefix, limit }),
+        }),
       },
     })
 
     console.log('[ai/chat]', {
-      tab: resolvedTab,
-      model: resolvedTab === 'developpement'
+      intent: resolvedIntent,
+      triage: serverTriage?.category ?? null,
+      contentPatch,
+      surface: resolvedSurface,
+      model: resolvedIntent === 'developpement'
         ? (process.env.AI_MODEL_DEV ?? 'gpt-4o')
-        : (process.env.AI_MODEL_CONTENU ?? 'gpt-4o-mini'),
+        : contentPatch
+          ? (process.env.AI_MODEL_PATCH ?? process.env.AI_MODEL_DEV ?? 'gpt-4o')
+          : (process.env.AI_MODEL_CONTENU ?? 'gpt-4o-mini'),
       contextType: context?.type,
       hasUser: !!userId,
       latencyMs: Date.now() - logStart,
     })
-    return result.toUIMessageStreamResponse()
+    return result.toUIMessageStreamResponse({
+      headers: serverTriage
+        ? { [AI_TRIAGE_HEADER]: serializeTriageHeader(serverTriage) }
+        : undefined,
+    })
   } catch (err) {
     console.error('[ai/chat]', {
-      tab: resolvedTab,
+      intent: resolvedIntent,
       error: err instanceof Error ? err.message : String(err),
       latencyMs: Date.now() - logStart,
     })
